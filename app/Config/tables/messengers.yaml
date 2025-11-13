@@ -1,0 +1,69 @@
+name: api
+model: Messenger
+titleMenu: Messenger
+descr:
+    one: 'мессенжер'
+table: messengers
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    options:
+        type: jsonb
+        comment: Опции
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+    color:
+        type: string
+        comment: color
+        nullable: true
+        example: ''
+    icon:
+        type: string
+        comment: icon
+        nullable: true
+        example: ''
+menu:
+    name: Мессенджеры
+    shortname: messenger.messenger
+    is_root: 1
+    is_api: 1
+    level: 3
+    page: /web/chats/messengers
+    api: 'https://chats.itstaffer.ru/api/messenger'
+    model: Modules\Messenger\Models\Messenger
+    settings:
+        fields:
+            name:
+                name: Название
+                control: text
+                db_type: string
+                is_lookup: false
+            shortname:
+                name: Короткое
+                control: text
+                db_type: string
+                is_lookup: false
+            status:
+                name: Статус
+                control: status
+                db_type: integer
+                is_lookup: false
+    icon: 'uil uil-telegram-alt'
+    resource: mess_message
+    status: 1
+    is_list: 1
+    parent_shortname: chats.lists

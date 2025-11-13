@@ -1,0 +1,52 @@
+---
+name: api
+model: Task
+titleMenu: Задачи
+descr:
+  about: задачах
+  many_r: задач
+  one: задачу
+table: tasks
+module: Tasks
+fields:
+  name:
+    type: string
+    comment: Наименование
+    nullable: true
+    example: Задача
+  shortname:
+    type: string
+    comment: Краткое наименование
+    nullable: true
+    example: Задача
+  user_id:
+    type: integer
+    comment: Пользователь
+    nullable: true
+    example: '1'
+  descr:
+    type: string
+    comment: Описание задачи
+    nullable: true
+    example: '1'
+  status:
+    type: integer
+    comment: Статус
+    default: 0
+    nullable: true
+    example: '1'
+  plan_time:
+    type: string
+    comment: Статус
+    nullable: true
+    example: 01.01.2025 18:30
+  fact_time:
+    type: string
+    comment: Статус
+    nullable: true
+    example: 01.01.2025 18:30
+  src:
+    type: json
+    comment: Api
+    nullable: true
+    example: "{json}"

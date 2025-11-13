@@ -1,0 +1,64 @@
+name: api
+model: Type_message
+titleMenu: Type_message
+descr:
+    one: 'тип сообщения'
+table: type_messages
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: 'Короткое название'
+        nullable: true
+        example: ''
+    cnt:
+        type: integer
+        comment: 'Кол-во использований'
+        nullable: true
+        example: ''
+    other:
+        type: json
+        comment: 'Название в других сервисах '
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+menu:
+    name: 'Типы сообщений'
+    shortname: messenger.type_message
+    is_root: 1
+    is_api: 1
+    level: 3
+    page: /web/chats/typemessage
+    api: 'https://chats.itstaffer.ru/api/typemessage'
+    model: Modules\Messenger\Models\TypeMessage
+    settings:
+        fields:
+            name:
+                name: Название
+                control: text
+                db_type: string
+                is_lookup: false
+            shortname:
+                name: Короткое
+                control: text
+                db_type: string
+                is_lookup: false
+            status:
+                name: Статус
+                control: status
+                db_type: integer
+                is_lookup: false
+    icon: 'uil uil-telegram-alt'
+    resource: typemessage
+    status: 1
+    is_list: 1
+    parent_shortname: chats.lists

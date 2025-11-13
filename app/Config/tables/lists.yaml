@@ -1,0 +1,11 @@
+menu:
+    name: Справочники
+    shortname: chats.lists
+    is_root: 1
+    is_api: 2
+    level: 2
+    page: /web/chats/lists
+    icon: 'uil uil-apps'
+    status: 1
+    nom: 10
+    is_list: 2

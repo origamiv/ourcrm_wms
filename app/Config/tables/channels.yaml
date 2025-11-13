@@ -1,0 +1,233 @@
+name: api
+model: Channel
+titleMenu: Channel
+descr:
+    one: 'канал'
+table: channels
+module: messenger
+fields:
+    account_id:
+        type: integer
+        comment: Аккаунт
+        nullable: true
+        example: ''
+    bot_id:
+        type: integer
+        comment: Бот
+        nullable: true
+        example: ''
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    channel:
+        type: string
+        comment: 'Название в мессенджере'
+        nullable: true
+        example: ''
+    username:
+        type: string
+        comment: Псевдоним
+        nullable: true
+        example: ''
+    phone:
+        type: string
+        comment: Телефон
+        nullable: true
+        example: ''
+    fn_avatar:
+        type: string
+        comment: Аватар
+        nullable: true
+        example: ''
+    type_channel:
+        type: integer
+        comment: 'Тип канала'
+        nullable: true
+        example: ''
+    cnt:
+        type: integer
+        comment: 'Количество сообщений'
+        nullable: true
+        example: ''
+    cnt_parsed:
+        type: integer
+        comment: 'Количество полученных сообщений'
+        nullable: true
+        example: ''
+    cnt_people:
+        type: integer
+        comment: 'Количество участников'
+        nullable: true
+        example: ''
+    cnt_people_parsed:
+        type: integer
+        comment: 'Количество полученных участников'
+        nullable: true
+        example: ''
+    can_view_participants:
+        type: integer
+        comment: 'Можно просматривать участников'
+        nullable: true
+        example: ''
+    date_last_message:
+        type: date
+        comment: 'Время последнего сообщения'
+        nullable: true
+        example: ''
+    date_last_check:
+        type: date
+        comment: 'Время последней проверки сообщений'
+        nullable: true
+        example: ''
+    frequency:
+        type: integer
+        comment: 'Частота сообщений'
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+    srcDialog:
+        type: jsonb
+        comment: Исходник
+        nullable: true
+        example: ''
+    src:
+        type: jsonb
+        comment: Исходник
+        nullable: true
+        example: ''
+    last_message_id:
+        type: integer
+        comment: 'Последнее сообщение'
+        nullable: true
+        example: ''
+    cnt_unread:
+        type: integer
+        comment: 'Число непрочитанных сообщений'
+        nullable: true
+        example: ''
+    date_last_read:
+        type: date
+        comment: 'Время прочтения сообщений'
+        nullable: true
+        example: ''
+    last_message_src:
+        type: json
+        comment: last_message_src
+        nullable: true
+        example: ''
+    tagged_at:
+        type: date
+        comment: tagged_at
+        nullable: true
+        example: ''
+    is_in_black:
+        type: integer
+        comment: is_in_black
+        nullable: true
+        example: ''
+    is_in_white:
+        type: integer
+        comment: is_in_white
+        nullable: true
+        example: ''
+menu:
+    name: Каналы
+    shortname: messenger.channels
+    is_root: 1
+    is_api: 2
+    level: 2
+    nom: 3
+    page: /web/chats/channels
+    api: 'https://chats.itstaffer.ru/api/channel'
+    model: Modules\Messenger\Models\Channel
+    settings:
+        fields:
+            account_id:
+                name: Аккаунт
+                field_model: /Modules/Messenger/Models/Account
+                field_items: accounts
+                field_prop: account
+                control: select
+                db_type: integer
+                is_lookup: true
+                lookup_api: 'https://chats.itstaffer.ru/api/account'
+                lookup_id: id
+                lookup_name: name
+            name:
+                name: Название
+                control: text
+                db_type: string
+                is_lookup: false
+            shortname:
+                name: Короткое
+                control: text
+                db_type: string
+                is_lookup: false
+            channel:
+                name: Канал
+                control: text
+                db_type: string
+                is_lookup: false
+            username:
+                name: Юзернейм
+                control: text
+                db_type: string
+                is_lookup: false
+            phone:
+                name: Телефон
+                control: text
+                db_type: string
+                is_lookup: false
+            type_channel:
+                name: 'Тип канала'
+                control: text
+                db_type: string
+                is_lookup: false
+            cnt:
+                name: 'Кол-во сообщений'
+                control: text
+                db_type: string
+                is_lookup: false
+            cnt_people:
+                name: 'Кол-во участников'
+                control: text
+                db_type: string
+                is_lookup: false
+            src:
+                name: 'Все данные'
+                field_mode: 'create,edit,show'
+                control: json
+                db_type: string
+                is_lookup: false
+            status:
+                name: Статус
+                control: status
+                db_type: integer
+                is_lookup: false
+        actions:
+            profile:
+                name: 'Получить профиль канала'
+                icon: uil-atom
+                url: 'https://chats.itstaffer.ru/api/channel/{id}/load'
+                type: ajaxBtn
+            messages:
+                name: 'Перейти к сообщениям канала'
+                icon: uil-comment-dots
+                url: '/web/messenger/message/from/channel_id/{id}'
+                type: url
+        order:
+            updated_at: desc
+    icon: 'uil uil-channel'
+    status: 1
+    is_list: 2

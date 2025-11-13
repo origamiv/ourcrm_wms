@@ -1,0 +1,72 @@
+name: api
+model: Automate
+titleMenu: Automate
+descr:
+    one: 'автоиатизации'
+table: automates
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: Аккаунт
+        nullable: true
+        example: ''
+    channel_id:
+        type: integer
+        comment: Канал
+        nullable: true
+        example: ''
+    assistant_id:
+        type: integer
+        comment: Ассистент
+        nullable: true
+        example: ''
+    options:
+        type: jsonb
+        comment: Настройки
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+menu:
+  name: Автоматизации
+  shortname: messenger.automates
+  is_root: 1
+  is_api: 1
+  level: 3
+  page: /web/chats/automate
+  api: https://chats.itstaffer.ru/api/automate
+  model: Modules\Messenger\Models\Automate
+  settings:
+    fields:
+      name:
+        name: Название
+        control: text
+        db_type: string
+        is_lookup: false
+      shortname:
+        name: Короткое
+        control: text
+        db_type: string
+        is_lookup: false
+      status:
+        name: Статус
+        control: status
+        db_type: integer
+        is_lookup: false
+  icon: 'uil uil-telegram-alt'
+  status: 1
+  is_list: 1
+  parent_shortname: chats.lists

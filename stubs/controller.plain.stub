@@ -1,0 +1,12 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use OurCRM\BaseController;
+
+class {{ class }} extends BaseController
+{
+    //
+}

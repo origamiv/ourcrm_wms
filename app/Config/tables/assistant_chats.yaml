@@ -1,0 +1,130 @@
+name: api
+model: AssistantChat
+titleMenu: Creator
+descr:
+  one: 'чат AI ассистента'
+table: assistant_chats
+module: messenger
+fields:
+  name:
+    type: string
+    comment: Название
+    nullable: true
+  shortname:
+    type: string
+    comment: Короткое
+    nullable: true
+    example: ''
+  assistant_id:
+    type: integer
+    comment: 'Ассистент'
+    nullable: true
+    example: ''
+  account_id:
+    type: integer
+    comment: Аккаунт
+    nullable: true
+    example: ''
+  channel_id:
+    type: integer
+    comment: Канал
+    nullable: true
+    example: ''
+  ext_thread_id:
+    type: string
+    comment: Тред ассистента
+    nullable: true
+    example: ''
+  direction:
+    type: string
+    comment: Направление
+    nullable: true
+    example: ''
+  options:
+    type: jsonb
+    comment: Настройки
+    nullable: true
+    example: ''
+  status:
+    type: integer
+    comment: Статус
+    nullable: true
+    example: ''
+  cnt:
+    type: integer
+    comment: Количество
+    nullable: true
+    example: ''
+menu:
+  name: 'Чаты AI ассиcтентов'
+  shortname: messenger.assistant_chats
+  is_root: 1
+  is_api: 1
+  level: 3
+  page: /web/chats/assistantchat
+  api: https://chats.itstaffer.ru/api/assistantchat
+  model: Modules\Messenger\Models\AssistantChat
+  settings:
+    fields:
+      name:
+        name: Название
+        control: text
+        db_type: string
+        is_lookup: false
+      shortname:
+        name: Короткое
+        control: text
+        db_type: string
+        is_lookup: false
+      assistant_id:
+        name: Ассистент
+        field_model: /Modules/Messenger/Models/assistant
+        field_items: assistants
+        field_prop: assistant
+        control: select
+        db_type: integer
+        is_lookup: true
+        lookup_api: https://chats.itstaffer.ru/api/assistant
+        lookup_id: id
+        lookup_name: name
+      account_id:
+        name: Аккаунт
+        field_model: /Modules/Messenger/Models/Account
+        field_items: accounts
+        field_prop: account
+        control: select
+        db_type: integer
+        is_lookup: true
+        lookup_api: https://chats.itstaffer.ru/api/account
+        lookup_id: id
+        lookup_name: name
+      channel_id:
+        name: Канал
+        field_model: /Modules/Messenger/Models/Channel
+        field_items: channels
+        field_prop: channel
+        control: select
+        db_type: integer
+        is_lookup: true
+        lookup_api: https://chats.itstaffer.ru/api/channel
+        lookup_id: id
+        lookup_name: name
+      ext_thread_id:
+        name: Тред ассистента
+        control: string
+        db_type: string
+        is_lookup: false
+      cnt:
+        name: Количество
+        control: string
+        db_type: string
+        is_lookup: false
+      status:
+        name: Статус
+        control: status
+        db_type: integer
+        is_lookup: false
+  icon: 'uil uil-telegram-alt'
+  status: 1
+  is_list: 1
+  parent_shortname: chats.ai

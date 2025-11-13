@@ -1,0 +1,23 @@
+name: api
+model: Acc_seller
+titleMenu: Acc_seller
+descr:
+    one: 'покупка аккаунта'
+table: acc_seller
+module: messenger
+fields:
+    telegram_id:
+        type: string
+        comment: telegram_id
+        nullable: true
+        example: ''
+    name:
+        type: string
+        comment: name
+        nullable: true
+        example: ''
+    cnt_buy:
+        type: string
+        comment: cnt_buy
+        nullable: true
+        example: ''

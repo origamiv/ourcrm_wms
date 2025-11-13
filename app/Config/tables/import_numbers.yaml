@@ -1,0 +1,28 @@
+name: api
+model: Import_number
+titleMenu: Import_number
+descr:
+    one: 'номер'
+table: import_numbers
+module: messenger
+fields:
+    numbers:
+        type: string
+        comment: numbers
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: status
+        nullable: true
+        example: ''
+    code:
+        type: string
+        comment: code
+        nullable: true
+        example: ''
+    pass2fa:
+        type: string
+        comment: pass2fa
+        nullable: true
+        example: ''

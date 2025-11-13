@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use OurCRM\BaseModel;
+
+/**
+ * @property string $name Название
+ * @property string $shortname Короткое
+ * @property int $account_id Аккаунт
+ * @property int $channel_id Канал
+ * @property int $assistant_id Ассистент
+ * @property jsonb $options Настройки
+ * @property int $status Статус
+ */
+final class Automate extends BaseModel
+{
+    use HasFactory;
+    use SoftDeletes;
+
+    // public $guarded = ['id'];
+    protected $table = 'messenger.automates';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name', // Название
+        'shortname', // Короткое
+        'account_id', // Аккаунт
+        'channel_id', // Канал
+        'assistant_id', // Ассистент
+        'options', // Настройки
+        'status', // Статус
+    ];
+
+    /**
+     * Атрибуты, которые должны быть преобразованы в дату
+     *
+     * @var array
+     */
+    protected $dates = ['deleted_at'];
+}

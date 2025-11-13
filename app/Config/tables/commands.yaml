@@ -1,0 +1,43 @@
+name: api
+model: Command
+titleMenu: Command
+descr:
+    one: 'команда'
+table: commands
+module: messenger
+fields:
+    command:
+        type: string
+        comment: command
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: shortname
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: account_id
+        nullable: true
+        example: ''
+    command_arguments:
+        type: text
+        comment: command_arguments
+        nullable: true
+        example: ''
+    command_date:
+        type: date
+        comment: command_date
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: '0 - новая, 1 - выполнена, 2 - возникла проблема, 3 - в процессе выполнения'
+        nullable: true
+        example: ''
+    result:
+        type: json
+        comment: result
+        nullable: true
+        example: ''

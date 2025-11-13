@@ -1,0 +1,38 @@
+name: api
+model: Channel_user
+titleMenu: Channel_user
+descr:
+    one: 'пользователи канала'
+table: channel_users
+module: messenger
+fields:
+    user_id:
+        type: integer
+        comment: 'ID польз у нас'
+        nullable: true
+        example: ''
+    channel_id:
+        type: integer
+        comment: 'ID канала у нас'
+        nullable: true
+        example: ''
+    mess_user_id:
+        type: string
+        comment: 'ID польз в мессенджере'
+        nullable: true
+        example: ''
+    mess_channel:
+        type: string
+        comment: 'ID канала в мессенджере'
+        nullable: true
+        example: ''
+    src:
+        type: json
+        comment: src
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: account_id
+        nullable: true
+        example: ''

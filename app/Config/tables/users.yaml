@@ -1,0 +1,68 @@
+name: api
+model: MessUser
+titleMenu: MessUser
+descr:
+    one: 'пользователь мессенжера'
+table: users
+module: messenger
+fields:
+    bot_id:
+        type: integer
+        comment: bot_id
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: account_id
+        nullable: true
+        example: ''
+    name:
+        type: string
+        comment: name
+        nullable: true
+        example: ''
+    messenger_id:
+        type: integer
+        comment: messenger_id
+        nullable: true
+        example: ''
+    peer_id:
+        type: string
+        comment: peer_id
+        nullable: true
+        example: ''
+    first_name:
+        type: string
+        comment: first_name
+        nullable: true
+        example: ''
+    last_name:
+        type: string
+        comment: last_name
+        nullable: true
+        example: ''
+    photo_id:
+        type: string
+        comment: photo_id
+        nullable: true
+        example: ''
+    username:
+        type: string
+        comment: username
+        nullable: true
+        example: ''
+    src:
+        type: json
+        comment: src
+        nullable: true
+        example: ''
+    status:
+        type: string
+        comment: 'Статус'
+        nullable: true
+        example: ''
+    activity:
+        type: integer
+        comment: 'Активность'
+        nullable: true
+        example: ''

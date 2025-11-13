@@ -1,0 +1,23 @@
+name: api
+model: Profile
+titleMenu: Profile
+descr:
+    one: 'профиль пользователя'
+table: whats_profile
+module: messenger
+fields:
+    profile_id:
+        type: string
+        comment: profile_id
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: account_id
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: status
+        nullable: true
+        example: ''

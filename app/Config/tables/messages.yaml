@@ -1,0 +1,270 @@
+name: api
+model: Message
+titleMenu: Message
+descr:
+    one: 'сообщение'
+table: messages
+module: messenger
+fields:
+    account_id:
+        type: integer
+        comment: Аккаунт
+        nullable: true
+        example: ''
+    bot_id:
+        type: integer
+        comment: Бот
+        nullable: true
+        example: ''
+    messenger_id:
+        type: integer
+        comment: Мессенджер
+        nullable: true
+        example: ''
+    message_id:
+        type: string
+        comment: 'ИД сообщения'
+        nullable: true
+        example: ''
+    channel_id:
+        type: integer
+        comment: Канал
+        nullable: true
+        example: ''
+    channel:
+        type: string
+        comment: 'ИД канала в мессенджере'
+        nullable: true
+        example: ''
+    channel_name:
+        type: string
+        comment: 'Название канала'
+        nullable: true
+        example: ''
+    thread_id:
+        type: integer
+        comment: 'ID темы'
+        nullable: true
+        example: ''
+    thread:
+        type: string
+        comment: 'Тема в мессенджере'
+        nullable: true
+        example: ''
+    message:
+        type: text
+        comment: Сообщение
+        nullable: true
+        example: ''
+    files:
+        type: json
+        comment: Сообщение
+        nullable: true
+        example: ''
+    msg_date:
+        type: date
+        comment: 'Время сообщения'
+        nullable: true
+        example: ''
+    napr:
+        type: integer
+        comment: Направление
+        nullable: true
+        example: ''
+    from_id:
+        type: string
+        comment: Отправитель
+        nullable: true
+        example: ''
+    from_name:
+        type: string
+        comment: 'Имя отправителя'
+        nullable: true
+        example: ''
+    src:
+        type: jsonb
+        comment: Исходник
+        nullable: true
+        example: ''
+    type_msg:
+        type: string
+        comment: 'Тип сообщения'
+        nullable: true
+        example: ''
+    user:
+        type: string
+        comment: Псевдоним
+        nullable: true
+        example: ''
+    comment:
+        type: string
+        comment: Примечание
+        nullable: true
+        example: ''
+    resend_status:
+        type: integer
+        comment: 'Статус пересылки'
+        nullable: true
+        example: ''
+    phone:
+        type: string
+        comment: Телефон
+        nullable: true
+        example: ''
+    channel_id_our:
+        type: integer
+        comment: 'ID канала'
+        nullable: true
+        example: ''
+    date_view:
+        type: date
+        comment: 'Время чтения сообщений'
+        nullable: true
+        example: ''
+    parent_message_id:
+        type: string
+        comment: 'Связанное сообщение'
+        nullable: true
+        example: ''
+    messenger_user_id:
+        type: string
+        comment: 'Пользователь мессенджера'
+        nullable: true
+        example: ''
+    is_hidden_for_user:
+        type: integer
+        comment: Скрытое
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+    is_media:
+        type: integer
+        comment: 'Есть вложения'
+        nullable: true
+        example: ''
+    comments_cnt:
+        type: integer
+        comment: 'кол-во комментариев'
+        nullable: true
+        example: ''
+    replies_cnt:
+        type: integer
+        comment: 'кол-во ответов'
+        nullable: true
+        example: ''
+    type_msg_id:
+        type: integer
+        comment: 'тип сообщения'
+        nullable: true
+        example: ''
+    is_read:
+        type: integer
+        comment: 'Сообщение прочитано или нет'
+        nullable: true
+        example: ''
+    parent_message_src:
+        type: json
+        comment: parent_message_src
+        nullable: true
+        example: ''
+    is_tagged:
+        type: integer
+        comment: is_tagged
+        nullable: true
+        example: ''
+    reaction:
+        type: json
+        comment: reaction
+        nullable: true
+        example: ''
+    edited_status:
+        type: integer
+        comment: edited_status
+        nullable: true
+        example: ''
+    edited_cnt:
+        type: integer
+        comment: edited_cnt
+        nullable: true
+        example: ''
+    is_socket:
+        type: integer
+        comment: '0 - нет 1 - да'
+        nullable: true
+        example: ''
+menu:
+    name: Сообщения
+    shortname: messenger.message
+    is_api: 1
+    level: 2
+    nom: 1
+    page: /web/chats/message
+    api: 'https://chats.itstaffer.ru/api/message'
+    model: Modules\Messenger\Models\Message
+    settings:
+        fields:
+            account_id:
+                name: Аккаунт
+                field_model: /Modules/Messenger/Models/Account
+                field_items: accounts
+                field_prop: account
+                control: select
+                db_type: integer
+                is_lookup: true
+                lookup_api: 'https://chats.itstaffer.ru/api/account'
+                lookup_id: id
+                lookup_name: name
+            bot_id:
+                name: Бот
+                control: text
+                db_type: string
+                is_lookup: false
+            message_id:
+                name: 'ИД сообщения'
+                control: text
+                db_type: string
+                is_lookup: false
+            napr:
+                name: Направление
+                field_mode: index
+                field_items: [{ id: '0', name: Неизвестно }, { id: '1', name: Исх. }, { id: '2', name: Вх. }]
+                control: status
+                db_type: integer
+                is_lookup: false
+            message:
+                name: Сообщение
+                control: text
+                db_type: string
+                is_lookup: false
+            channel_id:
+                name: Канал
+                field_model: /Modules/Messenger/Models/Channel
+                field_items: channels
+                field_prop: channel
+                control: select
+                db_type: integer
+                is_lookup: true
+                lookup_api: 'https://chats.itstaffer.ru/api/channel'
+                lookup_id: id
+                lookup_name: name
+            src:
+                name: 'Все данные'
+                field_mode: 'create,edit,show'
+                control: json
+                db_type: string
+                is_lookup: false
+            status:
+                name: Статус
+                control: status
+                db_type: integer
+                is_lookup: false
+        order:
+            id: desc
+    icon: 'uil uil-comment-lines'
+    resource: messenger.message
+    status: 1
+    is_list: 2

@@ -1,0 +1,245 @@
+name: api
+model: Account
+titleMenu: Account
+descr:
+    one: 'аккаунт'
+table: accounts
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    user_id:
+        type: integer
+        comment: Пользователь
+        nullable: true
+        example: ''
+    messenger_id:
+        type: integer
+        comment: Мессенджер
+        nullable: true
+        example: ''
+    login:
+        type: string
+        comment: Логин
+        nullable: true
+        example: ''
+    code:
+        type: string
+        comment: Код
+        nullable: true
+        example: ''
+    password:
+        type: string
+        comment: Пароль
+        nullable: true
+        example: ''
+    is_2fa:
+        type: integer
+        comment: 'Включенал ли 2ФА'
+        nullable: true
+        example: ''
+    pass2fa:
+        type: string
+        comment: 'Пароль 2FA'
+        nullable: true
+        example: ''
+    telegram_id:
+        type: string
+        comment: 'ID в Телеграмм'
+        nullable: true
+        example: ''
+    tas_session_status:
+        type: text
+        comment: 'Статус сессии в TAS'
+        nullable: true
+        example: ''
+    tas_session_expires:
+        type: string
+        comment: 'Дата истечения сессии в TAS'
+        nullable: true
+        example: ''
+    first_name:
+        type: string
+        comment: Имя
+        nullable: true
+        example: ''
+    last_name:
+        type: string
+        comment: Фамилия
+        nullable: true
+        example: ''
+    username:
+        type: string
+        comment: Псевдоним
+        nullable: true
+        example: ''
+    src:
+        type: jsonb
+        comment: 'Инфо об аккаунте'
+        nullable: true
+        example: ''
+    options:
+        type: jsonb
+        comment: Опции
+        nullable: true
+        example: ''
+    slot:
+        type: integer
+        comment: 'Слот '
+        nullable: true
+        example: ''
+    last_used_at:
+        type: date
+        comment: 'Время последнего использования '
+        nullable: true
+        example: ''
+    new_messages_last_check:
+        type: date
+        comment: 'Время последней проверки сообщений'
+        nullable: true
+        example: ''
+    phone_code_hash:
+        type: string
+        comment: phone_code_hash
+        nullable: true
+        example: ''
+    cnt:
+        type: integer
+        comment: 'Количество сообщений'
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+    status_messenger:
+        type: integer
+        comment: 'Статус в мессенджере'
+        nullable: true
+        example: ''
+    cnt_people:
+        type: integer
+        comment: cnt_people
+        nullable: true
+        example: ''
+    tas_port:
+        type: string
+        comment: 'TAS port для сессии'
+        nullable: true
+        example: ''
+    port:
+        type: integer
+        comment: port
+        nullable: true
+        example: ''
+    fn_avatar:
+        type: string
+        comment: fn_avatar
+        nullable: true
+        example: ''
+    icon:
+        type: string
+        comment: icon
+        nullable: true
+        example: ''
+    tagged_at:
+        type: date
+        comment: tagged_at
+        nullable: true
+        example: ''
+    mode:
+        type: string
+        comment: mode
+        nullable: true
+        example: ''
+menu:
+    name: Аккаунты
+    shortname: messenger.account
+    is_api: 2
+    level: 2
+    nom: 2
+    page: /web/chats/accounts
+    api: 'https://chats.itstaffer.ru/api/account'
+    model: Modules\Messenger\Models\Account
+    settings:
+        fields:
+            name:
+                name: Название
+                control: text
+                db_type: string
+                is_lookup: false
+            shortname:
+                name: Короткое
+                control: text
+                db_type: string
+                is_lookup: false
+            login:
+                name: Логин
+                control: text
+                db_type: string
+                is_lookup: false
+            code:
+                name: Код
+                field_mode: 'create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            password:
+                name: Пароль
+                field_mode: 'create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            is_2fa:
+                name: 'Использовать 2FA'
+                field_mode: 'create,edit,show'
+                control: checkbox
+                db_type: string
+                is_lookup: false
+            pass2fa:
+                name: 'Пароль 2ФА'
+                field_mode: 'create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            tas_port:
+                name: 'TAS port'
+                control: text
+                db_type: string
+                is_lookup: false
+            status:
+                name: Статус
+                control: status
+                db_type: integer
+                is_lookup: false
+        actions:
+            login:
+                name: Войти
+                icon: uil-keyhole-circle
+                url: 'https://chats.itstaffer.ru/api/account/{id}/login'
+                type: ajaxBtn
+                msg: Вход произведен
+            channels:
+                name: Каналы
+                icon: uil-channel
+                url: '/web/chats/accounts/{id}/channels'
+                type: url
+            messages:
+                name: Переписки
+                icon: uil-comment-dots
+                url: '/web/chats/message/from/account_id/{id}'
+                type: url
+        order:
+            updated_at: desc
+    icon: 'uil uil-users-alt'
+    status: 1
+    is_list: 2

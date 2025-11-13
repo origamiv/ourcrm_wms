@@ -1,0 +1,15 @@
+name: api
+model: Alembic_version
+titleMenu: Alembic_version
+descr:
+    about: 'о ком чем?'
+    many_r: 'много кого чего?'
+    one: 'редактировать кого чего?'
+table: alembic_version
+module: messenger
+fields:
+    version_num:
+        type: string
+        comment: version_num
+        nullable: true
+        example: ''

@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ factoryImport }}
+use OurCRM\BaseModel;
+
+/**
+ * @OA\Schema(
+ *     title="{{ class }}",
+ *     description="{{ class }} model",
+ *     @OA\Property(
+ *         property="id",
+ *         type="integer",
+ *         format="int64",
+ *     ),
+ * )
+ */
+class {{ class }} extends BaseModel
+{
+    {{ factory }}
+
+    protected $fillable = [
+        //
+    ];
+
+    protected $casts = [
+        //
+    ];
+}

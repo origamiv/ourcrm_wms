@@ -1,0 +1,23 @@
+name: api
+model: Black_lst
+titleMenu: Black_lst
+descr:
+    one: 'черный список'
+table: black_lst
+module: messenger
+fields:
+    account_id:
+        type: integer
+        comment: account_id
+        nullable: true
+        example: ''
+    channel_id:
+        type: integer
+        comment: channel_id
+        nullable: true
+        example: ''
+    target_type:
+        type: string
+        comment: target_type
+        nullable: true
+        example: ''

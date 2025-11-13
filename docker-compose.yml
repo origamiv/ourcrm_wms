@@ -1,0 +1,62 @@
+services:
+    nginx_chats:
+        container_name: ${DOCKER_PROJECT}_nginx
+        image: nginx:alpine
+        ports:
+            - ${DOCKER_NGINX_PORT}:80
+        volumes:
+            - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+            - ./:/var/www/html # add :cached if on Mac OS
+        depends_on:
+            - fpm_chats
+        networks:
+            - netw
+        labels:
+            - com.ourcrm.project=${DOCKER_PROJECT}
+            - com.ourcrm.module=${MODULE}
+
+    fpm_chats:
+        container_name: ${DOCKER_PROJECT}_php
+        build:
+            context: ./docker/php
+            dockerfile: Dockerfile
+            args:
+                - UID=${UID}
+                - GID=${GID}
+        environment:
+            XDEBUG_CONFIG: client_host=${XDEBUG_REMOTE_HOST}
+            PHP_IDE_CONFIG: serverName=localhost
+        volumes:
+            - ./:/var/www/html # add :cached if on Mac OS
+            - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+        ports:
+            - ${DOCKER_PHP_PORT}:9000
+        # depends_on:
+        #     - $db
+        #     - redis
+        user: ${UID}
+        networks:
+            - netw
+        working_dir: /var/www/html
+        labels:
+            - com.ourcrm.project=${DOCKER_PROJECT}
+            - com.ourcrm.module=${MODULE}
+
+    supervisor:
+        container_name: ${DOCKER_PROJECT}_supervisor
+        build:
+            context: ./docker/supervisor
+            dockerfile: Dockerfile
+        volumes:
+            - ./:/var/www/html
+            - ./docker/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+        restart: unless-stopped
+        networks:
+            - netw
+        labels:
+            - com.ourcrm.project=${DOCKER_PROJECT}
+            - com.ourcrm.module=${MODULE}
+
+networks:
+    netw:
+        external: true

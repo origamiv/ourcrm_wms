@@ -1,0 +1,28 @@
+name: api
+model: Project
+titleMenu: Project
+descr:
+    one: 'проект'
+table: projects
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    options:
+        type: jsonb
+        comment: Опции
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''

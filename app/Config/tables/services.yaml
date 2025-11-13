@@ -1,0 +1,68 @@
+name: api
+model: Service
+titleMenu: Service
+descr:
+  about: 'о ком чем?'
+  many_r: 'много кого чего?'
+  one: 'редактировать кого чего?'
+table: services
+module: Messenger
+fields:
+  name:
+    type: string
+    comment: Название
+    nullable: true
+    example: ''
+  shortname:
+    type: string
+    comment: 'Короткое название'
+    nullable: true
+    example: ''
+  options:
+    type: json
+    comment: Параметры
+    nullable: true
+    example: ''
+  status:
+    type: integer
+    comment: Статус
+    nullable: true
+    example: ''
+menu:
+  name: Сервисы
+  shortname: messenger.service
+  is_api: 2
+  level: 3
+  page: /web/messenger/service
+  api: 'https://messenger.itstaffer.ru/api/service'
+  model: Modules\Messenger\Models\Service
+  settings:
+    fields:
+      name:
+        name: Название
+        field_mode: 'index,create,edit,show'
+        control: text
+        db_type: string
+        is_lookup: false
+      shortname:
+        name: 'Короткое название'
+        field_mode: 'index,create,edit,show'
+        control: text
+        db_type: string
+        is_lookup: false
+      options:
+        name: Параметры
+        field_mode: 'create,edit,show'
+        control: json
+        db_type: string
+        is_lookup: false
+      status:
+        name: Статус
+        field_mode: 'index,create,edit,show'
+        control: status
+        db_type: integer
+        is_lookup: false
+  icon: 'uil uil-user'
+  status: 1
+  is_list: 1
+  parent_shortname: chats.lists

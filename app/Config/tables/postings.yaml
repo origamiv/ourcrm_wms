@@ -1,0 +1,77 @@
+name: api
+model: Posting
+titleMenu: Posting
+descr:
+    one: 'пост'
+table: postings
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    date_send:
+        type: date
+        comment: 'Дата и время отправки'
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: Аккаунт
+        nullable: true
+        example: ''
+    channel_id:
+        type: integer
+        comment: Канал
+        nullable: true
+        example: ''
+    message_id:
+        type: integer
+        comment: 'ID сообщения после отправки'
+        nullable: true
+        example: ''
+    message:
+        type: mediumtext
+        comment: Сообщение
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+menu:
+  name: Автопостинги
+  shortname: messenger.posting
+  is_root: 1
+  is_api: 1
+  level: 3
+  page: /web/chats/posting
+  api: https://chats.itstaffer.ru/api/posting
+  model: Modules\Messenger\Models\Posting
+  settings:
+    fields:
+      name:
+        name: Название
+        control: text
+        db_type: string
+        is_lookup: false
+      shortname:
+        name: Короткое
+        control: text
+        db_type: string
+        is_lookup: false
+      status:
+        name: Статус
+        control: status
+        db_type: integer
+        is_lookup: false
+  icon: 'uil uil-telegram-alt'
+  status: 1
+  is_list: 1
+  parent_shortname: chats.ai

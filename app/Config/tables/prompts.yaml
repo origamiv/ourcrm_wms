@@ -1,0 +1,88 @@
+name: api
+model: Prompt
+titleMenu: Project
+descr:
+    one: 'промпт'
+table: prompts
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    tag:
+        type: string
+        comment: Тег
+        nullable: true
+        example: ''
+    category:
+        type: string
+        comment: Категория
+        nullable: true
+        example: ''
+    message:
+        type: mediumtext
+        comment: Промпт
+        nullable: true
+        example: ''
+    options:
+        type: jsonb
+        comment: Опции
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+menu:
+  name: Промпты
+  shortname: messenger.prompts
+  is_root: 1
+  is_api: 1
+  level: 3
+  page: /web/chats/prompt
+  api: https://chats.itstaffer.ru/api/prompt
+  model: Modules\Messenger\Models\Prompt
+  settings:
+    fields:
+      name:
+        name: Название
+        control: text
+        db_type: string
+        is_lookup: false
+      shortname:
+        name: Короткое
+        control: text
+        db_type: string
+        is_lookup: false
+      tag:
+        name: Тег
+        control: text
+        db_type: string
+        is_lookup: false
+      category:
+        name: Категория
+        control: text
+        db_type: string
+        is_lookup: false
+      message:
+        name: Промпт
+        control: text
+        db_type: string
+        is_lookup: false
+      status:
+        name: Статус
+        control: status
+        db_type: integer
+        is_lookup: false
+  icon: 'uil uil-telegram-alt'
+  status: 1
+  is_list: 1
+  parent_shortname: chats.ai

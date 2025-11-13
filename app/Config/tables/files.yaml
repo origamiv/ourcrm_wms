@@ -1,0 +1,115 @@
+name: api
+model: File
+titleMenu: File
+descr:
+    one: 'файл'
+table: files
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: 'Короткое название'
+        nullable: true
+        example: ''
+    account_id:
+        type: integer
+        comment: Аккаунт
+        nullable: true
+        example: ''
+    channel_id:
+        type: integer
+        comment: Канал
+        nullable: true
+        example: ''
+    message_id:
+        type: integer
+        comment: Сообщение
+        nullable: true
+        example: ''
+    cnt:
+        type: integer
+        comment: 'Кол-во скачиваний'
+        nullable: true
+        example: ''
+    path:
+        type: string
+        comment: 'Путь  '
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+    src:
+        type: json
+        comment: 'исходник сообщения'
+        nullable: true
+        example: ''
+menu:
+    name: Файлы
+    shortname: messenger.file
+    is_root: 1
+    is_api: 2
+    level: 2
+    page: /web/chats/file
+    api: 'https://chats.itstaffer.ru/api/file'
+    model: Modules\Messenger\Models\File
+    settings:
+        fields:
+            name:
+                name: Название
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            shortname:
+                name: 'Короткое название'
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            account_id:
+                name: Аккаунт
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            channel_id:
+                name: Канал
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            message_id:
+                name: Сообщение
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            cnt:
+                name: 'Кол-во скачиваний'
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            path:
+                name: 'Путь  '
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+            status:
+                name: Статус
+                field_mode: 'index,create,edit,show'
+                control: text
+                db_type: string
+                is_lookup: false
+    icon: 'uil uil-user'
+    status: 1
+    is_list: 2

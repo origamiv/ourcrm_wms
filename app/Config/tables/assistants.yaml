@@ -1,0 +1,103 @@
+name: api
+model: Assistant
+titleMenu: Assistant
+descr:
+    one: 'ассистент'
+table: assistants
+module: messenger
+fields:
+    name:
+        type: string
+        comment: Название
+        nullable: true
+        example: ''
+    shortname:
+        type: string
+        comment: Короткое
+        nullable: true
+        example: ''
+    prompt:
+        type: text
+        comment: Промпт
+        nullable: true
+        example: ''
+    data:
+        type: text
+        comment: Данные
+        nullable: true
+        example: ''
+    func:
+        type: text
+        comment: Функция
+        nullable: true
+        example: ''
+    ext_id:
+        type: string
+        comment: ID ассистента
+        nullable: true
+        example: ''
+    ext_model:
+        type: string
+        comment: Модель
+        nullable: true
+        example: 'gpt-4o-mini'
+    options:
+        type: jsonb
+        comment: Опции
+        nullable: true
+        example: ''
+    status:
+        type: integer
+        comment: Статус
+        nullable: true
+        example: ''
+menu:
+  name: Ассистенты
+  shortname: messenger.assistants
+  is_root: 1
+  is_api: 1
+  level: 3
+  page: /web/chats/assistant
+  api: https://chats.itstaffer.ru/api/assistant
+  model: Modules\Messenger\Models\Assistant
+  settings:
+    fields:
+      name:
+        name: Название
+        control: text
+        db_type: string
+        is_lookup: false
+      shortname:
+        name: Короткое
+        control: text
+        db_type: string
+        is_lookup: false
+      prompt:
+        name: Инструкция
+        control: text
+        db_type: string
+        is_lookup: false
+      data:
+        name: Данные
+        control: text
+        db_type: string
+        is_lookup: false
+      func:
+        name: Функция
+        control: text
+        db_type: string
+        is_lookup: false
+      ext_id:
+        name: ID ассистента
+        control: text
+        db_type: string
+        is_lookup: false
+      status:
+        name: Статус
+        control: status
+        db_type: integer
+        is_lookup: false
+  icon: 'uil uil-telegram-alt'
+  status: 1
+  is_list: 1
+  parent_shortname: chats.ai
