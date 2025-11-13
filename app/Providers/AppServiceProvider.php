@@ -74,7 +74,6 @@ final class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         $this->registerCommands();
 
-        Message::observe(MessageObserver::class);
 
         Blade::component('menu', Menu::class);
         Blade::component('table', Table::class);
@@ -94,13 +93,7 @@ final class AppServiceProvider extends ServiceProvider
             ToolsAllYamlCommand::class,
             ProjectMenuCommand::class,
             ProjectSyncPermissionsCommand::class,
-            PostingCommand::class,
-            CreatorCommand::class,
-            SubscribeToTriggersCommand::class,
-            MessengerChannelsCommand::class,
             DbConnectionsCommand::class,
-            StartAutomateCommand::class,
-            //EmbeddingsCommand::class,
         ]);
     }
 }
