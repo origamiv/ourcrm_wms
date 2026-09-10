@@ -1833,12 +1833,19 @@ useCardRoute<ReferenceRow>({
     white-space: nowrap;
 }
 .column-settings-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     margin-left: 6px;
     border: 0;
     border-radius: 4px;
     padding: 2px 4px;
     background: transparent;
     color: #667085;
+    font-size: 19px;
+    line-height: 1;
     cursor: pointer;
 }
 .column-settings-button:hover {
