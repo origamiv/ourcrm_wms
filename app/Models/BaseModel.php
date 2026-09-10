@@ -10,5 +10,5 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 abstract class BaseModel extends Model
 {
-    use HasFactory, SoftDeletes;
+    use Concerns\HasTenantVisibility, HasFactory, SoftDeletes;
 }

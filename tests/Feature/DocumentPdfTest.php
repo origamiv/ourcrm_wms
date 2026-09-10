@@ -59,7 +59,7 @@ it('rejects foreign parties and missing content and supports the bearer download
 });
 
 it('uses type settings for custom print fields and synchronizes settings edits', function () {
-    $version = app(App\Services\EntitySyncService::class)->current(App\Models\DocType::class, null, 1)['version'];
+    $version = app(App\Services\EntitySyncService::class)->current(App\Models\DocType::class, 'tenant_a', 1)['version'];
     $print = config('document_print.1');
     $print['fields'][] = ['key' => 'warehouse', 'label' => 'Склад', 'type' => 'text', 'required' => true];
     $this->putJson('/web/clients/doc_types/1', ['name' => 'Счёт', 'status' => 1, 'version' => $version, 'settings' => ['print' => $print]])->assertOk()->assertJsonPath('data.settings.print.fields.5.key', 'warehouse');

@@ -7,6 +7,7 @@ namespace App\Services;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use JsonException;
 
@@ -20,6 +21,10 @@ final class EntitySyncService
     /** @return array<string, mixed> */
     public function current(string $entity, ?string $tenant, string|int $id): array
     {
+        $this->checkpoint($tenant);
+        if ($tenant !== null && class_exists($entity) && is_subclass_of($entity, \Illuminate\Database\Eloquent\Model::class)) {
+            abort_unless($entity::withTrashed()->visibleTo($tenant)->whereKey($id)->exists(), 404);
+        }
         $row = DB::table('public.entity_changes')->where('entity', $entity)->where('tenant_id', $tenant)->where('entity_id', $id)->orderByDesc('revision')->first();
         abort_unless($row && $row->data, 404);
 
@@ -51,6 +56,17 @@ final class EntitySyncService
         }
         $more = count($rows) > $size;
         $rows = array_slice($rows, 0, $size);
+        $visible = null;
+        if ($tenant !== null && $rows && class_exists($entity) && is_subclass_of($entity, \Illuminate\Database\Eloquent\Model::class)) {
+            $visible = array_fill_keys($entity::withTrashed()->visibleTo($tenant)->whereKey(array_column($rows, 'entity_id'))->pluck('id')->map(fn ($id) => (string) $id)->all(), true);
+        }
+        // Never replay previously visible payloads after access has been revoked.
+        foreach ($rows as $row) {
+            if ($visible !== null && ! isset($visible[(string) $row->entity_id])) {
+                $row->operation = 'remove';
+                $row->data = null;
+            }
+        }
         $changes = array_map(fn ($row) => ['id' => (string) $row->entity_id, 'version' => (string) $row->revision,
             'operation' => $row->operation, 'data' => $row->data ? [...json_decode($row->data, true), 'version' => (string) $row->revision] : null], $rows);
         if ($rows) {
@@ -70,7 +86,24 @@ final class EntitySyncService
             $state = DB::table('public.sync_state')->where('tenant_id', $tenant)->firstOrFail();
         }
 
+        if ($tenant !== null && isset($state->shared_initialized) && ! $state->shared_initialized) {
+            DB::statement('SELECT wms.initialize_tenant_shares(?)', [$tenant]);
+            $state = DB::table('public.sync_state')->where('tenant_id', $tenant)->firstOrFail();
+        }
+
         return $state;
+    }
+
+    /** Shared writes lock the global partition before tenant partitions; owned writes take a shared lock. */
+    public function prepareWrite(string $tenant, string $model, ?string $id, bool $shared = false): void
+    {
+        $this->checkpoint($tenant);
+        $this->checkpoint(null);
+        $instance = new $model;
+        $shared = $shared || ! Schema::hasColumn($instance->getTable(), 'tenant_id')
+            || ($id !== null && $model::withTrashed()->whereKey($id)->whereNull('tenant_id')->exists());
+        $lock = DB::table('public.sync_state')->whereNull('tenant_id');
+        ($shared ? $lock->lockForUpdate() : $lock->sharedLock())->firstOrFail();
     }
 
     private function generation(?string $tenant): string

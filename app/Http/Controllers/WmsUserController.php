@@ -32,7 +32,7 @@ final class WmsUserController extends BaseApiController
     {
         $users->find($request->user(), $id);
 
-        return response()->json(['data' => $sync->current($id)]);
+        return response()->json(['data' => $sync->current($id, $request->user()->tenant_id)]);
     }
 
     /** Создать пользователя в статусе «Новый». */

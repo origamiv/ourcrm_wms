@@ -19,13 +19,14 @@ final class RolePermissionService
         return DB::transaction(function () use ($actor, $roleId, $permissionId, $enabled, $version) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, PermissionRole::class, null, true);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
-            Role::where('tenant_id', $tenant)->where('status', 1)->findOrFail($roleId);
-            Permission::where('tenant_id', $tenant)->where('status', 1)->findOrFail($permissionId);
-            $links = PermissionRole::withTrashed()->where('tenant_id', $tenant)->where('role_id', $roleId)->where('permission_id', $permissionId)->orderBy('id')->get();
+            Role::visibleTo($tenant)->where('status', 1)->findOrFail($roleId);
+            Permission::visibleTo($tenant)->where('status', 1)->findOrFail($permissionId);
+            $links = PermissionRole::withTrashed()->visibleTo($tenant)->where('role_id', $roleId)->where('permission_id', $permissionId)->orderBy('id')->get();
             $rows = $links->map(fn ($row) => $sync->current(PermissionRole::class, $tenant, $row->id));
             $currentVersion = (string) ($rows->max(fn ($row) => (int) $row['version']) ?? 0);
             if (! hash_equals($currentVersion, $version)) {

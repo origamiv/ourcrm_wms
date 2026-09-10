@@ -22,7 +22,7 @@ final class CompanyDirectoryController extends BaseApiController
         $data = $request->validate(['company_id' => ['sometimes', 'required', 'integer', 'min:1']]);
         $scope = null;
         if (isset($data['company_id'])) {
-            $company = Company::where('tenant_id', $request->user()->tenant_id)->findOrFail($data['company_id']);
+            $company = Company::visibleTo($request->user()->tenant_id)->findOrFail($data['company_id']);
             $scope = ['id' => (string) $company->id, 'name' => $company->name];
         }
 

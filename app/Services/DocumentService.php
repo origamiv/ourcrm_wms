@@ -21,9 +21,9 @@ final class DocumentService
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
             $types = $catalog === 'doc_types';
-            $partition = $types ? null : $tenant;
             $model = $types ? DocType::class : Document::class;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, $model, $id);
             // Lock the shared types before tenant documents to serialize type deletion with use.
             $sync->checkpoint(null);
             $typeState = DB::table('public.sync_state')->whereNull('tenant_id');
@@ -34,9 +34,9 @@ final class DocumentService
             }
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
-            $row = $id ? $model::withTrashed()->when(! $types, fn ($q) => $q->where('tenant_id', $tenant))->findOrFail($id) : new $model;
+            $row = $id ? $model::withTrashed()->visibleTo($tenant)->findOrFail($id) : new $model;
             if ($id) {
-                $current = $sync->current($model, $partition, $id);
+                $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {
                     throw new HttpResponseException(response()->json(['message' => 'Запись уже изменена. Загрузите актуальные данные.', 'current' => $current], 409));
                 }
@@ -54,10 +54,10 @@ final class DocumentService
                     }
                 }
                 if (! $types) {
-                    if (! Client::where('tenant_id', $tenant)->whereKey($data['client_id'])->exists()) {
+                    if (! Client::visibleTo($tenant)->whereKey($data['client_id'])->exists()) {
                         throw ValidationException::withMessages(['client_id' => 'Выберите клиента своей организации.']);
                     }
-                    if (! DocType::whereKey($data['doc_type_id'])->exists()) {
+                    if (! DocType::visibleTo($tenant)->whereKey($data['doc_type_id'])->exists()) {
                         throw ValidationException::withMessages(['doc_type_id' => 'Выберите существующий тип документа.']);
                     }
                     $candidate = new Document;
@@ -83,7 +83,7 @@ final class DocumentService
                 $row->save();
             }
 
-            return $sync->current($model, $partition, $row->id);
+            return $sync->current($model, $tenant, $row->id);
         }, 3);
     }
 }

@@ -16,11 +16,12 @@ final class AccessCatalogService
         return DB::transaction(function () use ($actor, $id, $version) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, \App\Models\Role::class, $id);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
-            $role = \App\Models\Role::withTrashed()->where('tenant_id', $tenant)->findOrFail($id);
+            $role = \App\Models\Role::withTrashed()->visibleTo($tenant)->findOrFail($id);
             $current = $sync->current(\App\Models\Role::class, $tenant, $id);
             if (! hash_equals($current['version'], $version)) {
                 throw new HttpResponseException(response()->json(['message' => 'Запись уже изменена. Загрузите актуальные данные.', 'current' => $current], 409));
@@ -40,13 +41,14 @@ final class AccessCatalogService
         return DB::transaction(function () use ($actor, $catalog, $data, $id) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, config('sync.entities.'.$catalog.'.entity'), $id);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
             $definition = app(SyncEntityRegistry::class)->resolve($catalog, $actor);
             $model = $definition['entity'];
-            $record = $id ? $model::withTrashed()->where('tenant_id', $tenant)->findOrFail($id) : new $model;
+            $record = $id ? $model::withTrashed()->visibleTo($tenant)->findOrFail($id) : new $model;
             if ($id) {
                 $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {
@@ -68,7 +70,7 @@ final class AccessCatalogService
             if ($catalog === 'roles' && $data['slug'] === 'admin' && (! $id || $record->slug !== 'admin')) {
                 throw ValidationException::withMessages(['slug' => 'Код admin зарезервирован.']);
             }
-            if ($model::withTrashed()->where('tenant_id', $tenant)->where('slug', $data['slug'])->when($id, fn ($query) => $query->where('id', '<>', $id))->exists()) {
+            if ($model::withTrashed()->where('tenant_id', $id ? $record->tenant_id : $tenant)->where('slug', $data['slug'])->when($id, fn ($query) => $query->where('id', '<>', $id))->exists()) {
                 throw ValidationException::withMessages(['slug' => 'Этот код уже используется в организации.']);
             }
             $fields = ['name', 'slug', 'status', $catalog === 'roles' ? 'description' : 'resource'];

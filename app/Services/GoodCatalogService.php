@@ -22,11 +22,12 @@ final class GoodCatalogService
             $tenant = $actor->tenant_id;
             $model = $catalog === 'type_goods' ? GoodType::class : GoodUnit::class;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, $model, $id);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
-            $row = $id ? $model::withTrashed()->where('tenant_id', $tenant)->findOrFail($id) : new $model;
+            $row = $id ? $model::withTrashed()->visibleTo($tenant)->findOrFail($id) : new $model;
             if ($id) {
                 $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {

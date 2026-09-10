@@ -17,7 +17,7 @@ final class UserService
     {
         abort_unless($this->access->isAdmin($actor), 403);
 
-        return User::withTrashed()->where('tenant_id', $actor->tenant_id)->findOrFail($id);
+        return User::withTrashed()->visibleTo($actor->tenant_id)->findOrFail($id);
     }
 
     /** @return array{id: string, name: ?string, last_name: ?string, middle_name: ?string, nick: ?string, email: ?string, phone: ?string, status: ?int, tenant_id: ?string, created_at: ?string, updated_at: ?string, deleted_at: ?string, version: string} */
@@ -25,13 +25,13 @@ final class UserService
     {
         return DB::transaction(function () use ($actor, $data, $id, $action) {
             $tenant = $actor->tenant_id;
-            app(EntitySyncService::class)->checkpoint($tenant);
+            app(EntitySyncService::class)->prepareWrite($tenant, User::class, $id);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && $this->access->isAdmin($actor), 403);
             $user = $id ? $this->find($actor, $id) : new User;
             if ($id) {
-                $current = $this->sync->current($id);
+                $current = $this->sync->current($id, $tenant);
                 if (! hash_equals($current['version'], (string) $data['version'])) {
                     throw new HttpResponseException(response()->json(['message' => 'Запись уже изменена. Проверьте актуальные данные.', 'current' => $current], 409));
                 }
@@ -86,7 +86,7 @@ final class UserService
                 $user->tokens()->where('name', 'like', 'wms:%')->delete();
             }
 
-            return $this->sync->current($user->id);
+            return $this->sync->current($user->id, $tenant);
         }, 3);
     }
 }

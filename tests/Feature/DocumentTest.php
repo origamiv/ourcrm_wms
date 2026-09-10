@@ -39,7 +39,7 @@ it('creates and edits documents with all dates comments JSON and the four status
         $row = $this->putJson('/web/clients/documents/'.$row['id'], [...$payload, 'status' => $status, 'canceled_at' => '2026-09-13T14:00', 'version' => $row['version']])->assertOk()->assertJsonPath('data.status', $status)->json('data');
     }
     $this->putJson('/web/clients/documents/'.$row['id'], [...$payload, 'version' => '0'])->assertConflict();
-    $typeVersion = app(App\Services\EntitySyncService::class)->current(DocType::class, null, 1)['version'];
+    $typeVersion = app(App\Services\EntitySyncService::class)->current(DocType::class, 'tenant_a', 1)['version'];
     $this->deleteJson('/web/clients/doc_types/1', ['version' => $typeVersion])->assertUnprocessable();
     $this->deleteJson('/web/clients/documents/'.$row['id'], ['version' => $row['version']])->assertOk();
     expect(Document::withTrashed()->find($row['id'])->trashed())->toBeTrue();

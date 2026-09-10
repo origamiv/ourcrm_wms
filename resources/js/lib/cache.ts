@@ -11,7 +11,7 @@ export interface UserRow extends EntityRow {
     email: string | null;
     phone: string | null;
     status: number | null;
-    tenant_id: string;
+    tenant_id: string | null;
     deleted_at: string | null;
     created_at: string | null;
     updated_at: string | null;
@@ -53,7 +53,7 @@ const complete = (t: IDBTransaction) =>
 let database: Promise<IDBDatabase> | undefined;
 function open() {
     return (database ??= new Promise<IDBDatabase>((resolve, reject) => {
-        const r = indexedDB.open("wms_cache", 2);
+        const r = indexedDB.open("wms_cache", 3);
         r.onupgradeneeded = () => {
             for (const name of Array.from(r.result.objectStoreNames))
                 r.result.deleteObjectStore(name);

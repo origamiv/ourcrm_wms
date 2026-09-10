@@ -20,13 +20,14 @@ final class CompanyDirectoryService
         return DB::transaction(function () use ($actor, $directory, $data, $id, $delete, $companyId, $clientId) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, config('sync.entities.'.$directory.'.entity'), $id);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
             if ($companyId !== null) {
                 abort_unless($directory === 'company_contacts', 404);
-                Company::where('tenant_id', $tenant)->findOrFail($companyId);
+                Company::visibleTo($tenant)->findOrFail($companyId);
                 if (isset($data['company_id']) && (string) $data['company_id'] !== $companyId) {
                     throw ValidationException::withMessages(['company_id' => 'В этом разделе можно работать только с контактами выбранной компании.']);
                 }
@@ -34,7 +35,7 @@ final class CompanyDirectoryService
             }
             if ($clientId !== null) {
                 abort_unless(in_array($directory, ['client_companies', 'client_individuals'], true), 404);
-                \App\Models\Client::where('tenant_id', $tenant)->findOrFail($clientId);
+                \App\Models\Client::visibleTo($tenant)->findOrFail($clientId);
                 if (array_key_exists('client_id', $data) && (string) $data['client_id'] !== $clientId) {
                     throw ValidationException::withMessages(['client_id' => 'В этом разделе можно работать только с выбранным клиентом.']);
                 }
@@ -42,7 +43,7 @@ final class CompanyDirectoryService
             }
             $definition = app(SyncEntityRegistry::class)->resolve($directory, $actor);
             $model = $definition['entity'];
-            $record = $id ? $model::withTrashed()->where('tenant_id', $tenant)->when($companyId !== null, fn ($query) => $query->where('company_id', $companyId))->when($clientId !== null, fn ($query) => $query->where('client_id', $clientId))->findOrFail($id) : new $model;
+            $record = $id ? $model::withTrashed()->visibleTo($tenant)->when($companyId !== null, fn ($query) => $query->where('company_id', $companyId))->when($clientId !== null, fn ($query) => $query->where('client_id', $clientId))->findOrFail($id) : new $model;
             if ($id) {
                 $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {
@@ -55,12 +56,12 @@ final class CompanyDirectoryService
                 abort_if($directory === 'companies' && CompanyContact::where('company_id', $id)->exists(), 422, 'У компании есть контактные лица. Сначала удалите или перенесите их.');
                 $record->delete();
             } else {
-                if ($directory === 'company_contacts' && ! Company::where('tenant_id', $tenant)->whereKey($data['company_id'])->exists()) {
+                if ($directory === 'company_contacts' && ! Company::visibleTo($tenant)->whereKey($data['company_id'])->exists()) {
                     throw ValidationException::withMessages(['company_id' => 'Выберите существующую компанию своей организации.']);
                 }
                 if (str_starts_with($directory, 'client_')) {
                     foreach (['client_id' => \App\Models\Client::class, 'user_id' => User::class, 'manager_id' => User::class] as $field => $related) {
-                        if (isset($data[$field]) && ! $related::where('tenant_id', $tenant)->whereKey($data[$field])->exists()) {
+                        if (isset($data[$field]) && ! $related::visibleTo($tenant)->whereKey($data[$field])->exists()) {
                             throw ValidationException::withMessages([$field => 'Связанная запись недоступна в вашей организации.']);
                         }
                     }

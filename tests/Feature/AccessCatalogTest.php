@@ -22,7 +22,7 @@ it('shows tenant catalogs to admins and captures direct SQL changes', function (
     $this->loginUser($admin);
     $this->get('/main/roles')->assertOk();
     $this->get('/main/permissions')->assertOk();
-    $roles = $this->getJson('/web/sync/roles')->assertOk()->assertJsonCount(1, 'changes')->assertJsonPath('changes.0.data.name', 'Склад')->json();
+    $roles = $this->getJson('/web/sync/roles')->assertOk()->assertJsonCount(2, 'changes')->assertJsonPath('changes.1.data.name', 'Склад')->json();
     $permissions = $this->getJson('/web/sync/permissions')->assertOk()->assertJsonCount(1, 'changes')->assertJsonPath('changes.0.data.resource', 'inventory')->json();
     DB::table('main.roles')->where('id', $role)->update(['name' => 'Обновлённая роль', 'deleted_at' => now()]);
     $this->getJson('/web/sync/roles?cursor='.urlencode($roles['cursor']))->assertOk()->assertJsonPath('changes.0.data.name', 'Обновлённая роль')->assertJsonCount(1, 'changes');

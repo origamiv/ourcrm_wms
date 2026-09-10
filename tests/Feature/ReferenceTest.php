@@ -14,7 +14,7 @@ afterEach(function () {
     DB::rollBack();
 });
 
-it('shares modules and features between organizations with global versions and protected links', function () {
+it('shares modules and features between organizations with tenant projection versions and protected links', function () {
     $a = $this->makeUser([], true);
     $b = $this->makeUser(['tenant_id' => 'tenant_b'], true);
     $this->loginUser($a);
@@ -23,6 +23,8 @@ it('shares modules and features between organizations with global versions and p
     $this->get('/main/modules/'.$module['id'].'/view')->assertOk();
     $this->loginUser($b);
     $snapshot = $this->getJson('/web/sync/modules')->assertOk()->assertJsonCount(1, 'changes')->json();
+    $module['version'] = $snapshot['changes'][0]['version'];
+    $feature['version'] = app(EntitySyncService::class)->current(App\Models\Feature::class, 'tenant_b', $feature['id'])['version'];
     $updated = $this->putJson('/web/modules/'.$module['id'], ['name' => 'Общий модуль', 'status' => 2, 'version' => $module['version']])->assertOk()->json('data');
     $this->getJson('/web/sync/modules?cursor='.urlencode($snapshot['cursor']))->assertOk()->assertJsonPath('changes.0.data.name', 'Общий модуль');
     $this->getJson('/web/sync/features')->assertOk()->assertJsonCount(1, 'changes');

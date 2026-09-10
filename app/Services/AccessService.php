@@ -22,7 +22,8 @@ final class AccessService
     public function adminAssignments(string $tenant)
     {
         return DB::table('main.role_user as ru')->join('main.roles as r', 'r.id', '=', 'ru.role_id')
-            ->where('ru.tenant_id', $tenant)->where('r.slug', 'admin')->where('ru.status', 1)->where('r.status', 1)
+            ->whereRaw('wms.entity_visible(?, ru.id::text, ru.tenant_id, ?)', [\App\Models\RoleUser::class, $tenant])
+            ->whereRaw('wms.entity_visible(?, r.id::text, r.tenant_id, ?)', [\App\Models\Role::class, $tenant])->where('r.slug', 'admin')->where('ru.status', 1)->where('r.status', 1)
             ->whereNull('ru.deleted_at')->whereNull('r.deleted_at');
     }
 }

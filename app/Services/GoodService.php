@@ -20,11 +20,12 @@ final class GoodService
         return DB::transaction(function () use ($actor, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, Good::class, $id);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
-            $row = $id ? Good::withTrashed()->where('tenant_id', $tenant)->findOrFail($id) : new Good;
+            $row = $id ? Good::withTrashed()->visibleTo($tenant)->findOrFail($id) : new Good;
             if ($id) {
                 $current = $sync->current(Good::class, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {
@@ -38,7 +39,7 @@ final class GoodService
             } else {
                 foreach (['parent_id' => Good::class, 'goodcard_id' => GoodCard::class, 'type_good' => GoodType::class, 'type_unit' => GoodUnit::class] as $field => $model) {
                     $value = array_key_exists($field, $data) ? $data[$field] : $row->{$field};
-                    $related = $model::where('tenant_id', $tenant)->whereKey($value);
+                    $related = $model::visibleTo($tenant)->whereKey($value);
                     if ($field === 'goodcard_id') {
                         $related->where('good_id', $id ?? '0');
                     }
@@ -53,7 +54,7 @@ final class GoodService
                         throw ValidationException::withMessages(['parent_id' => 'Родительская связь не может образовывать цикл.']);
                     }
                     $seen[(string) $parent] = true;
-                    $parent = Good::where('tenant_id', $tenant)->whereKey($parent)->value('parent_id');
+                    $parent = Good::visibleTo($tenant)->whereKey($parent)->value('parent_id');
                 }
                 $fields = array_diff(config('sync.entities.goods.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']);
                 $row->forceFill(array_intersect_key($data, array_flip($fields)));

@@ -16,11 +16,12 @@ final class ClientService
         return DB::transaction(function () use ($actor, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, Client::class, $id);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
-            $client = $id ? Client::withTrashed()->where('tenant_id', $tenant)->findOrFail($id) : new Client;
+            $client = $id ? Client::withTrashed()->visibleTo($tenant)->findOrFail($id) : new Client;
             if ($id) {
                 $current = $sync->current(Client::class, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {

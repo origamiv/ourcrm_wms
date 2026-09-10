@@ -18,7 +18,7 @@ export function useCardRoute<T extends { id: string }>(options: {
         [() => page.url, options.ready, options.rows],
         async () => {
             const url = page.url;
-            if (!options.ready.value || appliedUrl === url) return;
+            if (!options.ready.value) return;
             const path = url.split("?")[0];
             if (path !== options.base && !path.startsWith(options.base + "/"))
                 return;
@@ -27,6 +27,7 @@ export function useCardRoute<T extends { id: string }>(options: {
                 id && id !== "0"
                     ? options.rows.value.find((row) => row.id === id)
                     : null;
+            if (appliedUrl === url && (!id || id === "0" || row)) return;
             applying = true;
             options.close();
             if (id && action) {

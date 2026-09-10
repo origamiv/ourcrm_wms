@@ -23,18 +23,17 @@ final class ReferenceService
             $tenant = $actor->tenant_id;
             $partition = $definition['global'] ? null : $tenant;
             $sync = app(EntitySyncService::class);
+            $sync->prepareWrite($tenant, $definition['entity'], $id);
             $sync->checkpoint($partition);
             DB::table('public.sync_state')->where('tenant_id', $partition)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
             $model = $definition['entity'];
             $query = $model::withTrashed();
-            if (! $definition['global']) {
-                $query->where('tenant_id', $tenant);
-            }
+            $query->visibleTo($tenant);
             $row = $id ? $query->findOrFail($id) : new $model;
             if ($id) {
-                $current = $sync->current($model, $partition, $id);
+                $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {
                     throw new HttpResponseException(response()->json(['message' => 'Запись уже изменена. Загрузите актуальные данные.', 'current' => $current], 409));
                 }
@@ -53,9 +52,7 @@ final class ReferenceService
                     $value = $data[$field] ?? null;
                     if ($value !== null) {
                         $relatedQuery = $related::query();
-                        if ($field !== 'module_id') {
-                            $relatedQuery->where('tenant_id', $tenant);
-                        }
+                        $relatedQuery->visibleTo($tenant);
                         if (! $relatedQuery->whereKey($value)->exists()) {
                             throw ValidationException::withMessages([$field => 'Связанная запись недоступна.']);
                         }
@@ -70,7 +67,7 @@ final class ReferenceService
                 $row->save();
             }
 
-            return $sync->current($model, $partition, $row->id);
+            return $sync->current($model, $tenant, $row->id);
         }, 3);
     }
 }

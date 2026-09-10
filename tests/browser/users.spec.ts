@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { test, expect, type Page } from "@playwright/test";
 async function login(page: Page) {
     await page.goto("/login");
@@ -1878,4 +1879,107 @@ test("goods reference dropdown creates edits and caches both catalogs", async ({
         page.getByRole("button", { name: "Добавить запись", exact: true }),
     ).toBeDisabled();
     await context.setOffline(false);
+});
+
+test("shared records retain NULL ownership and disappear from the card and IndexedDB on revocation", async ({
+    page,
+}) => {
+    const sql = (query: string) =>
+        execFileSync(
+            "psql",
+            [
+                "-h",
+                "/var/run/postgresql",
+                "-U",
+                "root",
+                "-d",
+                "wms_browser_test",
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-At",
+                "-c",
+                query,
+            ],
+            { encoding: "utf8" },
+        ).trim();
+    const id = sql(
+        "INSERT INTO goods.type_goods (name, status) VALUES ('Общий тип браузера', 1) RETURNING id",
+    ).split("\n")[0];
+    expect(id).toMatch(/^\d+$/);
+    try {
+        await login(page);
+        await page.goto("/goods/type_goods/" + id + "/edit");
+        await expect(
+            page.getByLabel("Название *", { exact: true }),
+        ).toHaveValue("Общий тип браузера");
+        await page
+            .getByLabel("Название *", { exact: true })
+            .fill("Общий тип изменён");
+        const saved = page.waitForResponse(
+            (response) =>
+                response.url().endsWith("/web/goods/type_goods/" + id) &&
+                response.request().method() === "PUT",
+        );
+        await page
+            .getByRole("button", { name: "Сохранить изменения", exact: true })
+            .click();
+        expect((await (await saved).json()).data.tenant_id).toBeNull();
+        expect(
+            sql(
+                "SELECT tenant_id IS NULL FROM goods.type_goods WHERE id = " +
+                    id,
+            ),
+        ).toBe("t");
+        sql(
+            "INSERT INTO main.tenant_entity (entity_type, entity_id, tenant_id) VALUES ('App\\Models\\GoodType', " +
+                id +
+                ", 'another_tenant')",
+        );
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        await expect(
+            page.getByLabel("Название *", { exact: true }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole("button", {
+                name: "Общий тип изменён",
+                exact: true,
+            }),
+        ).toHaveCount(0);
+        const stored = await page.evaluate(async () => {
+            const db = await new Promise<IDBDatabase>((resolve, reject) => {
+                const request = indexedDB.open("wms_cache");
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+            return await new Promise<string>((resolve, reject) => {
+                const request = db
+                    .transaction("entries")
+                    .objectStore("entries")
+                    .getAll();
+                request.onsuccess = () => {
+                    db.close();
+                    resolve(JSON.stringify(request.result));
+                };
+                request.onerror = () => reject(request.error);
+            });
+        });
+        expect(stored).not.toContain("Общий тип изменён");
+        sql(
+            "DELETE FROM main.tenant_entity WHERE entity_type = 'App\\Models\\GoodType' AND entity_id = " +
+                id,
+        );
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        await expect(
+            page.getByRole("button", {
+                name: "Общий тип изменён",
+                exact: true,
+            }),
+        ).toBeVisible();
+    } finally {
+        sql(
+            "DELETE FROM main.tenant_entity WHERE entity_type = 'App\\Models\\GoodType' AND entity_id = " +
+                id,
+        );
+        sql("DELETE FROM goods.type_goods WHERE id = " + id);
+    }
 });

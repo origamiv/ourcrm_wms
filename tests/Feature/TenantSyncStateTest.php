@@ -44,7 +44,8 @@ it('keeps a single null-tenant counter and records moves into a tenant', functio
     expect(DB::table('public.sync_state')->whereNull('tenant_id')->value('revision'))->toBe(2);
     $user->forceFill(['tenant_id' => 'tenant_a'])->save();
     expect(DB::table('public.sync_state')->whereNull('tenant_id')->value('revision'))->toBe(3);
-    expect(app(EntitySyncService::class)->revision('tenant_a'))->toBe('1');
+    // The new tenant also receives the other shared user.
+    expect(app(EntitySyncService::class)->revision('tenant_a'))->toBe('2');
     expect(DB::table('public.entity_changes')->whereNull('tenant_id')->where('revision', 3)->value('operation'))->toBe('remove');
 });
 

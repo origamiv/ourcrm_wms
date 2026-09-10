@@ -76,7 +76,7 @@ DB::transaction(function () {
 
 DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000013_add_document_parties.php'))->up();
-        (require database_path('migrations/2026_09_10_000015_add_document_amount.php'))->up();
+    (require database_path('migrations/2026_09_10_000015_add_document_amount.php'))->up();
     (require database_path('migrations/2026_09_10_000014_add_document_type_print_settings.php'))->up();
     DB::table('main.companies')->where('id', 1)->update(['src' => json_encode(['is_own' => true])]);
 });
@@ -86,4 +86,8 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000017_sync_goods.php'))->up();
     DB::table('goods.type_goods')->insert(['name' => 'Товар', 'tenant_id' => 'test_org']);
     DB::table('goods.unit_goods')->insert(['name' => 'Штука', 'shortname' => 'шт.', 'tenant_id' => 'test_org']);
+});
+
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_10_000018_tenant_entity_visibility.php'))->up();
 });

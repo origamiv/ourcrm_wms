@@ -14,11 +14,11 @@ final class UserSyncService
     }
 
     /** @return array{id: string, name: ?string, last_name: ?string, middle_name: ?string, nick: ?string, email: ?string, phone: ?string, status: ?int, tenant_id: ?string, created_at: ?string, updated_at: ?string, deleted_at: ?string, version: string} */
-    public function current(string|int $id): array
+    public function current(string|int $id, ?string $viewer = null): array
     {
         $user = User::withTrashed()->findOrFail($id);
 
-        return app(EntitySyncService::class)->current(User::class, (string) $user->tenant_id, $id);
+        return app(EntitySyncService::class)->current(User::class, $viewer ?? $user->tenant_id, $id);
     }
 
     /** @return array{mode: 'snapshot'|'delta', changes: list<array{id: string, version: string, operation: 'upsert'|'remove', data: array{id: string, name: ?string, last_name: ?string, middle_name: ?string, nick: ?string, email: ?string, phone: ?string, status: ?int, tenant_id: ?string, created_at: ?string, updated_at: ?string, deleted_at: ?string, version: string}|null}>, cursor: ?string, continuation: ?string} */

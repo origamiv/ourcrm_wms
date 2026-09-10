@@ -17,20 +17,20 @@ final class DocumentPartiesService
     {
         abort_unless(app(AccessService::class)->isAdmin($actor), 403);
 
-        return Document::where('tenant_id', $actor->tenant_id)
-            ->whereHas('client', fn ($q) => $q->where('tenant_id', $actor->tenant_id))
+        return Document::visibleTo($actor->tenant_id)
+            ->whereHas('client', fn ($q) => $q->visibleTo($actor->tenant_id))
             ->findOrFail($id);
     }
 
     public function executors(Document $document): Builder
     {
-        return Company::where('tenant_id', $document->tenant_id)
+        return Company::visibleTo($this->viewer($document))
             ->whereRaw("src->>'is_own' IN ('true', '1')");
     }
 
     public function customers(Document $document): Builder
     {
-        return ClientCompany::where('tenant_id', $document->tenant_id)->where('client_id', $document->client_id);
+        return ClientCompany::visibleTo($this->viewer($document))->where('client_id', $document->client_id);
     }
 
     public function resolve(Document $document, array $selection): array
@@ -47,5 +47,10 @@ final class DocumentPartiesService
         }
 
         return $parties;
+    }
+
+    private function viewer(Document $document): string
+    {
+        return (string) (auth()->user()?->tenant_id ?? $document->tenant_id);
     }
 }
