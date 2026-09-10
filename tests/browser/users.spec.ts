@@ -2098,11 +2098,9 @@ test("goods tree expands categories filters with ancestors and refreshes parents
             exact: true,
         });
         const row = (name: string) =>
-            tree
-                .getByRole("row")
-                .filter({
-                    has: page.getByRole("button", { name, exact: true }),
-                });
+            tree.getByRole("row").filter({
+                has: page.getByRole("button", { name, exact: true }),
+            });
         await expect(
             row("АА Дерево А").getByRole("img", {
                 name: "Категория",
@@ -2182,4 +2180,51 @@ test("goods tree expands categories filters with ancestors and refreshes parents
                 ")",
         );
     }
+});
+
+test("empty good category switch persists while categories with children cannot be toggled", async ({
+    page,
+}) => {
+    await login(page);
+    await page.goto("/goods/goods/0/create");
+    await page
+        .getByLabel("Название *", { exact: true })
+        .fill("Ручная пустая категория");
+    const toggle = page.getByRole("switch", {
+        name: "Является категорией",
+        exact: true,
+    });
+    await expect(toggle).not.toBeChecked();
+    await page.getByText("Является категорией", { exact: true }).click();
+    await expect(toggle).toBeChecked();
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    const categoryUrl = page.url();
+    await page.reload();
+    await expect(toggle).toBeChecked();
+    await page.goto("/goods/goods/0/create");
+    await page
+        .getByLabel("Название *", { exact: true })
+        .fill("Ребёнок ручной категории");
+    await page
+        .getByRole("combobox", { name: "Родительская запись", exact: true })
+        .fill("Ручная пустая категория");
+    await page
+        .getByRole("option", { name: "Ручная пустая категория", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.goto(categoryUrl);
+    await expect(page.getByLabel("Название *", { exact: true })).toHaveValue(
+        "Ручная пустая категория",
+    );
+    await expect(toggle).toHaveCount(0);
 });

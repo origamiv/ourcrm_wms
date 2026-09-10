@@ -56,7 +56,10 @@ final class GoodService
                     $seen[(string) $parent] = true;
                     $parent = Good::whereKey($parent)->value('parent_id');
                 }
-                $fields = array_diff(config('sync.entities.goods.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'level', 'is_category']);
+                $fields = array_diff(config('sync.entities.goods.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'level', 'has_children']);
+                if ($id && array_key_exists('is_category', $data) && (int) $data['is_category'] !== 1 && Good::where('parent_id', $id)->exists()) {
+                    throw ValidationException::withMessages(['is_category' => 'Запись с дочерними товарами является категорией.']);
+                }
                 $row->forceFill(array_intersect_key($data, array_flip($fields)));
                 if (! $id) {
                     $row->tenant_id = $tenant;

@@ -10,6 +10,7 @@ beforeEach(function () {
     $this->setupPostgres();
     (require database_path('migrations/2026_09_10_000016_relate_good_cards_to_goods.php'))->up();
     (require database_path('migrations/2026_09_10_000017_sync_goods.php'))->up();
+    (require database_path('migrations/2026_09_10_000020_manual_good_categories.php'))->up();
     $this->admin = $this->makeUser([], true);
     $this->loginUser($this->admin);
 });
@@ -105,7 +106,7 @@ it('manages goods catalogs with tenant isolation version control and protected r
 });
 
 it('recalculates subtree levels and both parent category flags after moves and deletion', function () {
-    $create = fn ($name, $parent = null) => $this->postJson('/web/goods/goods', ['name' => $name, 'status' => 1, 'parent_id' => $parent, 'level' => 77, 'is_category' => 1])->assertCreated()->json('data');
+    $create = fn ($name, $parent = null) => $this->postJson('/web/goods/goods', ['name' => $name, 'status' => 1, 'parent_id' => $parent, 'level' => 77])->assertCreated()->json('data');
     $a = $create('Корень А');
     expect($a['level'])->toBe(0);
     expect($a['is_category'])->toBe(2);
@@ -151,7 +152,22 @@ it('maintains hierarchy on direct SQL and rejects cycles without changing the tr
     expect(Good::find($root)->parent_id)->toBeNull();
     DB::table('goods.goods')->where('id', $child)->update(['level' => 123, 'is_category' => 1]);
     expect(Good::find($child)->level)->toBe(1);
-    expect(Good::find($child)->is_category)->toBe(2);
+    expect(Good::find($child)->is_category)->toBe(1);
     DB::table('goods.goods')->where('id', $child)->delete();
     expect(Good::find($root)->is_category)->toBe(2);
+});
+
+it('preserves manual empty categories and protects categories with children', function () {
+    $row = $this->postJson('/web/goods/goods', ['name' => 'Пустая категория', 'status' => 1, 'is_category' => 1])->assertCreated()->assertJsonPath('data.is_category', 1)->assertJsonPath('data.has_children', false)->json('data');
+    $child = $this->postJson('/web/goods/goods', ['name' => 'Ребёнок', 'status' => 1, 'parent_id' => $row['id']])->assertCreated()->json('data');
+    $sync = app(App\Services\EntitySyncService::class);
+    $current = $sync->current(Good::class, 'tenant_a', $row['id']);
+    expect($current['has_children'])->toBeTrue();
+    $this->putJson('/web/goods/goods/'.$row['id'], ['name' => 'Пустая категория', 'status' => 1, 'is_category' => 2, 'version' => $current['version']])->assertUnprocessable()->assertJsonValidationErrors('is_category');
+    $this->deleteJson('/web/goods/goods/'.$child['id'], ['version' => $child['version']])->assertOk();
+    $current = $sync->current(Good::class, 'tenant_a', $row['id']);
+    expect($current['has_children'])->toBeFalse();
+    expect($current['is_category'])->toBe(1);
+    $this->putJson('/web/goods/goods/'.$row['id'], ['name' => 'Обычный товар', 'status' => 1, 'is_category' => 2, 'version' => $current['version']])->assertOk()->assertJsonPath('data.is_category', 2);
+    expect(Good::find($row['id'])->category_manual)->toBeFalse();
 });

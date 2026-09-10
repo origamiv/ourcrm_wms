@@ -12,6 +12,7 @@ beforeEach(function () {
     $this->setupPostgres();
     (require database_path('migrations/2026_09_10_000016_relate_good_cards_to_goods.php'))->up();
     (require database_path('migrations/2026_09_10_000017_sync_goods.php'))->up();
+    (require database_path('migrations/2026_09_10_000020_manual_good_categories.php'))->up();
     $this->admin = $this->makeUser([], true);
     $this->other = $this->makeUser(['tenant_id' => 'tenant_b'], true);
     $this->loginUser($this->admin);

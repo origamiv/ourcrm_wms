@@ -322,6 +322,7 @@ function open(row: ReferenceRow | null, readOnly = false) {
                         : ""),
             ]),
         ),
+        ...(isGood ? { is_category: row?.is_category ?? 2 } : {}),
         status: row ? row.status : isDocument ? 0 : 1,
         ...(clientScope.value ? { client_id: clientScope.value.id } : {}),
     };
@@ -418,6 +419,7 @@ async function save(remove = false) {
             if (!remove) revealGood(response.data);
         }
         selected.value = response.data;
+        if (isGood) form.value.is_category = response.data.is_category;
         conflict.value = null;
         notice.value = "Изменения сохранены";
         if (remove) editing.value = false;
@@ -1114,6 +1116,29 @@ useCardRoute<ReferenceRow>({
                                 />
                             </label>
                         </template>
+                        <label
+                            v-if="isGood && !selected?.has_children"
+                            class="category-switch"
+                        >
+                            <span>Является категорией</span>
+                            <input
+                                type="checkbox"
+                                role="switch"
+                                aria-label="Является категорией"
+                                :checked="Number(form.is_category) === 1"
+                                @change="
+                                    form.is_category = (
+                                        $event.target as HTMLInputElement
+                                    ).checked
+                                        ? 1
+                                        : 2
+                                "
+                            />
+                            <span
+                                class="category-switch-track"
+                                aria-hidden="true"
+                            ></span>
+                        </label>
                         <p v-if="isGood" class="goods-derived">
                             Уровень:
                             {{
@@ -1122,7 +1147,7 @@ useCardRoute<ReferenceRow>({
                             }}
                             ·
                             {{
-                                selected?.is_category === 1
+                                Number(form.is_category) === 1
                                     ? "Категория"
                                     : "Товар"
                             }}
@@ -1191,6 +1216,53 @@ useCardRoute<ReferenceRow>({
     </div>
 </template>
 <style scoped>
+.client-form .category-switch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    cursor: pointer;
+}
+.category-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+.category-switch-track {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    flex: 0 0 38px;
+    border-radius: 12px;
+    background: #b5bec5;
+    transition: background 0.15s;
+}
+.category-switch-track::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.15s;
+}
+.category-switch input:checked + .category-switch-track {
+    background: #208b35;
+}
+.category-switch input:checked + .category-switch-track::after {
+    transform: translateX(16px);
+}
+.category-switch input:focus-visible + .category-switch-track {
+    outline: 2px solid #2274a5;
+    outline-offset: 3px;
+}
+.category-switch input:disabled + .category-switch-track {
+    opacity: 0.5;
+}
+
 .goods-tree-controls {
     display: flex;
     align-items: center;
