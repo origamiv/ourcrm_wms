@@ -784,7 +784,7 @@ useCardRoute<ReferenceRow>({
                 <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
                     <div class="column-settings-title">Показывать колонки</div>
                     <div
-                        v-for="field in allColumns"
+                        v-for="field in allColumns.filter((item) => !fixedColumnKeys.has(item.key))"
                         :key="field.key"
                         class="column-settings-item"
                         draggable="true"
@@ -796,7 +796,6 @@ useCardRoute<ReferenceRow>({
                             <input
                                 type="checkbox"
                                 :checked="isColumnVisible(field.key)"
-                                :disabled="fixedColumnKeys.has(field.key)"
                                 @change="toggleColumn(field.key)"
                             />
                             <span class="column-drag-handle" aria-hidden="true">⠿</span>
