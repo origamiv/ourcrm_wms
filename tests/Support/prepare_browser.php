@@ -73,3 +73,9 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000012_sync_client_documents.php'))->up();
     DB::table('clients.documents')->insert(['name' => 'Счёт тестового клиента', 'client_id' => 1, 'doc_type_id' => 1, 'status' => 0, 'doc_date' => '2026-09-10', 'tenant_id' => 'test_org']);
 });
+
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_10_000013_add_document_parties.php'))->up();
+    (require database_path('migrations/2026_09_10_000014_add_document_type_print_settings.php'))->up();
+    DB::table('main.companies')->where('id', 1)->update(['src' => json_encode(['is_own' => true])]);
+});

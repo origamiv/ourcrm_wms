@@ -1586,3 +1586,69 @@ test("documents retain comments JSON dates and statuses; document types dropdown
     await page.screenshot({ path: "/tmp/wms-documents.png", fullPage: true });
     await context.setOffline(false);
 });
+
+test("document print fields follow settings and download the saved PDF", async ({
+    page,
+}) => {
+    await login(page);
+    await page.goto("/clients/documents/0/create");
+    await page.getByLabel("Название *", { exact: true }).fill("PDF проверка");
+    await page
+        .getByRole("combobox", { name: "Клиент", exact: true })
+        .selectOption("1");
+    await page
+        .getByRole("combobox", { name: "Тип документа", exact: true })
+        .selectOption("1");
+    await page
+        .getByRole("combobox", { name: "Исполнитель", exact: true })
+        .selectOption("1");
+    await page
+        .getByRole("combobox", { name: "Заказчик", exact: true })
+        .selectOption("1");
+    await expect(page.getByLabel("Оплатить до", { exact: true })).toBeVisible();
+    await page.getByLabel("Номер документа", { exact: true }).fill("PDF-42");
+    await page
+        .getByRole("button", { name: "Добавить позицию", exact: true })
+        .click();
+    await page.getByLabel("Наименование: позиция 1").fill("Хранение");
+    await page.getByLabel("Цена без НДС: позиция 1").fill("100.25");
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+        page.getByRole("combobox", { name: "Заказчик", exact: true }),
+    ).toHaveValue("1");
+    await expect(
+        page.getByLabel("Номер документа", { exact: true }),
+    ).toHaveValue("PDF-42");
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    const download = page.waitForEvent("download");
+    await page
+        .getByRole("button", { name: "Скачать: PDF проверка", exact: true })
+        .click();
+    expect((await download).suggestedFilename()).toMatch(/^document_\d+\.pdf$/);
+    await page
+        .getByRole("button", {
+            name: "Редактировать: PDF проверка",
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole("combobox", { name: "Тип документа", exact: true })
+        .selectOption("5");
+    await expect(
+        page.getByLabel("Номер договора", { exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByLabel("Изменения договора", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Оплатить до", { exact: true })).toHaveCount(
+        0,
+    );
+});

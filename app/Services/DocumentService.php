@@ -46,12 +46,28 @@ final class DocumentService
                 abort_if($types && Document::where('doc_type_id', $id)->exists(), 422, 'Тип используется в документах.');
                 $row->delete();
             } else {
+                if ($types && isset($data['settings']['print']['fields'])) {
+                    foreach ($data['settings']['print']['fields'] as $field) {
+                        if (($field['key'] === 'items') !== ($field['type'] === 'items')) {
+                            throw ValidationException::withMessages(['settings' => 'Для позиций используйте ключ items и тип items.']);
+                        }
+                    }
+                }
                 if (! $types) {
                     if (! Client::where('tenant_id', $tenant)->whereKey($data['client_id'])->exists()) {
                         throw ValidationException::withMessages(['client_id' => 'Выберите клиента своей организации.']);
                     }
                     if (! DocType::whereKey($data['doc_type_id'])->exists()) {
                         throw ValidationException::withMessages(['doc_type_id' => 'Выберите существующий тип документа.']);
+                    }
+                    $candidate = new Document;
+                    $candidate->forceFill(['tenant_id' => $tenant, 'client_id' => $data['client_id']]);
+                    $parties = app(DocumentPartiesService::class);
+                    foreach (['executor_id' => $parties->executors($candidate), 'customer_id' => $parties->customers($candidate)] as $field => $query) {
+                        $value = array_key_exists($field, $data) ? $data[$field] : $row->{$field};
+                        if ($value !== null && ! $query->whereKey($value)->exists()) {
+                            throw ValidationException::withMessages([$field => $field === 'executor_id' ? 'Выберите компанию с признаком «Наша».' : 'Выберите юридическое лицо выбранного клиента.']);
+                        }
                     }
                     foreach (['accepted_at', 'payed_at', 'canceled_at'] as $field) {
                         if (isset($data[$field])) {

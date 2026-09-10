@@ -11,7 +11,13 @@ export interface ReferenceField {
         | "datetime"
         | "json";
     required?: boolean;
-    lookup?: "modules" | "companies" | "users" | "clients" | "client_doc_types";
+    lookup?:
+        | "modules"
+        | "companies"
+        | "users"
+        | "clients"
+        | "client_doc_types"
+        | "client_companies";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -45,6 +51,18 @@ export const references = {
                 lookup: "client_doc_types",
                 required: true,
             },
+            {
+                key: "executor_id",
+                label: "Исполнитель",
+                kind: "lookup",
+                lookup: "companies",
+            },
+            {
+                key: "customer_id",
+                label: "Заказчик",
+                kind: "lookup",
+                lookup: "client_companies",
+            },
             { key: "comment", label: "Комментарий", kind: "textarea" },
             {
                 key: "internal_comment",
@@ -62,6 +80,7 @@ export const references = {
         title: "Типы документов",
         fields: [
             { key: "shortname", label: "Краткое название" },
+            { key: "settings", label: "Настройки (JSON)", kind: "json" },
         ] as ReferenceField[],
     },
     client_individuals: {

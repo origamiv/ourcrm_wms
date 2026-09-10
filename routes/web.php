@@ -15,6 +15,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::get('/web/clients/documents/{id}/download', [App\Http\Controllers\DocumentController::class, 'download'])->whereNumber('id');
         Route::post('/web/clients/{document_catalog}', [App\Http\Controllers\DocumentController::class, 'store'])->whereIn('document_catalog', ['documents', 'doc_types']);
         Route::put('/web/clients/{document_catalog}/{id}', [App\Http\Controllers\DocumentController::class, 'update'])->whereIn('document_catalog', ['documents', 'doc_types'])->whereNumber('id');
         Route::delete('/web/clients/{document_catalog}/{id}', [App\Http\Controllers\DocumentController::class, 'destroy'])->whereIn('document_catalog', ['documents', 'doc_types'])->whereNumber('id');

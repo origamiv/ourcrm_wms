@@ -27,6 +27,7 @@ export async function http(
     url: string,
     method = "GET",
     data?: unknown,
+    responseType: "json" | "blob" = "json",
 ): Promise<any> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
@@ -54,6 +55,10 @@ export async function http(
             },
             body: data === undefined ? undefined : JSON.stringify(data),
         });
+        if (r.ok && responseType === "blob") {
+            if (sessionEnded) throw new Error("Сеанс завершён");
+            return await r.blob();
+        }
         const body = await r
             .json()
             .catch(() => ({ message: "Неожиданный ответ сервера." }));

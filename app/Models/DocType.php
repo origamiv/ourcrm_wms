@@ -10,7 +10,7 @@ final class DocType extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['status' => 'integer'];
+    protected $casts = ['status' => 'integer', 'settings' => 'array'];
 
     public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

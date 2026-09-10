@@ -2,6 +2,8 @@
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
+import DocumentPrintFields from "./DocumentPrintFields.vue";
+import DocumentDownload from "./DocumentDownload.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
 import { references } from "../lib/references";
@@ -64,7 +66,17 @@ function choices(entity: string) {
             } as ReferenceRow,
         ];
     return (
-        lookupStores[entity]?.rows.value.filter((row) => !row.deleted_at) ?? []
+        lookupStores[entity]?.rows.value.filter(
+            (row) =>
+                !row.deleted_at &&
+                (!isDocument ||
+                    ((entity !== "companies" ||
+                        row.src?.is_own === true ||
+                        row.src?.is_own === 1) &&
+                        (entity !== "client_companies" ||
+                            String(row.client_id) ===
+                                String(form.value.client_id)))),
+        ) ?? []
     );
 }
 const query = ref(""),
@@ -192,6 +204,12 @@ function open(row: ReferenceRow | null, readOnly = false) {
                 row?.[field.key] == null
                     ? ""
                     : JSON.stringify(row[field.key], null, 2);
+    if (isDocument && !row)
+        form.value.src = JSON.stringify(
+            { pdf: { number: "", basis: "", items: [], terms: "" } },
+            null,
+            2,
+        );
     viewing.value = readOnly || !!row?.deleted_at;
     notice.value = "";
     conflict.value = null;
@@ -511,6 +529,12 @@ useCardRoute<ReferenceRow>({
                             </td>
                             <td>
                                 <div class="row-actions">
+                                    <DocumentDownload
+                                        v-if="isDocument"
+                                        :id="row.id"
+                                        :name="displayName(row)"
+                                        :disabled="!online || !!row.deleted_at"
+                                    />
                                     <button
                                         :aria-label="`Просмотр: ${displayName(row)}`"
                                         title="Просмотр"
@@ -662,6 +686,10 @@ useCardRoute<ReferenceRow>({
                             <select
                                 v-else-if="field.kind === 'lookup'"
                                 :required="field.required"
+                                @change="
+                                    if (isDocument && field.key === 'client_id')
+                                        form.customer_id = null;
+                                "
                                 :disabled="
                                     field.key === 'client_id' && !!clientScope
                                 "
@@ -725,8 +753,20 @@ useCardRoute<ReferenceRow>({
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
                                 maxlength="255"
-                            /> </label
-                        ><label
+                            />
+                        </label>
+                        <DocumentPrintFields
+                            v-if="isDocument"
+                            v-model="form.src"
+                            :fields="
+                                lookupStores.client_doc_types?.rows.value.find(
+                                    (row) =>
+                                        String(row.id) ===
+                                        String(form.doc_type_id),
+                                )?.settings?.print?.fields ?? []
+                            "
+                        />
+                        <label
                             >Статус<select
                                 v-model="form.status"
                                 aria-label="Статус"
