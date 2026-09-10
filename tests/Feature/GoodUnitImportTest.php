@@ -14,10 +14,13 @@ it('дополняет общие единицы без потери ID, сок�
     $hour = $table->insertGetId(['name' => 'Час', 'shortname' => 'ч.']);
     $tenant = $table->insertGetId(['name' => 'Метр', 'tenant_id' => 'tenant_a']);
     $deleted = $table->insertGetId(['name' => 'Грамм', 'deleted_at' => now()]);
+    $kilogram = $table->insertGetId(['name' => 'кг']);
     $migration = require database_path('migrations/2026_09_10_000023_complete_good_units.php');
 
     $migration->up();
 
+    expect(DB::table('goods.unit_goods')->where('id', $kilogram)->value('shortname'))->toBe('кг.');
+    expect(DB::table('goods.unit_goods')->where('id', $kilogram)->value('name'))->toBe('кг');
     expect($table->where('id', $minute)->value('shortname'))->toBe('мин.');
     expect(DB::table('goods.unit_goods')->where('id', $minute)->value('status'))->toBe(2);
     expect(DB::table('goods.unit_goods')->where('id', $hour)->value('shortname'))->toBe('ч.');

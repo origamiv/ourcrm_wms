@@ -54,11 +54,18 @@ return new class extends Migration
                 'Китайский юань' => 'юань',
             ];
 
+            $aliases = [
+                'Штука' => 'шт',
+                'Килограмм' => 'кг',
+                'Грамм' => 'гр',
+                'Месяц' => 'мес',
+            ];
+
             foreach ($units as $name => $shortname) {
                 $existing = DB::table('goods.unit_goods')
                     ->whereNull('tenant_id')
                     ->whereNull('deleted_at')
-                    ->whereRaw('lower(btrim(name)) = lower(?)', [$name]);
+                    ->whereRaw('lower(btrim(name)) IN (lower(?), lower(?))', [$name, $aliases[$name] ?? $name]);
 
                 if ($existing->exists()) {
                     $existing->whereRaw("coalesce(btrim(shortname), '') = ''")
