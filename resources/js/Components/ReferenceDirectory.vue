@@ -36,7 +36,7 @@ const draggedColumn = ref<string | null>(null);
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
-const fixedColumnKeys = new Set(["__id", "__name", "__actions"]);
+const fixedColumnKeys = new Set(["__id", "__actions"]);
 const configurableColumns = computed(() => [
     {
         key: "__id",
@@ -810,7 +810,7 @@ useCardRoute<ReferenceRow>({
                     <thead>
                         <tr>
                             <th scope="col" class="id-column">#</th>
-                            <th>
+                            <th v-if="isColumnVisible('__name')">
                                 <button @click="descending = !descending">
                                     {{
                                         isKiz
@@ -859,7 +859,7 @@ useCardRoute<ReferenceRow>({
                                 {{ field.label }}
                             </th>
                             <th v-if="isColumnVisible('status')">{{ isKiz ? "Состояние" : "Статус" }}</th>
-                            <th>
+                            <th v-if="isColumnVisible('__actions')">
                                 Действия
                                 <button
                                     type="button"
@@ -872,7 +872,7 @@ useCardRoute<ReferenceRow>({
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>
-                            <th>
+                            <th v-if="isColumnVisible('__name')">
                                 <input
                                     v-model="query"
                                     :aria-label="`Поиск: ${definition.title}`"
@@ -999,7 +999,7 @@ useCardRoute<ReferenceRow>({
                             @dblclick="open(row)"
                         >
                             <td class="id-column">{{ row.id }}</td>
-                            <td>
+                            <td v-if="isColumnVisible('__name')">
                                 <div
                                     v-if="isGood"
                                     class="goods-tree-name"
