@@ -278,20 +278,19 @@ onUnmounted(() => store.stop());
                                 }}</span>
                             </td>
                             <td>
-                                <button
-                                    class="catalog-edit"
-                                    :disabled="saving || !!row.deleted_at"
-                                    :aria-label="`Редактировать: ${row.name}`"
-                                    @click="open(row)"
-                                >
-                                    <img
-                                        src="/design/crm/edit.svg"
-                                        alt=""
-                                        width="16"
-                                        height="16"
-                                    />
-                                    Редактировать
-                                </button>
+                                <div class="row-actions">
+                                    <button
+                                        :disabled="saving || !!row.deleted_at"
+                                        :aria-label="`Редактировать: ${row.name}`"
+                                        title="Редактировать"
+                                        @click.stop="open(row)"
+                                    >
+                                        <img
+                                            src="/design/crm/edit.svg"
+                                            alt=""
+                                        />
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <tr v-if="!visible.length">
@@ -428,23 +427,6 @@ onUnmounted(() => store.stop());
     </div>
 </template>
 <style scoped>
-.catalog-edit {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    color: #1e892f;
-    white-space: nowrap;
-    padding: 6px 0;
-}
-.catalog-edit img {
-    width: 16px;
-    height: 16px;
-    object-fit: contain;
-}
-.catalog-edit:hover:not(:disabled) {
-    text-decoration: underline;
-}
-
 .catalog-form {
     display: grid;
     gap: 18px;
