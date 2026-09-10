@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 return [
     'entities' => [
+        'client_individuals' => ['entity' => App\Models\ClientIndividual::class, 'table' => 'clients.individuals', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'firstname', 'middlename', 'lastname', 'phone', 'email', 'birthday', 'passport_seria', 'passport_number', 'passport_date', 'passport_kem', 'passport_code', 'address_reg', 'vodud_date', 'vodud_nomer', 'user_id', 'manager_id', 'client_id', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
+        'client_companies' => ['entity' => App\Models\ClientCompany::class, 'table' => 'clients.companies', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'fullname', 'inn', 'kpp', 'ogrn', 'okpo', 'phone', 'email', 'site', 'director_fio', 'director_position', 'bank', 'bik', 'korr_schet', 'rasch_schet', 'client_id', 'src', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
         'modules' => [
             'entity' => App\Models\Module::class,
             'table' => 'main.modules',

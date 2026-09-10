@@ -3,6 +3,7 @@ import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import AdminTabs from "./AdminTabs.vue";
+import ClientTabs from "./ClientTabs.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -18,6 +19,7 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
+const isIndividual = props.entity === "client_individuals";
 const page = usePage<any>();
 const store = createEntitySync<ReferenceRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
@@ -136,7 +138,7 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const response = await http(
-            `/web/${props.entity}${selected.value ? "/" + selected.value.id : ""}`,
+            `/web/${isIndividual ? "clients/individuals" : props.entity}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
             {
                 ...(!remove ? form.value : {}),
@@ -179,7 +181,7 @@ onUnmounted(() => {
 });
 
 useCardRoute<ReferenceRow>({
-    base: `/main/${props.entity}`,
+    base: isIndividual ? "/clients/individuals" : `/main/${props.entity}`,
     rows,
     ready,
     state: () =>
@@ -213,9 +215,12 @@ useCardRoute<ReferenceRow>({
     <div class="users-workspace" :class="{ 'has-editor': editing }">
         <section class="users-list">
             <div class="content-breadcrumb">
-                Администрирование › Справочники › {{ definition.title }}
+                {{
+                    isIndividual ? "Клиенты" : "Администрирование › Справочники"
+                }}
+                › {{ definition.title }}
             </div>
-            <AdminTabs />
+            <ClientTabs v-if="isIndividual" /><AdminTabs v-else />
             <div class="page-heading">
                 <h1>{{ definition.title }}</h1>
                 <button
@@ -246,15 +251,20 @@ useCardRoute<ReferenceRow>({
                         <tr>
                             <th>
                                 <button @click="descending = !descending">
-                                    Название {{ descending ? "▴" : "▾" }}
+                                    {{ isIndividual ? "ФИО" : "Название" }}
+                                    {{ descending ? "▴" : "▾" }}
                                 </button>
                             </th>
                             <th>
                                 {{
-                                    ["modules", "features"].includes(
-                                        props.entity,
-                                    )
-                                        ? "Краткое название"
+                                    [
+                                        "modules",
+                                        "features",
+                                        "client_individuals",
+                                    ].includes(props.entity)
+                                        ? isIndividual
+                                            ? "Краткое имя"
+                                            : "Краткое название"
                                         : "Категория"
                                 }}
                             </th>
@@ -273,9 +283,11 @@ useCardRoute<ReferenceRow>({
                                 <input
                                     v-model="shortQuery"
                                     :aria-label="
-                                        ['modules', 'features'].includes(
-                                            props.entity,
-                                        )
+                                        [
+                                            'modules',
+                                            'features',
+                                            'client_individuals',
+                                        ].includes(props.entity)
                                             ? 'Поиск по краткому названию'
                                             : 'Поиск по категории'
                                     "
@@ -447,7 +459,8 @@ useCardRoute<ReferenceRow>({
                         :disabled="viewing || saving || !online || !!conflict"
                     >
                         <label
-                            >Название *<input
+                            >{{ isIndividual ? "ФИО *" : "Название *"
+                            }}<input
                                 v-model="form.name"
                                 required
                                 maxlength="255"
@@ -500,6 +513,12 @@ useCardRoute<ReferenceRow>({
                                 <option :value="1">Да</option>
                                 <option :value="0">Нет</option>
                             </select>
+                            <input
+                                v-else-if="field.kind === 'date'"
+                                v-model="form[field.key]"
+                                :aria-label="field.label"
+                                type="date"
+                            />
                             <input
                                 v-else-if="field.kind === 'number'"
                                 v-model="form[field.key]"

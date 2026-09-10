@@ -1220,3 +1220,130 @@ test("reference submenu supports all four directories and cached navigation", as
         page.getByRole("button", { name: "Добавить запись", exact: true }),
     ).toBeDisabled();
 });
+
+test("client legal entities and individuals support cards, links and offline navigation", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Клиенты", exact: true })
+        .click();
+    const ribbon = page.getByRole("navigation", {
+        name: "Разделы клиентов",
+        exact: true,
+    });
+    await ribbon.getByRole("link", { name: "Юр.лица", exact: true }).click();
+    await expect(page).toHaveURL("/clients/companies");
+    await expect(
+        page.getByRole("combobox", { name: "Тип компании", exact: true }),
+    ).toHaveCount(0);
+    for (const label of ["Наша", "Клиент", "Партнёр"])
+        await expect(
+            page.getByRole("columnheader", { name: label, exact: true }),
+        ).toHaveCount(0);
+    await page
+        .getByRole("button", { name: "+ Добавить компанию", exact: true })
+        .click();
+    await page
+        .getByLabel("Название компании *", { exact: true })
+        .fill("Юрлицо браузера");
+    await page.getByLabel("Краткое название *", { exact: true }).fill("Юрлицо");
+    await page
+        .getByRole("combobox", { name: "Клиент", exact: true })
+        .selectOption({ label: "Тестовый клиент" });
+    await page.getByLabel("ОКПО", { exact: true }).fill("12345678");
+    for (const label of ["Наша", "Клиент", "Партнёр"])
+        await expect(
+            page.getByRole("checkbox", { name: label, exact: true }),
+        ).toHaveCount(0);
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/clients\/companies\/\d+\/edit$/);
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Просмотр: Юрлицо браузера", exact: true })
+        .click();
+    await expect(page.getByLabel("ОКПО", { exact: true })).toBeDisabled();
+    await expect(
+        page.getByRole("button", {
+            name: "Контактные лица: Юрлицо браузера",
+            exact: true,
+        }),
+    ).toHaveCount(0);
+    await ribbon.getByRole("link", { name: "Физ.лица", exact: true }).click();
+    await expect(page).toHaveURL("/clients/individuals");
+    await page
+        .getByRole("button", { name: "Добавить запись", exact: true })
+        .click();
+    await page.getByLabel("ФИО *", { exact: true }).fill("Физлицо браузера");
+    await page.getByLabel("Имя", { exact: true }).fill("Иван");
+    await page.getByLabel("Дата рождения", { exact: true }).fill("1990-01-02");
+    await page.getByLabel("Серия паспорта", { exact: true }).fill("0000");
+    await page
+        .getByRole("combobox", { name: "Клиент", exact: true })
+        .selectOption({ label: "Тестовый клиент" });
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/clients\/individuals\/\d+\/edit$/);
+    await page.reload();
+    await expect(page.getByLabel("Дата рождения", { exact: true })).toHaveValue(
+        "1990-01-02",
+    );
+    await page.getByLabel("Телефон", { exact: true }).fill("+79991234567");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page.screenshot({
+        path: "/tmp/wms-client-individuals.png",
+        fullPage: true,
+    });
+    await context.setOffline(true);
+    await ribbon.getByRole("link", { name: "Юр.лица", exact: true }).click();
+    await expect(
+        page.getByRole("button", { name: "Юрлицо браузера", exact: true }),
+    ).toBeVisible();
+    await ribbon.getByRole("link", { name: "Физ.лица", exact: true }).click();
+    await expect(
+        page.getByRole("button", { name: "Физлицо браузера", exact: true }),
+    ).toBeVisible();
+    await context.setOffline(false);
+    await page
+        .getByRole("button", { name: "Удалить: Физлицо браузера", exact: true })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Удалить", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Физлицо браузера", exact: true }),
+    ).toHaveCount(0);
+    await ribbon.getByRole("link", { name: "Юр.лица", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Удалить: Юрлицо браузера", exact: true })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Удалить", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Юрлицо браузера", exact: true }),
+    ).toHaveCount(0);
+});

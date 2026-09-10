@@ -4,6 +4,7 @@ import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import DadataInput from "./DadataInput.vue";
 import AdminTabs from "./AdminTabs.vue";
+import ClientTabs from "./ClientTabs.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
@@ -17,18 +18,22 @@ interface DirectoryRow extends EntityRow {
     [key: string]: any;
 }
 const props = defineProps<{
-    entity: "companies" | "company_contacts";
+    entity: "companies" | "company_contacts" | "client_companies";
     title: string;
 }>();
 const page = usePage<any>();
 const namespace = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`;
 const store = createEntitySync<DirectoryRow>(namespace, props.entity);
 const companies =
-    props.entity === "companies"
+    props.entity !== "company_contacts"
         ? store
         : createEntitySync<DirectoryRow>(namespace, "companies");
 const { rows, ready, syncing, online, error, warning } = store;
-const isCompany = props.entity === "companies";
+const isCompany = props.entity !== "company_contacts";
+const isClientCompany = props.entity === "client_companies";
+const clients = isClientCompany
+    ? createEntitySync<DirectoryRow>(namespace, "clients")
+    : null;
 const scope = computed<{ id: string; name: string } | null>(() =>
     !isCompany ? (page.props.companyScope ?? null) : null,
 );
@@ -38,6 +43,7 @@ const labels: Record<string, string> = isCompany
           name: "Название компании",
           shortname: "Краткое название",
           fullname: "Полное название",
+          ...(isClientCompany ? { okpo: "ОКПО" } : {}),
           inn: "ИНН",
           kpp: "КПП",
           ogrn: "ОГРН",
@@ -59,11 +65,13 @@ const srcLabels: Record<string, string> = {
     accountant_position: "Должность бухгалтера",
     accountant_fio: "ФИО бухгалтера",
 };
-const flags: Record<string, string> = {
-    is_own: "Наша",
-    is_client: "Клиент",
-    is_partner: "Партнёр",
-};
+const flags: Record<string, string> = isClientCompany
+    ? {}
+    : {
+          is_own: "Наша",
+          is_client: "Клиент",
+          is_partner: "Партнёр",
+      };
 const flagFilter = ref("");
 const query = ref(""),
     detailQuery = ref(""),
@@ -173,6 +181,9 @@ function open(row: DirectoryRow | null, readOnly = false) {
             Object.keys(labels).map((key) => [key, row?.[key] ?? ""]),
         ),
         status: row ? row.status : 1,
+        ...(isClientCompany
+            ? { client_id: row?.client_id ? String(row.client_id) : null }
+            : {}),
         ...(isCompany
             ? {
                   src: {
@@ -241,7 +252,7 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const response = await http(
-            `${scope.value ? `/web/companies/${scope.value.id}/contacts` : `/web/${props.entity}`}${selected.value ? "/" + selected.value.id : ""}`,
+            `${scope.value ? `/web/companies/${scope.value.id}/contacts` : `/web/${isClientCompany ? "clients/companies" : props.entity}`}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
             {
                 ...(!remove ? form.value : {}),
@@ -276,15 +287,17 @@ onMounted(async () => {
     await Promise.all([
         store.start(),
         ...(!isCompany ? [companies.start()] : []),
+        ...(clients ? [clients.start()] : []),
     ]);
 });
 onUnmounted(() => {
     store.stop();
     if (!isCompany) companies.stop();
+    clients?.stop();
 });
 
 useCardRoute<DirectoryRow>({
-    base: `/main/${props.entity}`,
+    base: isClientCompany ? "/clients/companies" : `/main/${props.entity}`,
     rows,
     ready,
     state: () =>
@@ -319,9 +332,10 @@ useCardRoute<DirectoryRow>({
         <section class="users-list">
             <div class="list-heading">
                 <div class="content-breadcrumb">
-                    Администрирование › {{ title }}
+                    {{ isClientCompany ? "Клиенты" : "Администрирование" }} ›
+                    {{ title }}
                 </div>
-                <AdminTabs />
+                <ClientTabs v-if="isClientCompany" /><AdminTabs v-else />
                 <p v-if="scope" class="company-scope">
                     Компания:
                     <strong>{{
@@ -429,7 +443,10 @@ useCardRoute<DirectoryRow>({
                                     <option value="deleted">Удалённые</option>
                                 </select>
                             </th>
-                            <th v-if="isCompany" colspan="3">
+                            <th
+                                v-if="isCompany && !isClientCompany"
+                                colspan="3"
+                            >
                                 <select
                                     v-model="flagFilter"
                                     aria-label="Тип компании"
@@ -494,7 +511,7 @@ useCardRoute<DirectoryRow>({
                             <td>
                                 <div class="row-actions">
                                     <button
-                                        v-if="isCompany"
+                                        v-if="isCompany && !isClientCompany"
                                         :aria-label="`Контактные лица: ${row.name}`"
                                         title="Контактные лица"
                                         :disabled="saving || !!row.deleted_at"
@@ -548,7 +565,11 @@ useCardRoute<DirectoryRow>({
                         </tr>
                         <tr v-if="!visible.length">
                             <td
-                                :colspan="isCompany ? 7 : 5"
+                                :colspan="
+                                    isCompany
+                                        ? 4 + Object.keys(flags).length
+                                        : 5
+                                "
                                 class="empty-state"
                             >
                                 {{
@@ -659,6 +680,42 @@ useCardRoute<DirectoryRow>({
                                 :required="['name', 'shortname'].includes(key)"
                                 maxlength="255"
                         /></label>
+                        <label v-if="clients"
+                            >Клиент<select
+                                v-model="form.client_id"
+                                aria-label="Клиент"
+                            >
+                                <option :value="null">Не выбран</option>
+                                <option
+                                    v-if="
+                                        form.client_id &&
+                                        !clients.rows.value.some(
+                                            (row) =>
+                                                !row.deleted_at &&
+                                                String(row.id) ===
+                                                    String(form.client_id),
+                                        )
+                                    "
+                                    :value="form.client_id"
+                                    disabled
+                                >
+                                    Недоступный клиент №{{ form.client_id }}
+                                </option>
+                                <option
+                                    v-for="row in clients.rows.value.filter(
+                                        (row) => !row.deleted_at,
+                                    )"
+                                    :key="row.id"
+                                    :value="row.id"
+                                >
+                                    {{
+                                        row.name ||
+                                        row.shortname ||
+                                        `Клиент №${row.id}`
+                                    }}
+                                </option>
+                            </select></label
+                        >
                         <label v-if="!isCompany"
                             >Компания *<select
                                 v-model="form.company_id"

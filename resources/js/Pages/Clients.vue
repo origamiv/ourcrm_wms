@@ -2,7 +2,7 @@
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
-import RibbonTabs from "../Components/RibbonTabs.vue";
+import ClientTabs from "../Components/ClientTabs.vue";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
@@ -19,14 +19,6 @@ const store = createEntitySync<ClientRow>(
     "clients",
 );
 const { rows, ready, syncing, online, error, warning } = store;
-const tabs = [
-    {
-        label: "Клиенты",
-        url: "/clients/clients",
-        component: "Clients",
-        icon: "company_contacts",
-    },
-];
 const query = ref(""),
     shortQuery = ref(""),
     statusFilter = ref("all"),
@@ -182,7 +174,7 @@ useCardRoute<ClientRow>({
     <div class="users-workspace" :class="{ 'has-editor': editing }">
         <section class="users-list">
             <div class="content-breadcrumb">Клиенты › Клиенты</div>
-            <RibbonTabs :tabs="tabs" label="Разделы клиентов" />
+            <ClientTabs />
             <div class="page-heading">
                 <h1>Клиенты</h1>
                 <button

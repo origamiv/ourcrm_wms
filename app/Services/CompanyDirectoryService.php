@@ -15,7 +15,7 @@ final class CompanyDirectoryService
 {
     public function save(User $actor, string $directory, array $data, ?string $id = null, bool $delete = false, ?string $companyId = null): array
     {
-        abort_unless(in_array($directory, ['companies', 'company_contacts'], true), 404);
+        abort_unless(in_array($directory, ['companies', 'company_contacts', 'client_companies', 'client_individuals'], true), 404);
 
         return DB::transaction(function () use ($actor, $directory, $data, $id, $delete, $companyId) {
             $tenant = $actor->tenant_id;
@@ -50,9 +50,16 @@ final class CompanyDirectoryService
                 if ($directory === 'company_contacts' && ! Company::where('tenant_id', $tenant)->whereKey($data['company_id'])->exists()) {
                     throw ValidationException::withMessages(['company_id' => 'Выберите существующую компанию своей организации.']);
                 }
+                if (str_starts_with($directory, 'client_')) {
+                    foreach (['client_id' => \App\Models\Client::class, 'user_id' => User::class, 'manager_id' => User::class] as $field => $related) {
+                        if (isset($data[$field]) && ! $related::where('tenant_id', $tenant)->whereKey($data[$field])->exists()) {
+                            throw ValidationException::withMessages([$field => 'Связанная запись недоступна в вашей организации.']);
+                        }
+                    }
+                }
                 $fields = array_diff($definition['fields'], ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'src']);
                 $record->forceFill(array_intersect_key($data, array_flip($fields)));
-                if ($directory === 'companies' && array_key_exists('src', $data)) {
+                if (in_array($directory, ['companies', 'client_companies'], true) && array_key_exists('src', $data)) {
                     abort_if($record->src !== null && ! is_array($record->src), 422, 'Содержимое дополнительных данных компании требует проверки.');
                     $record->src = array_replace($record->src ?? [], $data['src']);
                 }

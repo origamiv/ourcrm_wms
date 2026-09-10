@@ -1,8 +1,8 @@
 export interface ReferenceField {
     key: string;
     label: string;
-    kind?: "text" | "textarea" | "number" | "flag" | "lookup";
-    lookup?: "modules" | "companies" | "users";
+    kind?: "text" | "textarea" | "number" | "flag" | "lookup" | "date";
+    lookup?: "modules" | "companies" | "users" | "clients";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -18,6 +18,52 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    client_individuals: {
+        title: "Физ.лица",
+        fields: [
+            { key: "shortname", label: "Краткое имя" },
+            { key: "lastname", label: "Фамилия" },
+            { key: "firstname", label: "Имя" },
+            { key: "middlename", label: "Отчество" },
+            { key: "phone", label: "Телефон" },
+            { key: "email", label: "Email" },
+            { key: "birthday", label: "Дата рождения", kind: "date" },
+            { key: "passport_seria", label: "Серия паспорта" },
+            { key: "passport_number", label: "Номер паспорта" },
+            {
+                key: "passport_date",
+                label: "Дата выдачи паспорта",
+                kind: "date",
+            },
+            { key: "passport_kem", label: "Кем выдан паспорт" },
+            { key: "passport_code", label: "Код подразделения" },
+            { key: "address_reg", label: "Адрес регистрации" },
+            {
+                key: "vodud_date",
+                label: "Дата выдачи водительского удостоверения",
+                kind: "date",
+            },
+            { key: "vodud_nomer", label: "Номер водительского удостоверения" },
+            {
+                key: "client_id",
+                label: "Клиент",
+                kind: "lookup",
+                lookup: "clients",
+            },
+            {
+                key: "user_id",
+                label: "Пользователь",
+                kind: "lookup",
+                lookup: "users",
+            },
+            {
+                key: "manager_id",
+                label: "Менеджер",
+                kind: "lookup",
+                lookup: "users",
+            },
+        ] as ReferenceField[],
+    },
     modules: {
         title: "Модули",
         fields: [

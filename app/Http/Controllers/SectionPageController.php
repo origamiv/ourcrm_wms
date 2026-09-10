@@ -14,8 +14,9 @@ final class SectionPageController
     {
         $pages = [
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
-            'clients' => ['clients' => 'Clients'],
+            'clients' => ['clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals'],
         ];
+        $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
         abort_unless(($id === null) === ($action === null), 404);
@@ -32,9 +33,9 @@ final class SectionPageController
             if ($action === 'create') {
                 abort_unless($id === '0', 404);
             } else {
-                $model = config('sync.entities.'.$top.'.entity');
+                $model = config('sync.entities.'.$entity.'.entity');
                 $query = $model::withTrashed();
-                if (! config('sync.entities.'.$top.'.global', false)) {
+                if (! config('sync.entities.'.$entity.'.global', false)) {
                     $query->where('tenant_id', $request->user()->tenant_id);
                 }
                 $row = $query->findOrFail($id);

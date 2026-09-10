@@ -36,3 +36,5 @@
 [Клиенты](CLIENTS.md): `POST /api/clients`, `PUT /api/clients/{id}`, `DELETE /api/clients/{id}`, чтение через `GET /api/sync/clients`.
 
 [Справочники](REFERENCES.md): CRUD `/api/{reference}` и синхронизация `/api/sync/{reference}` для `modules`, `features`, `icons`, `files`. Модули и возможности общие для всех организаций.
+
+[Юридические и физические лица клиентов](CLIENT_PARTIES.md): CRUD `/api/clients/{party}`, `party=companies|individuals`; синхронизация `client_companies` и `client_individuals`.

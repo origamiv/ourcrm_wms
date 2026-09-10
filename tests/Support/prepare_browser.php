@@ -55,3 +55,9 @@ DB::transaction(function () {
     DB::table('main.files')->insert(['name' => 'Документ', 'category' => 'Склад', 'status' => 1, 'tenant_id' => 'test_org']);
     (require database_path('migrations/2026_09_10_000009_sync_references.php'))->up();
 });
+
+DB::transaction(function () {
+    DB::table('clients.companies')->insert(['name' => 'ООО Клиентское юрлицо', 'shortname' => 'Клиентское', 'status' => 1, 'tenant_id' => 'test_org', 'client_id' => 1]);
+    DB::table('clients.individuals')->insert(['name' => 'Тестовое физлицо', 'firstname' => 'Тестовое', 'lastname' => 'Физлицо', 'status' => 1, 'tenant_id' => 'test_org', 'client_id' => 1]);
+    (require database_path('migrations/2026_09_10_000010_sync_client_parties.php'))->up();
+});
