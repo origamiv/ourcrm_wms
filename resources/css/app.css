@@ -300,6 +300,10 @@ h3 {
     min-width: 0;
     flex: 1;
 }
+.users-list > .table-scroll {
+    flex: 1;
+    min-height: 0;
+}
 .page-heading {
     display: flex;
     align-items: center;
@@ -492,6 +496,11 @@ td small {
     width: 26px;
     height: 26px;
     font-size: 19px;
+}
+.list-footer button.active {
+    border-color: #1e892f;
+    background: #e1f3e7;
+    color: #1e892f;
 }
 .editor {
     width: 355px;

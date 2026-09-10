@@ -365,6 +365,14 @@ const pages = computed(() =>
         ),
     ),
 );
+const pageItems = computed<(number | string)[]>(() => {
+    const total = pages.value;
+    if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+    const current = currentPage.value;
+    if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
+    if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+    return [1, "…", current - 1, current, current + 1, "…", total];
+});
 const visible = computed(() =>
     isGood
         ? flattenGoods(
@@ -1258,21 +1266,32 @@ useCardRoute<ReferenceRow>({
                         :disabled="!online || syncing"
                         @click="store.sync"
                     >
-                        Обновить</button
-                    ><button
+                        Обновить
+                    </button>
+                    <button
+                        :disabled="currentPage === 1"
+                        @click="currentPage = 1"
+                        aria-label="Первая страница"
+                    >«</button>
+                    <button
                         :disabled="currentPage === 1"
                         @click="currentPage--"
                         aria-label="Предыдущая страница"
-                    >
-                        <img src="/design/crm/arrow_left.svg" alt="" /></button
-                    ><span>{{ currentPage }} / {{ pages }}</span
-                    ><button
+                    >‹</button>
+                    <template v-for="item in pageItems" :key="item">
+                        <span v-if="item === '…'">…</span>
+                        <button v-else :class="{ active: currentPage === item }" @click="currentPage = Number(item)">{{ item }}</button>
+                    </template>
+                    <button
                         :disabled="currentPage === pages"
                         @click="currentPage++"
                         aria-label="Следующая страница"
-                    >
-                        <img src="/design/crm/arrow_right.svg" alt="" />
-                    </button>
+                    >›</button>
+                    <button
+                        :disabled="currentPage === pages"
+                        @click="currentPage = pages"
+                        aria-label="Последняя страница"
+                    >»</button>
                 </div>
             </footer>
         </section>
