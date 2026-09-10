@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
+import AdminTabs from "../Components/AdminTabs.vue";
 import { createUsers } from "../lib/users";
 import type { UserRow } from "../lib/cache";
 import { http, HttpError, endSession } from "../lib/http";
@@ -222,14 +223,7 @@ onUnmounted(store.stop);
             <div class="content-breadcrumb">
                 Администрирование › Пользователи
             </div>
-            <div class="module-tabs">
-                <span class="module-tab active"
-                    ><img
-                        src="/design/crm/contacts.svg"
-                        alt=""
-                    />Пользователи</span
-                >
-            </div>
+            <AdminTabs />
             <div class="page-heading">
                 <h1>Пользователи</h1>
                 <button

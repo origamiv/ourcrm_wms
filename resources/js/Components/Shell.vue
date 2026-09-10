@@ -72,7 +72,11 @@ onUnmounted(() => {
                     v-if="page.props.auth.is_admin"
                     href="/users"
                     aria-label="Администрирование"
-                    :class="{ active: page.url.startsWith('/users') }"
+                    :class="{
+                        active: ['/users', '/roles', '/permissions'].some(
+                            (url) => page.url.startsWith(url),
+                        ),
+                    }"
                     @click.prevent="go('Users', '/users')"
                     ><img
                         class="nav-icon"
@@ -94,7 +98,9 @@ onUnmounted(() => {
         <main class="main-panel">
             <header class="topbar">
                 <span class="section-title">{{
-                    page.url.startsWith("/users")
+                    ["/users", "/roles", "/permissions"].some((url) =>
+                        page.url.startsWith(url),
+                    )
                         ? "Администрирование"
                         : "Рабочий стол"
                 }}</span>

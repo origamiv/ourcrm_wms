@@ -12,3 +12,8 @@ CREATE TABLE public.personal_access_tokens (
  last_used_at timestamp, expires_at timestamp, created_at timestamp, updated_at timestamp
 );
 CREATE INDEX public_tokens_owner ON public.personal_access_tokens (tokenable_type, tokenable_id);
+ALTER TABLE main.roles ADD COLUMN description text, ADD COLUMN system boolean NOT NULL DEFAULT false,
+ ADD COLUMN tags json, ADD COLUMN company_id integer, ADD COLUMN created_at timestamp, ADD COLUMN updated_at timestamp;
+CREATE TABLE main.permissions (id bigserial PRIMARY KEY, name varchar(255) NOT NULL, slug varchar(255) NOT NULL,
+ resource varchar(255) NOT NULL, system boolean NOT NULL DEFAULT false, status integer, module_id integer,
+ feature_id integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);

@@ -3,8 +3,10 @@ import { createInertiaApp } from "@inertiajs/vue3";
 import Shell from "./Components/Shell.vue";
 import Home from "./Pages/Home.vue";
 import Users from "./Pages/Users.vue";
+import Roles from "./Pages/Roles.vue";
+import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
-const pages: Record<string, any> = { Home, Users };
+const pages: Record<string, any> = { Home, Users, Roles, Permissions };
 createInertiaApp({
     title: (title) => `${title} · WMS`,
     resolve: (name) => {

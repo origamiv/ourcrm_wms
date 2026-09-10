@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 
 final class EntitySyncController extends BaseApiController
 {
-    /** Снимок или дельта зарегистрированной сущности; сейчас доступен тип users для администратора. */
+    /** Снимок или дельта зарегистрированной сущности; доступны users, roles и permissions для администратора. */
     #[Response(200, 'Страница синхронизации', type: 'array{entity_type: string, mode: string, changes: list<array{id: string, version: string, operation: string, data: array<string, mixed>|null}>, cursor: string|null, continuation: string|null}')]
     #[Response(409, 'Формат кэша или поколение журнала изменились: требуется новый снимок.')]
     public function index(Request $request, string $entity_type, SyncEntityRegistry $registry, EntitySyncService $sync): JsonResponse

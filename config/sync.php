@@ -10,5 +10,17 @@ return [
             'authorize' => [App\Services\AccessService::class, 'isAdmin'],
             'fields' => ['id', 'name', 'last_name', 'middle_name', 'nick', 'email', 'phone', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
         ],
+        'roles' => [
+            'entity' => App\Models\Role::class,
+            'table' => 'main.roles',
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'slug', 'description', 'system', 'tags', 'status', 'company_id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
+        'permissions' => [
+            'entity' => App\Models\Permission::class,
+            'table' => 'main.permissions',
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'slug', 'resource', 'system', 'status', 'module_id', 'feature_id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
     ],
 ];

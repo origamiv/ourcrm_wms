@@ -6,7 +6,7 @@
 | --- | --- |
 | `POST /api/auth/token` | Email и пароль → Bearer-токен на 12 часов; без предварительного токена |
 | `POST /api/auth/logout` | Отзыв текущего токена |
-| `GET /api/sync/{entity_type}` | Общая синхронизация; сейчас `users`, параметры `cursor`, `continuation` |
+| `GET /api/sync/{entity_type}` | Общая синхронизация; `users`, `roles`, `permissions`; параметры `cursor`, `continuation` |
 | `GET /api/users` | Начальный снимок или дельта, параметры `cursor`, `continuation` |
 | `GET /api/users/{id}` | Текущая запись своей организации |
 | `POST /api/users` | Создание: `name`, `email`, `password`, `password_confirmation`; необязательно `last_name`, `middle_name`, `nick`, `phone` |
@@ -24,3 +24,5 @@
 Интегрированный frontend использует аналогичные операции `/web/users`, `/web/users/{id}`, `/web/users/{id}/{action}`, `/web/sync/users` с cookie-сессией и CSRF. Это отдельный транспорт общих сервисов, а не вызов публичного API из frontend-контроллера.
 
 Общий контракт добавляет `entity_type` к ответу синхронизации. Старые маршруты пользователей сохраняют прежний ответ. Подключение типов и изоляция курсоров: [SYNC.md](SYNC.md).
+
+[Роли и права доступа](ACCESS_CATALOGS.md) читаются через общие маршруты синхронизации. Создание: `POST /api/roles`, `POST /api/permissions`; обновление: `PUT /api/roles/{id}`, `PUT /api/permissions/{id}`. Поля и ограничения описаны по ссылке.

@@ -126,3 +126,99 @@ test("mobile editor stays inside viewport", async ({ page }) => {
         fullPage: true,
     });
 });
+
+test("administration catalogs support search and cached navigation", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await expect(
+        page.getByRole("heading", { name: "Роли", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Кладовщик", { exact: true })).toBeVisible();
+    await page
+        .getByLabel("Поиск: Роли", { exact: true })
+        .fill("нет_такой_роли");
+    await expect(
+        page.getByText("По выбранным условиям ничего не найдено"),
+    ).toBeVisible();
+    await page.getByLabel("Поиск: Роли", { exact: true }).fill("");
+    await page
+        .getByRole("link", { name: "Права доступа", exact: true })
+        .click();
+    await expect(
+        page.getByText("Просмотр остатков", { exact: true }),
+    ).toBeVisible();
+    await page.screenshot({ path: "/tmp/wms-permissions.png", fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
+    await context.setOffline(true);
+    await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await expect(page.getByText("Кладовщик", { exact: true })).toBeVisible();
+    await page
+        .getByRole("link", { name: "Права доступа", exact: true })
+        .click();
+    await expect(
+        page.getByText("Просмотр остатков", { exact: true }),
+    ).toBeVisible();
+    await context.setOffline(false);
+    const delta = page.waitForRequest((request) =>
+        request.url().includes("/web/sync/roles?cursor="),
+    );
+    await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await delta;
+});
+
+test("creates and edits roles and permissions and updates another tab", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    for (const [title, button, code] of [
+        ["Роли", "Добавить роль", "browser_role"],
+        ["Права доступа", "Добавить право", "browser_permission"],
+    ]) {
+        await page.getByRole("link", { name: title, exact: true }).click();
+        await page.getByRole("button", { name: button, exact: true }).click();
+        await page
+            .getByLabel("Название *", { exact: true })
+            .fill(`Создано ${code}`);
+        await page.getByLabel("Код *", { exact: true }).fill(code);
+        if (title === "Права доступа")
+            await page
+                .getByLabel("Ресурс *", { exact: true })
+                .fill("inventory");
+        await page
+            .getByRole("button", { name: "Создать запись", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        const other = await context.newPage();
+        await other.goto(title === "Роли" ? "/roles" : "/permissions");
+        await expect(
+            other.getByRole("button", { name: `Создано ${code}`, exact: true }),
+        ).toBeVisible();
+        await page
+            .getByLabel("Название *", { exact: true })
+            .fill(`Изменено ${code}`);
+        await page
+            .getByRole("button", { name: "Сохранить изменения", exact: true })
+            .click();
+        await expect(
+            other.getByRole("button", {
+                name: `Изменено ${code}`,
+                exact: true,
+            }),
+        ).toBeVisible();
+        await other.close();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+    }
+});
