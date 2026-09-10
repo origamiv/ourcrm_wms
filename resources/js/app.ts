@@ -1,3 +1,9 @@
+import IntegrationWebhooks from "./Pages/IntegrationWebhooks.vue";
+import IntegrationData from "./Pages/IntegrationData.vue";
+import IntegrationRules from "./Pages/IntegrationRules.vue";
+import IntegrationServices from "./Pages/IntegrationServices.vue";
+import IntegrationHookTypes from "./Pages/IntegrationHookTypes.vue";
+import IntegrationProcessingTypes from "./Pages/IntegrationProcessingTypes.vue";
 import Kizes from "./Pages/Kizes.vue";
 import Marketplaces from "./Pages/Marketplaces.vue";
 import Warehouses from "./Pages/Warehouses.vue";
@@ -29,6 +35,13 @@ import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
 const pages: Record<string, any> = {
     Home,
+    IntegrationWebhooks,
+    IntegrationData,
+    IntegrationRules,
+    IntegrationServices,
+    IntegrationHookTypes,
+    IntegrationProcessingTypes,
+
     Goods,
     GoodTypes,
     KindKiz,

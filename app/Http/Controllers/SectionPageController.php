@@ -13,12 +13,16 @@ final class SectionPageController
     public function __invoke(Request $request, string $left, string $top, ?string $id = null, ?string $action = null): Response
     {
         $pages = [
+            'integration' => ['webhooks' => 'IntegrationWebhooks', 'data' => 'IntegrationData', 'rules' => 'IntegrationRules', 'services' => 'IntegrationServices', 'type_hook' => 'IntegrationHookTypes', 'type_processing' => 'IntegrationProcessingTypes'],
             'fulfillment' => ['warehouses' => 'Warehouses', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses'],
             'goods' => ['goods' => 'Goods', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals'],
         ];
         $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
+        if ($left === 'integration') {
+            $entity = 'integration_'.$top;
+        }
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
         $clientScope = null;

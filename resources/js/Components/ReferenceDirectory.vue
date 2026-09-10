@@ -9,6 +9,7 @@ import DocumentPrintFields from "./DocumentPrintFields.vue";
 import DocumentDownload from "./DocumentDownload.vue";
 import SearchableSelect from "./SearchableSelect.vue";
 import StringListInput from "./StringListInput.vue";
+import IntegrationTabs from "./IntegrationTabs.vue";
 import FulfillmentTabs from "./FulfillmentTabs.vue";
 import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
@@ -28,12 +29,22 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
+const isIntegration = props.entity.startsWith("integration_");
+const detailLoading = ref(false);
+const detailReady = ref(false);
+let detailRequest = 0;
 const isFulfillment = ["warehouses", "type_warehouses", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
-    isKiz ? definition.fields.filter((field) => field.key !== "code") : [],
+    isKiz
+        ? definition.fields.filter((field) => field.key !== "code")
+        : isIntegration
+          ? definition.fields.filter((field) =>
+                ["lookup", "number", "datetime"].includes(field.kind ?? ""),
+            )
+          : [],
 );
 const isGood = props.entity === "goods";
 const isGoodsSection =
@@ -43,8 +54,10 @@ const isIndividual = props.entity === "client_individuals";
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
 const isClientSection = isIndividual || isDocument || isDocType;
-const basePath = isFulfillment
-    ? `/fulfillment/${props.entity}`
+const basePath = isIntegration
+    ? `/integration/${props.entity.replace("integration_", "")}`
+    : isFulfillment
+      ? `/fulfillment/${props.entity}`
     : isGoodsSection
       ? `/goods/${props.entity}`
       : isClientSection
@@ -311,7 +324,48 @@ function displayName(row: ReferenceRow) {
         `Запись №${row.id}`
     );
 }
-function open(row: ReferenceRow | null, readOnly = false) {
+async function open(row: ReferenceRow | null, readOnly = false) {
+    if (saving.value) return;
+    const request = ++detailRequest;
+    fillForm(row, readOnly);
+    detailReady.value = !row;
+    detailLoading.value = false;
+    if (!isIntegration || !row) return;
+    if (!online.value) {
+        notice.value = "Полная карточка доступна при подключении к сети.";
+        return;
+    }
+    detailLoading.value = true;
+    try {
+        const response = await http(`/web${basePath}/${row.id}`);
+        if (
+            request !== detailRequest ||
+            !editing.value ||
+            selected.value?.id !== row.id
+        )
+            return;
+        await store.apply(response.data);
+        if (
+            request !== detailRequest ||
+            !editing.value ||
+            selected.value?.id !== row.id
+        )
+            return;
+        fillForm({ ...response.data, ...response.details }, readOnly);
+        // Параметры остаются только в форме, не в IndexedDB или истории Inertia.
+        selected.value = response.data;
+        detailReady.value = true;
+    } catch (e) {
+        if (request === detailRequest)
+            notice.value =
+                e instanceof Error
+                    ? e.message
+                    : "Не удалось загрузить карточку.";
+    } finally {
+        if (request === detailRequest) detailLoading.value = false;
+    }
+}
+function fillForm(row: ReferenceRow | null, readOnly = false) {
     if (
         saving.value ||
         (clientScope.value &&
@@ -356,6 +410,11 @@ function open(row: ReferenceRow | null, readOnly = false) {
             form.value[field.key] = Array.isArray(row?.[field.key])
                 ? row[field.key].map(String)
                 : [];
+    for (const field of definition.fields)
+        if (field.kind === "lookup_list")
+            form.value[field.key] = Array.isArray(row?.[field.key])
+                ? row[field.key].map(String)
+                : [];
     if (isDocument && !row)
         form.value.src = JSON.stringify(
             { pdf: { number: "", basis: "", items: [], terms: "" } },
@@ -386,7 +445,13 @@ function open(row: ReferenceRow | null, readOnly = false) {
     }
 }
 async function save(remove = false) {
-    if (!online.value || saving.value || (!remove && viewing.value)) return;
+    if (
+        !online.value ||
+        saving.value ||
+        (!remove && viewing.value) ||
+        (isIntegration && !detailReady.value && !remove)
+    )
+        return;
     saving.value = true;
     notice.value = "";
     try {
@@ -457,7 +522,9 @@ async function save(remove = false) {
 }
 async function confirmDelete() {
     if (!deleting.value || !online.value || saving.value) return;
-    open(deleting.value, true);
+    ++detailRequest;
+    detailLoading.value = false;
+    fillForm(deleting.value, true);
     deleting.value = null;
     await save(true);
 }
@@ -469,6 +536,7 @@ onMounted(async () => {
 });
 onUnmounted(() => {
     store.stop();
+    ++detailRequest;
     Object.values(lookupStores).forEach((store) => store.stop());
 });
 
@@ -508,7 +576,9 @@ useCardRoute<ReferenceRow>({
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
-                    isFulfillment
+                    isIntegration
+                        ? "Интеграции"
+                        : isFulfillment
                         ? "Фулфилмент › Справочники"
                         : isGoodsSection
                           ? "Товары"
@@ -518,7 +588,9 @@ useCardRoute<ReferenceRow>({
                 }}
                 › {{ definition.title }}
             </div>
-            <FulfillmentTabs v-if="isFulfillment" /><GoodsTabs
+            <IntegrationTabs v-if="isIntegration" /><FulfillmentTabs
+                v-else-if="isFulfillment"
+            /><GoodsTabs
                 v-else-if="isGoodsSection"
             /><ClientTabs v-else-if="isClientSection" /><AdminTabs v-else />
             <p v-if="clientScope" class="notice">
@@ -844,7 +916,9 @@ useCardRoute<ReferenceRow>({
                                           (row[field.key]
                                               ? "№" + row[field.key]
                                               : "—"))
-                                        : formatDate(row[field.key], true)
+                                        : field.kind === "datetime"
+                                          ? formatDate(row[field.key], true)
+                                          : (row[field.key] ?? "—")
                                 }}
                             </td>
                             <td v-if="isGood">{{ row.code || "—" }}</td>
@@ -945,7 +1019,15 @@ useCardRoute<ReferenceRow>({
                         </tr>
                         <tr v-if="!visible.length">
                             <td
-                                :colspan="isDocument ? 9 : isGood ? 6 : 5"
+                                :colspan="
+                                    isIntegration
+                                        ? 5 + kizColumns.length
+                                        : isDocument
+                                          ? 9
+                                          : isGood
+                                            ? 6
+                                            : 5
+                                "
                                 class="empty-state"
                             >
                                 {{
@@ -1023,13 +1105,22 @@ useCardRoute<ReferenceRow>({
             </header>
             <div class="editor-content">
                 <p v-if="notice" class="notice" role="status">{{ notice }}</p>
+                <p v-if="detailLoading" class="notice" role="status">
+                    Загружаем карточку…
+                </p>
                 <button v-if="conflict" @click="open(conflict, viewing)">
                     Загрузить актуальные данные
                 </button>
                 <form @submit.prevent="save()">
                     <fieldset
                         class="client-form"
-                        :disabled="viewing || saving || !online || !!conflict"
+                        :disabled="
+                            viewing ||
+                            saving ||
+                            !online ||
+                            !!conflict ||
+                            (isIntegration && !detailReady)
+                        "
                     >
                         <label v-if="!isKiz"
                             >{{ isIndividual ? "ФИО *" : "Название *"
@@ -1096,6 +1187,37 @@ useCardRoute<ReferenceRow>({
                                     maxlength="10000"
                                     rows="4"
                                 />
+                                <select
+                                    v-else-if="field.kind === 'lookup_list'"
+                                    v-model="form[field.key]"
+                                    multiple
+                                >
+                                    <option
+                                        v-for="id in form[field.key].filter(
+                                            (id: string) =>
+                                                !choices(field.lookup!).some(
+                                                    (row) =>
+                                                        String(row.id) ===
+                                                        String(id),
+                                                ),
+                                        )"
+                                        :key="id"
+                                        :value="id"
+                                    >
+                                        №{{ id }} · недоступно
+                                    </option>
+                                    <option
+                                        v-for="row in choices(field.lookup!)"
+                                        :key="row.id"
+                                        :value="String(row.id)"
+                                    >
+                                        {{
+                                            row.name ||
+                                            row.shortname ||
+                                            `№${row.id}`
+                                        }}
+                                    </option>
+                                </select>
                                 <select
                                     v-else-if="field.kind === 'lookup'"
                                     :required="field.required"

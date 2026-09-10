@@ -11,6 +11,10 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
     Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::post('/auth/logout', [WmsAuthController::class, 'revoke']);
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::get('/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'show'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
+        Route::post('/integration/{integration_catalog}', [App\Http\Controllers\IntegrationController::class, 'store'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing']);
+        Route::put('/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'update'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
+        Route::delete('/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'destroy'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::post('/fulfillment/{catalog}', [App\Http\Controllers\FulfillmentCatalogController::class, 'store'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses']);
         Route::put('/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'update'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses'])->whereNumber('id');
         Route::delete('/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'destroy'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses'])->whereNumber('id');
