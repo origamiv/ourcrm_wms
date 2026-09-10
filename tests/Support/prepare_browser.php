@@ -102,4 +102,5 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000022_create_kizes.php'))->up();
     (require database_path('migrations/2026_09_10_000023_create_fulfillment_catalogs.php'))->up();
     (require database_path('migrations/2026_09_10_000024_seed_delivery_services.php'))->up();
+    (require database_path('migrations/2026_09_10_000025_seed_marketplaces_and_delivery_links.php'))->up();
 });
