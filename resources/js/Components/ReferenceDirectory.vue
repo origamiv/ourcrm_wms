@@ -170,6 +170,41 @@ watch(
         currentPage.value = 1;
     },
 );
+const pendingDocumentDefaults = new Set<string>();
+function applyDocumentDefaults() {
+    if (!isDocument || !editing.value || viewing.value) return;
+    for (const [field, entity] of [
+        ["client_id", "clients"],
+        ["executor_id", "companies"],
+    ]) {
+        if (!pendingDocumentDefaults.has(field)) continue;
+        if (form.value[field] != null && form.value[field] !== "") {
+            pendingDocumentDefaults.delete(field);
+            continue;
+        }
+        if (!lookupStores[entity]?.ready.value) continue;
+        const first = choices(entity)[0];
+        if (first) {
+            form.value[field] = first.id;
+            pendingDocumentDefaults.delete(field);
+        }
+    }
+}
+watch(
+    () => [
+        editing.value,
+        viewing.value,
+        lookupStores.clients?.ready.value,
+        lookupStores.clients?.rows.value,
+        lookupStores.companies?.ready.value,
+        lookupStores.companies?.rows.value,
+    ],
+    applyDocumentDefaults,
+);
+function changeLookup(field: string) {
+    pendingDocumentDefaults.delete(field);
+    if (isDocument && field === "client_id") form.value.customer_id = null;
+}
 function displayName(row: ReferenceRow) {
     return row.name || row.shortname || `Запись №${row.id}`;
 }
@@ -216,6 +251,14 @@ function open(row: ReferenceRow | null, readOnly = false) {
     notice.value = "";
     conflict.value = null;
     editing.value = true;
+    pendingDocumentDefaults.clear();
+    if (isDocument) {
+        for (const field of ["client_id", "executor_id"]) {
+            if (form.value[field] == null || form.value[field] === "")
+                pendingDocumentDefaults.add(field);
+        }
+        applyDocumentDefaults();
+    }
 }
 async function save(remove = false) {
     if (!online.value || saving.value || (!remove && viewing.value)) return;
@@ -704,10 +747,7 @@ useCardRoute<ReferenceRow>({
                             <select
                                 v-else-if="field.kind === 'lookup'"
                                 :required="field.required"
-                                @change="
-                                    if (isDocument && field.key === 'client_id')
-                                        form.customer_id = null;
-                                "
+                                @change="changeLookup(field.key)"
                                 :disabled="
                                     field.key === 'client_id' && !!clientScope
                                 "
