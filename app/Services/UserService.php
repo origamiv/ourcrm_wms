@@ -38,8 +38,10 @@ final class UserService
                 abort_if($user->trashed() && $action !== 'restore', 422, 'Сначала восстановите пользователя.');
                 abort_if(! $user->trashed() && $action === 'restore', 422, 'Пользователь не удалён.');
             }
-            if (in_array($action, ['delete', 'block'], true)) {
-                abort_if($user->id === $actor->id, 422, 'Нельзя блокировать или удалять себя.');
+            $statusChanged = $id && $action === 'update' && array_key_exists('status', $data) && (int) $data['status'] !== $user->status;
+            $disabling = $statusChanged && (int) $data['status'] !== 1;
+            if (in_array($action, ['delete', 'block'], true) || $disabling) {
+                abort_if($user->id === $actor->id, 422, 'Нельзя отключить, перевести в новые или удалить себя.');
                 if ($this->access->isAdmin($user)) {
                     $others = $this->access->adminAssignments($actor->tenant_id)->join('public.users as u', 'u.id', '=', 'ru.user_id')
                         ->where('u.tenant_id', $actor->tenant_id)->where('u.status', 1)->whereNull('u.deleted_at')->where('u.id', '<>', $user->id)->exists();
@@ -57,8 +59,11 @@ final class UserService
             }
             if (! $id) {
                 $user->tenant_id = $actor->tenant_id;
-                $user->status = 0;
+                $user->status = (int) ($data['status'] ?? 0);
                 $user->password = $data['password'];
+            }
+            if ($statusChanged) {
+                $user->status = (int) $data['status'];
             }
             if ($action === 'password') {
                 $user->password = $data['password'];
@@ -77,7 +82,7 @@ final class UserService
                 $user->deleted_at = now();
             }
             $user->save();
-            if (in_array($action, ['password', 'block', 'delete'], true)) {
+            if (in_array($action, ['password', 'block', 'delete'], true) || $disabling) {
                 $user->tokens()->where('name', 'like', 'wms:%')->delete();
             }
 

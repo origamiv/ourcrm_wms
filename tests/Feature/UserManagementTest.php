@@ -117,3 +117,22 @@ it('removes only the empty legacy token table and preserves shared tokens on rol
     expect(DB::table('public.personal_access_tokens')->where('id', $token->id)->exists())->toBeTrue();
     $migration->up();
 });
+
+it('saves user status from the profile and revokes access when disabled or new', function () {
+    $admin = $this->makeUser([], true);
+    $user = $this->makeUser();
+    $this->loginUser($admin);
+    foreach ([2, 0, 1] as $status) {
+        $token = $user->createToken('wms:'.$user->credentialFingerprint());
+        $version = app(UserSyncService::class)->current($user->id)['version'];
+        $this->putJson('/web/users/'.$user->id, ['name' => $user->name, 'email' => $user->email, 'status' => $status, 'version' => $version])->assertOk()->assertJsonPath('data.status', $status);
+        if ($status !== 1) {
+            expect(DB::table('public.personal_access_tokens')->where('id', $token->accessToken->id)->exists())->toBeFalse();
+        }
+    }
+    $version = app(UserSyncService::class)->current($admin->id)['version'];
+    foreach ([0, 2] as $status) {
+        $this->putJson('/web/users/'.$admin->id, ['name' => $admin->name, 'email' => $admin->email, 'status' => $status, 'version' => $version])->assertUnprocessable();
+    }
+    $this->putJson('/web/users/'.$admin->id, ['name' => $admin->name, 'email' => $admin->email, 'status' => 3, 'version' => $version])->assertUnprocessable();
+});

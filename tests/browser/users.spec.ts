@@ -266,3 +266,100 @@ test("role rights matrix saves assignments and synchronizes tabs and offline vie
     ).toBe(true);
     await other.close();
 });
+
+test("user and role status dropdowns persist selected values", async ({
+    page,
+}) => {
+    await login(page);
+    await page.getByRole("button", { name: /Иванов Михаил/ }).click();
+    await page
+        .getByLabel("Статус пользователя", { exact: true })
+        .selectOption("2");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(page.locator(".profile-summary .badge")).toHaveText(
+        "Отключен",
+    );
+    await page
+        .getByLabel("Статус пользователя", { exact: true })
+        .selectOption("0");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(page.locator(".profile-summary .badge")).toHaveText("Новый");
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Редактировать: Кладовщик", exact: true })
+        .click();
+    await page.getByLabel("Статус", { exact: true }).selectOption("2");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page
+            .getByRole("row")
+            .filter({ hasText: "warehouse_operator" })
+            .getByText("Отключен", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await page
+        .getByRole("button", { name: "Редактировать: Кладовщик", exact: true })
+        .click();
+    await expect(page.getByLabel("Статус", { exact: true })).toHaveValue("2");
+});
+
+test("password action opens a separate panel and saves the new password", async ({
+    page,
+}) => {
+    await login(page);
+    const row = page.getByRole("row").filter({ hasText: "Иванов Михаил" });
+    await row
+        .getByRole("button", {
+            name: "Редактировать пользователя",
+            exact: true,
+        })
+        .click();
+    await expect(
+        page
+            .getByRole("complementary", {
+                name: "Карточка пользователя",
+                exact: true,
+            })
+            .getByRole("button", { name: "Установить пароль", exact: true }),
+    ).toHaveCount(0);
+    await row
+        .getByRole("button", { name: "Установить пароль", exact: true })
+        .click();
+    const panel = page.getByRole("complementary", {
+        name: "Установка пароля",
+        exact: true,
+    });
+    await expect(panel).toBeVisible();
+    await expect(
+        panel.getByLabel("Статус пользователя", { exact: true }),
+    ).toHaveCount(0);
+    await panel
+        .getByLabel("Пароль", { exact: true })
+        .fill("Changed_password_456");
+    await panel
+        .getByLabel("Подтверждение пароля", { exact: true })
+        .fill("Changed_password_456");
+    const saved = page.waitForResponse(
+        (response) =>
+            response.url().endsWith("/password") &&
+            response.request().method() === "POST",
+    );
+    await panel
+        .getByRole("button", { name: "Установить пароль", exact: true })
+        .click();
+    expect((await saved).status()).toBe(200);
+    await expect(panel.getByRole("status")).toHaveText("Изменения сохранены");
+    await expect(panel.getByLabel("Пароль", { exact: true })).toHaveValue("");
+    await expect(
+        panel.getByLabel("Подтверждение пароля", { exact: true }),
+    ).toHaveValue("");
+});

@@ -13,6 +13,6 @@ abstract class UserProfileRequest extends BaseRequest
         return ['name' => ['required', 'string', 'max:255'], 'last_name' => ['nullable', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'], 'nick' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'], 'phone' => ['nullable', 'string', 'max:255'],
-            'tenant_id' => ['prohibited'], 'status' => ['prohibited']];
+            'tenant_id' => ['prohibited'], 'status' => ['sometimes', 'integer', 'in:0,1,2']];
     }
 }

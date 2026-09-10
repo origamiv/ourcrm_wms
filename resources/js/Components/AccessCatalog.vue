@@ -140,6 +140,8 @@ const statusOptions = computed(() =>
     ].sort((a, b) => a! - b!),
 );
 function statusLabel(value: number | null) {
+    if (props.entity === "roles")
+        return value === 1 ? "Активен" : value === 2 ? "Отключен" : "Не указан";
     return value === 1
         ? "Активен"
         : value === 0
@@ -365,8 +367,8 @@ onUnmounted(() => store.stop());
                     Загрузить актуальные данные
                 </button>
                 <p v-if="protectedRecord" class="notice">
-                    Код, ресурс и статус системной записи или роли admin
-                    защищены от изменения.
+                    Код системной записи и роли admin защищён. У системного
+                    права также защищены ресурс и статус.
                 </p>
                 <form class="catalog-form" @submit.prevent="save">
                     <label
@@ -399,14 +401,32 @@ onUnmounted(() => store.stop());
                     /></label>
                     <label
                         >Статус<select
+                            aria-label="Статус"
                             v-model="form.status"
-                            :disabled="saving || !online || protectedRecord"
+                            :disabled="
+                                saving ||
+                                !online ||
+                                (entity === 'permissions' && protectedRecord)
+                            "
                         >
-                            <option :value="null">Не указан</option>
-                            <option :value="0">Неактивен</option>
-                            <option :value="1">Активен</option>
-                            <option :value="2">2</option>
-                            <option :value="3">3</option>
+                            <template v-if="entity === 'roles'">
+                                <option
+                                    v-if="![1, 2].includes(form.status ?? -1)"
+                                    :value="form.status"
+                                    disabled
+                                >
+                                    Выберите статус
+                                </option>
+                                <option :value="1">Активен</option>
+                                <option :value="2">Отключен</option>
+                            </template>
+                            <template v-else>
+                                <option :value="null">Не указан</option>
+                                <option :value="0">Неактивен</option>
+                                <option :value="1">Активен</option>
+                                <option :value="2">2</option>
+                                <option :value="3">3</option>
+                            </template>
                         </select></label
                     >
                     <button

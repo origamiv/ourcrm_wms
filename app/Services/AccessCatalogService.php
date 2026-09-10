@@ -32,10 +32,16 @@ final class AccessCatalogService
                 }
                 abort_if($record->trashed(), 422, 'Удалённую запись нельзя редактировать.');
                 if ($record->system || ($catalog === 'roles' && $record->slug === 'admin')) {
-                    if ($data['slug'] !== $record->slug || ($data['status'] === null ? null : (int) $data['status']) !== $record->status || ($catalog === 'permissions' && $data['resource'] !== $record->resource)) {
-                        throw ValidationException::withMessages(['slug' => 'Код, ресурс и статус системной записи или роли admin изменять нельзя.']);
+                    if ($data['slug'] !== $record->slug || ($catalog === 'permissions' && ($data['status'] === null ? null : (int) $data['status']) !== $record->status) || ($catalog === 'permissions' && $data['resource'] !== $record->resource)) {
+                        throw ValidationException::withMessages(['slug' => 'Код системной записи или роли admin, а также ресурс и статус системного права изменять нельзя.']);
                     }
                 }
+            }
+            if ($id && $catalog === 'roles' && $record->slug === 'admin' && (int) $data['status'] === 2) {
+                $otherRole = app(AccessService::class)->adminAssignments($tenant)->where('ru.user_id', $actor->id)->where('ru.role_id', '<>', $record->id)->exists();
+                abort_unless($otherRole, 422, 'Нельзя отключить роль, обеспечивающую ваш административный доступ.');
+                $foreignAssignments = DB::table('main.role_user')->where('role_id', $record->id)->where('status', 1)->whereNull('deleted_at')->where('tenant_id', '<>', $tenant)->exists();
+                abort_if($foreignAssignments, 422, 'Роль используется администраторами другой организации.');
             }
             if ($catalog === 'roles' && $data['slug'] === 'admin' && (! $id || $record->slug !== 'admin')) {
                 throw ValidationException::withMessages(['slug' => 'Код admin зарезервирован.']);

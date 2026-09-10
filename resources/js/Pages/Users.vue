@@ -24,6 +24,7 @@ const selected = ref<UserRow | null>(null),
     conflict = ref<UserRow | null>(null),
     passwordMode = ref(false);
 const fields = {
+    status: 0,
     name: "",
     last_name: "",
     middle_name: "",
@@ -45,7 +46,7 @@ const labels: Record<string, string> = {
 const statuses: Record<number, string> = {
     0: "Новый",
     1: "Активен",
-    2: "Блокирован",
+    2: "Отключен",
     3: "Выполняется действие",
 };
 const filtered = computed(() => {
@@ -102,15 +103,16 @@ watch([query, emailQuery, phoneQuery, filter], () => {
 watch(pages, (n) => {
     currentPage.value = Math.min(currentPage.value, n);
 });
-function open(row: UserRow | null) {
+function open(row: UserRow | null, forPassword = false) {
     selected.value = row;
     creating.value = !row;
     editing.value = true;
     conflict.value = null;
     notice.value = "";
-    passwordMode.value = false;
+    passwordMode.value = forPassword;
     form.value = {
         ...fields,
+        status: row?.status ?? 0,
         ...Object.fromEntries(
             Object.keys(labels).map((k) => [
                 k,
@@ -152,6 +154,7 @@ async function save(action = "update") {
                     ]),
                 ),
                 version: selected.value!.version,
+                status: form.value.status,
             };
         else
             body = {
@@ -176,12 +179,12 @@ async function save(action = "update") {
         selected.value = result.data;
         form.value = {
             ...fields,
+            status: result.data.status,
             ...Object.fromEntries(
                 Object.keys(labels).map((key) => [key, result.data[key] ?? ""]),
             ),
         };
         creating.value = false;
-        passwordMode.value = false;
         form.value.password = "";
         form.value.password_confirmation = "";
         notice.value = "Изменения сохранены";
@@ -293,7 +296,7 @@ onUnmounted(store.stop);
                                     <option value="all">Все</option>
                                     <option value="0">Новые</option>
                                     <option value="1">Активные</option>
-                                    <option value="2">Блокированные</option>
+                                    <option value="2">Отключенные</option>
                                     <option value="3">Действие</option>
                                     <option value="deleted">Удалённые</option>
                                 </select>
@@ -368,6 +371,18 @@ onUnmounted(store.stop);
                                             alt=""
                                         />
                                     </button>
+                                    <button
+                                        @click.stop="open(row, true)"
+                                        aria-label="Установить пароль"
+                                        title="Установить пароль"
+                                        :disabled="
+                                            !online ||
+                                            saving ||
+                                            !!row.deleted_at
+                                        "
+                                    >
+                                        <img src="/design/crm/key.svg" alt="" />
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -410,7 +425,13 @@ onUnmounted(store.stop);
                 </div>
             </footer>
         </section>
-        <aside v-if="editing" class="editor" aria-label="Карточка пользователя">
+        <aside
+            v-if="editing"
+            class="editor"
+            :aria-label="
+                passwordMode ? 'Установка пароля' : 'Карточка пользователя'
+            "
+        >
             <header>
                 <div>
                     <small>{{
@@ -422,7 +443,9 @@ onUnmounted(store.stop);
                         {{
                             creating
                                 ? "Добавить пользователя"
-                                : "Карточка пользователя"
+                                : passwordMode
+                                  ? "Установить пароль"
+                                  : "Карточка пользователя"
                         }}
                     </h2>
                 </div>
@@ -464,7 +487,7 @@ onUnmounted(store.stop);
                     </p>
                     <button @click="reviewConflict">
                         Использовать актуальную версию</button
-                    ><button @click="open(conflict)">
+                    ><button @click="open(conflict, passwordMode)">
                         Загрузить поля с сервера
                     </button>
                 </div>
@@ -493,6 +516,24 @@ onUnmounted(store.stop);
                                     :required="['name', 'email'].includes(key)"
                                     maxlength="255"
                             /></label>
+                            <label
+                                >Статус<select
+                                    v-model="form.status"
+                                    aria-label="Статус пользователя"
+                                    required
+                                >
+                                    <option
+                                        v-if="![0, 1, 2].includes(form.status)"
+                                        :value="form.status"
+                                        disabled
+                                    >
+                                        Выберите статус
+                                    </option>
+                                    <option :value="0">Новый</option>
+                                    <option :value="1">Активен</option>
+                                    <option :value="2">Отключен</option>
+                                </select></label
+                            >
                         </div>
                         <template v-if="creating || passwordMode"
                             ><label
@@ -511,9 +552,8 @@ onUnmounted(store.stop);
                                     autocomplete="new-password" /></label
                             ><small>Не менее 12 символов</small></template
                         >
-                        <p v-if="creating" class="muted">
-                            Пользователь будет создан в статусе «Новый». Для
-                            входа потребуется активация.
+                        <p v-if="creating && form.status !== 1" class="muted">
+                            Для входа пользователю потребуется статус «Активен».
                         </p>
                         <button type="submit" class="primary save-button">
                             {{
@@ -528,18 +568,12 @@ onUnmounted(store.stop);
                         </button>
                     </fieldset>
                 </form>
-                <div v-if="selected && !creating" class="user-actions">
+                <div
+                    v-if="selected && !creating && !passwordMode"
+                    class="user-actions"
+                >
                     <h3>Действия</h3>
                     <template v-if="!selected.deleted_at"
-                        ><button
-                            @click="passwordMode = !passwordMode"
-                            :disabled="!online || saving"
-                        >
-                            {{
-                                passwordMode
-                                    ? "Вернуться к профилю"
-                                    : "Установить пароль"
-                            }}</button
                         ><button
                             v-if="selected.status !== 1"
                             @click="save('activate')"
@@ -556,7 +590,7 @@ onUnmounted(store.stop);
                                 !!conflict
                             "
                         >
-                            Блокировать</button
+                            Отключить</button
                         ><button
                             class="danger"
                             @click="save('delete')"

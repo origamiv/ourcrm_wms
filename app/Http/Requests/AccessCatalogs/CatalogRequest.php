@@ -13,7 +13,7 @@ abstract class CatalogRequest extends BaseRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255'],
-            'status' => ['present', 'nullable', 'integer', 'in:0,1,2,3'],
+            'status' => $this->route('catalog') === 'roles' ? ['required', 'integer', 'in:1,2'] : ['present', 'nullable', 'integer', 'in:0,1,2,3'],
             'description' => $this->route('catalog') === 'roles' ? ['nullable', 'string', 'max:10000'] : ['prohibited'],
             'resource' => $this->route('catalog') === 'permissions' ? ['required', 'string', 'max:255'] : ['prohibited'],
             'tenant_id' => ['prohibited'], 'system' => ['prohibited'], 'deleted_at' => ['prohibited'],

@@ -72,3 +72,19 @@ it('protects admin and system identifiers and exposes writes through Bearer API'
     $this->putJson('/api/permissions/'.$permission, ['name' => 'Системное', 'slug' => 'system_view', 'resource' => 'changed', 'status' => 1, 'version' => $version])->assertUnprocessable();
     $this->postJson('/api/permissions', ['name' => 'Новое', 'slug' => 'new_api', 'resource' => 'inventory', 'status' => 1])->assertCreated();
 });
+
+it('edits system role status using active and disabled values without locking out the actor', function () {
+    $admin = $this->makeUser([], true);
+    $ownRole = DB::table('main.role_user')->where('user_id', $admin->id)->value('role_id');
+    DB::table('main.roles')->where('id', $ownRole)->update(['tenant_id' => 'tenant_a', 'name' => 'Администратор']);
+    $role = DB::table('main.roles')->insertGetId(['name' => 'Системная роль', 'slug' => 'operator', 'status' => 1, 'system' => true, 'tenant_id' => 'tenant_a']);
+    (require database_path('migrations/2026_09_10_000005_sync_access_catalogs.php'))->up();
+    $this->loginUser($admin);
+    foreach ([2, 1] as $status) {
+        $version = app(App\Services\EntitySyncService::class)->current(App\Models\Role::class, 'tenant_a', $role)['version'];
+        $this->putJson('/web/roles/'.$role, ['name' => 'Системная роль', 'slug' => 'operator', 'status' => $status, 'version' => $version])->assertOk()->assertJsonPath('data.status', $status);
+    }
+    $version = app(App\Services\EntitySyncService::class)->current(App\Models\Role::class, 'tenant_a', $ownRole)['version'];
+    $this->putJson('/web/roles/'.$ownRole, ['name' => 'Администратор', 'slug' => 'admin', 'status' => 2, 'version' => $version])->assertUnprocessable();
+    $this->postJson('/web/roles', ['name' => 'Неверный статус', 'slug' => 'invalid', 'status' => 0])->assertUnprocessable();
+});
