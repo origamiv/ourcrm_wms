@@ -79,7 +79,7 @@ function receiveFile(event: Event) {
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
                 <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)"><img class="format-icon" :src="formatIconPath(format)" alt="" />{{ format }}</button>
-                <button type="button" @click="chooseImport('Буфер обмена'); closeMenu($event)"><img class="format-icon" src="/design/formats/clipboard.svg" alt="" />Буфер обмена</button>
+                <button type="button" @click="chooseImport('Буфер обмена'); closeMenu($event)"><img class="format-icon" src="/design/formats/clipboard.png" alt="" />Буфер обмена</button>
             </div>
         </details>
         <input ref="fileInput" class="data-transfer-file" type="file" accept=".xls,.xlsx,.csv,.txt,.pdf,.jpg,.jpeg,.png" @change="receiveFile" />
