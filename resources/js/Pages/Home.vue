@@ -3,6 +3,13 @@ import { Head, usePage, router } from "@inertiajs/vue3";
 const page = usePage<any>();
 const tiles = [
     {
+        title: "Пользователи",
+        description: "Учётные записи и доступ в систему",
+        url: "/main/users",
+        component: "Users",
+        icon: "/design/crm/contacts.svg",
+    },
+    {
         title: "Клиенты",
         description: "Клиенты и организации",
         url: "/clients/clients",
