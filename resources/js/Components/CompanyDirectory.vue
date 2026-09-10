@@ -421,7 +421,7 @@ useCardRoute<DirectoryRow>({
                 </p>
             </div>
             <div class="table-scroll">
-                <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
+                <div v-if="columnSettingsOpen" class="column-settings-panel" :class="{ 'column-settings-panel--compact': columnFields.length <= 6 }" role="dialog" aria-label="Настройка колонок">
                     <div class="column-settings-title">
                         <span>Показывать колонки</span>
                         <button type="button" class="column-settings-close" @click.stop="columnSettingsOpen = false">×</button>
@@ -894,6 +894,10 @@ useCardRoute<DirectoryRow>({
     justify-content: space-between;
     font-size: 12px;
     font-weight: 700;
+}
+.column-settings-panel--compact {
+    grid-template-columns: 1fr;
+    width: 260px;
 }
 .column-settings-close,
 .column-settings-button {
