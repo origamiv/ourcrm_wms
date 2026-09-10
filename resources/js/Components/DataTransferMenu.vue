@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { http } from "../lib/http";
 
 const props = withDefaults(defineProps<{
     rows?: any[];
@@ -14,19 +15,28 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const pendingFormat = ref("");
 const exportFormats = ["XLS", "CSV", "TXT", "PDF"];
 const importFormats = ["XLS", "CSV", "TXT", "PDF", "JPG", "PNG"];
-function exportData(format: string) {
+async function exportData(format: string) {
     emit("export", format);
     const columns = props.columns.length
         ? props.columns
         : Object.keys(props.rows[0] ?? {}).map((key) => ({ key, label: key }));
+    const rowValue = (row: any, key: string) =>
+        key === "__id" ? row.id : key === "__name" ? (row.name ?? row.shortname) : key === "__actions" ? "" : row[key];
     if (format === "PDF") {
-        const table = `<table><thead><tr>${columns.map((column) => `<th>${column.label}</th>`).join("")}</tr></thead><tbody>${props.rows.map((row) => `<tr>${columns.map((column) => `<td>${String(row[column.key] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-        const printWindow = window.open("", "_blank");
-        if (printWindow) { printWindow.document.write(`<html><body>${table}</body></html>`); printWindow.document.close(); printWindow.print(); }
+        const blob = await http("/web/export/pdf", "POST", {
+            title: props.filename,
+            columns,
+            rows: props.rows.map((row) => Object.fromEntries(columns.map((column) => [column.key, rowValue(row, column.key)]))),
+        }, "blob");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${props.filename}.pdf`;
+        link.click();
+        URL.revokeObjectURL(link.href);
         return;
     }
     const separator = format === "CSV" ? ";" : "\t";
-    const content = [columns.map((column) => column.label), ...props.rows.map((row) => columns.map((column) => String(row[column.key] ?? "")))].map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(separator)).join("\n");
+    const content = [columns.map((column) => column.label), ...props.rows.map((row) => columns.map((column) => String(rowValue(row, column.key) ?? "")))].map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(separator)).join("\n");
     const blob = new Blob([content], { type: format === "CSV" ? "text/csv;charset=utf-8" : "application/vnd.ms-excel;charset=utf-8" });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${props.filename}.${format === "TXT" ? "txt" : format === "XLS" ? "xls" : "csv"}`; link.click(); URL.revokeObjectURL(link.href);
 }
