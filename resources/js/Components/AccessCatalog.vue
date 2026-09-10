@@ -211,6 +211,7 @@ onUnmounted(() => store.stop());
                             </th>
                             <th>Системная запись</th>
                             <th>Статус</th>
+                            <th>Действия</th>
                         </tr>
                         <tr class="column-filters">
                             <th colspan="3">
@@ -246,6 +247,7 @@ onUnmounted(() => store.stop());
                                     <option value="deleted">Удалённые</option>
                                 </select>
                             </th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -275,9 +277,25 @@ onUnmounted(() => store.stop());
                                         : statusLabel(row.status)
                                 }}</span>
                             </td>
+                            <td>
+                                <button
+                                    class="catalog-edit"
+                                    :disabled="saving || !!row.deleted_at"
+                                    :aria-label="`Редактировать: ${row.name}`"
+                                    @click="open(row)"
+                                >
+                                    <img
+                                        src="/design/crm/edit.svg"
+                                        alt=""
+                                        width="16"
+                                        height="16"
+                                    />
+                                    Редактировать
+                                </button>
+                            </td>
                         </tr>
                         <tr v-if="!visible.length">
-                            <td colspan="5" class="empty-state">
+                            <td colspan="6" class="empty-state">
                                 {{
                                     !ready
                                         ? "Загрузка записей…"
@@ -410,6 +428,23 @@ onUnmounted(() => store.stop());
     </div>
 </template>
 <style scoped>
+.catalog-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #1e892f;
+    white-space: nowrap;
+    padding: 6px 0;
+}
+.catalog-edit img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+.catalog-edit:hover:not(:disabled) {
+    text-decoration: underline;
+}
+
 .catalog-form {
     display: grid;
     gap: 18px;
