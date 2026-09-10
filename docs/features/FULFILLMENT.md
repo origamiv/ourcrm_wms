@@ -4,6 +4,8 @@
 
 Первым пунктом верхнего меню размещены «Склады» (`/fulfillment/warehouses`). В выпадающие «Справочники» добавлены «Типы складов» (`/fulfillment/type_warehouses`). Склад содержит обязательные name/status, необязательные уникальные shortname и type_warehouse_id; тип склада содержит стандартные поля справочника.
 
+Миграция 000029 заполняет общие активные типы складов: первой записью является «Универсальный» (`universal`), далее добавлены фулфилмент-центр, распределительный центр, транзитный склад, склад возвратов, кросс-докинг, даркстор, склад магазина, пункт выдачи заказов и склад временного хранения. Все записи имеют `tenant_id = NULL` и доступны организациям по общему правилу видимости.
+
 - `wms.marketplaces`, модель `App\Models\Marketplace`: id, name, shortname, status, icon.
 - `wms.delivery_services`, модель `App\Models\DeliveryService`: те же поля, color, is_order_edit, prefix, folder и nullable marketplace_id → wms.marketplaces.
 
