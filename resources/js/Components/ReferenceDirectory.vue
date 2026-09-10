@@ -782,7 +782,18 @@ useCardRoute<ReferenceRow>({
             </div>
             <div class="table-scroll">
                 <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
-                    <div class="column-settings-title">Показывать колонки</div>
+                    <div class="column-settings-title">
+                        <span>Показывать колонки</span>
+                        <button
+                            type="button"
+                            class="column-settings-close"
+                            aria-label="Закрыть настройки колонок"
+                            title="Закрыть"
+                            @click.stop="columnSettingsOpen = false"
+                        >
+                            ×
+                        </button>
+                    </div>
                     <div
                         v-for="field in allColumns.filter((item) => !fixedColumnKeys.has(item.key))"
                         :key="field.key"
@@ -1748,8 +1759,29 @@ useCardRoute<ReferenceRow>({
 }
 .column-settings-title {
     grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 12px;
     font-weight: 700;
+}
+.column-settings-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #667085;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+.column-settings-close:hover {
+    background: #f2f4f7;
+    color: #344054;
 }
 .column-settings-item {
     min-width: 0;
