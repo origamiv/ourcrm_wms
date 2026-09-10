@@ -145,6 +145,9 @@ test("administration catalogs support search and cached navigation", async ({
     ).toBeVisible();
     await page.getByLabel("Поиск: Роли", { exact: true }).fill("");
     await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    await page
         .getByRole("link", { name: "Права доступа", exact: true })
         .click();
     await expect(
@@ -160,6 +163,9 @@ test("administration catalogs support search and cached navigation", async ({
     await context.setOffline(true);
     await page.getByRole("link", { name: "Роли", exact: true }).click();
     await expect(page.getByText("Кладовщик", { exact: true })).toBeVisible();
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
     await page
         .getByRole("link", { name: "Права доступа", exact: true })
         .click();
@@ -183,6 +189,10 @@ test("creates and edits roles and permissions and updates another tab", async ({
         ["Роли", "Добавить роль", "browser_role"],
         ["Права доступа", "Добавить право", "browser_permission"],
     ]) {
+        if (title === "Права доступа")
+            await page
+                .getByRole("button", { name: "Справочники", exact: false })
+                .click();
         await page.getByRole("link", { name: title, exact: true }).click();
         await page.getByRole("button", { name: button, exact: true }).click();
         await page
@@ -230,6 +240,9 @@ test("role rights matrix saves assignments and synchronizes tabs and offline vie
     context,
 }) => {
     await login(page);
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
     await page.getByRole("link", { name: "Роли и права", exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "Роли и права", exact: true }),
@@ -256,6 +269,9 @@ test("role rights matrix saves assignments and synchronizes tabs and offline vie
     await context.setOffline(true);
     await expect(checkbox).toBeDisabled();
     await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
     await page.getByRole("link", { name: "Роли и права", exact: true }).click();
     await expect(
         page.getByRole("checkbox", { name, exact: true }),
@@ -1073,7 +1089,7 @@ test("reference submenu supports all four directories and cached navigation", as
         .getByRole("button", { name: "Справочники", exact: false })
         .press("ArrowDown");
     await expect(
-        submenu.getByRole("link", { name: "Модули", exact: true }),
+        submenu.getByRole("link", { name: "Права доступа", exact: true }),
     ).toBeFocused();
 
     for (const [title, entity] of [
