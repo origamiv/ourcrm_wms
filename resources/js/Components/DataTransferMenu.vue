@@ -31,14 +31,16 @@ async function exportData(format: string) {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = `${props.filename}.pdf`;
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(link.href);
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         return;
     }
     const separator = format === "CSV" ? ";" : "\t";
     const content = [columns.map((column) => column.label), ...props.rows.map((row) => columns.map((column) => String(rowValue(row, column.key) ?? "")))].map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(separator)).join("\n");
     const blob = new Blob([content], { type: format === "CSV" ? "text/csv;charset=utf-8" : "application/vnd.ms-excel;charset=utf-8" });
-    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${props.filename}.${format === "TXT" ? "txt" : format === "XLS" ? "xls" : "csv"}`; link.click(); URL.revokeObjectURL(link.href);
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${props.filename}.${format === "TXT" ? "txt" : format === "XLS" ? "xls" : "csv"}`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 function chooseImport(format: string) {
     if (format === "Буфер обмена") {
