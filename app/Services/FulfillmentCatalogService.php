@@ -7,6 +7,9 @@ namespace App\Services;
 use App\Models\DeliveryService;
 use App\Models\Marketplace;
 use App\Models\TypeWarehouse;
+use App\Models\TypeStorage;
+use App\Models\Zone;
+use App\Models\Cell;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -16,7 +19,7 @@ final class FulfillmentCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses'], true), 404);
+        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
@@ -25,6 +28,9 @@ final class FulfillmentCatalogService
                 'delivery_services' => DeliveryService::class,
                 'warehouses' => Warehouse::class,
                 'type_warehouses' => TypeWarehouse::class,
+                'type_storage' => TypeStorage::class,
+                'zones' => Zone::class,
+                'cells' => Cell::class,
             };
             $sync = app(EntitySyncService::class);
             $sync->prepareWrite($tenant, $model, $id);
@@ -59,6 +65,16 @@ final class FulfillmentCatalogService
                     $type = array_key_exists('type_warehouse_id', $data) ? $data['type_warehouse_id'] : $row->type_warehouse_id;
                     if ($type !== null && ! TypeWarehouse::visibleTo($tenant)->whereKey($type)->exists()) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['type_warehouse_id' => 'Выберите доступный тип склада.']);
+                    }
+                }
+                if ($catalog === 'cells') {
+                    $warehouse = array_key_exists('warehouse_id', $data) ? $data['warehouse_id'] : $row->warehouse_id;
+                    $zone = array_key_exists('zone_id', $data) ? $data['zone_id'] : $row->zone_id;
+                    if (! Warehouse::visibleTo($tenant)->whereKey($warehouse)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['warehouse_id' => 'Выберите доступный склад.']);
+                    }
+                    if ($zone !== null && ! Zone::visibleTo($tenant)->whereKey($zone)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['zone_id' => 'Выберите доступную зону.']);
                     }
                 }
                 $row->forceFill(array_intersect_key($data, array_flip(array_diff(config('sync.entities.'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']))));

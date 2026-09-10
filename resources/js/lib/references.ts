@@ -34,6 +34,9 @@ export interface ReferenceField {
         | "unit_goods"
         | "kind_kiz"
         | "type_warehouses"
+        | "type_storage"
+        | "zones"
+        | "cells"
         | "warehouses"
         | "marketplaces";
 }
@@ -163,6 +166,25 @@ export const references = {
     type_warehouses: {
         title: "Типы складов",
         fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    type_storage: {
+        title: "Типы хранения",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    zones: {
+        title: "Зоны",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    cells: {
+        title: "Ячейки",
+        fields: [
+            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses" },
+            { key: "zone_id", label: "Зона", kind: "lookup", lookup: "zones" },
+            { key: "shortname", label: "Краткое название" },
+            { key: "row", label: "Ряд", kind: "number" },
+            { key: "level", label: "Уровень", kind: "number" },
+            { key: "number", label: "Номер", kind: "number" },
+        ] as ReferenceField[],
     },
     marketplaces: {
         title: "Маркетплейсы",

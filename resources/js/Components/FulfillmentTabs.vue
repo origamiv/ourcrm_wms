@@ -8,6 +8,12 @@ const tabs = [
         icon: "goods",
     },
     {
+        label: "Ячейки",
+        url: "/fulfillment/cells",
+        component: "Cells",
+        icon: "goods",
+    },
+    {
         label: "Справочники",
         url: "/fulfillment/references",
         component: "",
@@ -17,6 +23,18 @@ const tabs = [
                 label: "Типы складов",
                 url: "/fulfillment/type_warehouses",
                 component: "TypeWarehouses",
+                icon: "goods",
+            },
+            {
+                label: "Типы хранения",
+                url: "/fulfillment/type_storage",
+                component: "TypeStorage",
+                icon: "goods",
+            },
+            {
+                label: "Зоны",
+                url: "/fulfillment/zones",
+                component: "Zones",
                 icon: "goods",
             },
             {

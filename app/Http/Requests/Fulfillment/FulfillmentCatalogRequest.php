@@ -19,6 +19,9 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                     'marketplaces' => 'pgsql.wms.marketplaces',
                     'delivery_services' => 'pgsql.wms.delivery_services',
                     'warehouses' => 'pgsql.wms.warehouses',
+                    'cells' => 'pgsql.wms.cells',
+                    'zones' => 'pgsql.wms.zones',
+                    'type_storage' => 'pgsql.wms.type_storage',
                     default => 'pgsql.wms.type_warehouses',
                 }, 'shortname')
                     ->ignore($this->route('id'))
@@ -39,6 +42,15 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'is_order_edit' => ['nullable', 'integer', 'in:0,1'],
                 'prefix' => ['nullable', 'string', 'max:255'],
                 'folder' => ['nullable', 'string', 'max:255'],
+            ];
+        }
+        if ($this->route('catalog') === 'cells') {
+            $rules += [
+                'warehouse_id' => ['required', 'integer', 'min:1'],
+                'zone_id' => ['nullable', 'integer', 'min:1'],
+                'row' => ['nullable', 'integer', 'min:0'],
+                'level' => ['nullable', 'integer', 'min:0'],
+                'number' => ['nullable', 'integer', 'min:0'],
             ];
         }
 

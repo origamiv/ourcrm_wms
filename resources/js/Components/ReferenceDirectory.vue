@@ -170,7 +170,7 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
@@ -844,6 +844,9 @@ useCardRoute<ReferenceRow>({
                                         "delivery_services",
                                         "warehouses",
                                         "type_warehouses",
+                                        "type_storage",
+                                        "zones",
+                                        "cells",
                                         "modules",
                                         "features",
                                         "client_individuals",
@@ -903,6 +906,9 @@ useCardRoute<ReferenceRow>({
                                             'delivery_services',
                                             'warehouses',
                                             'type_warehouses',
+                                            'type_storage',
+                                            'zones',
+                                            'cells',
                                             'modules',
                                             'features',
                                             'client_individuals',
