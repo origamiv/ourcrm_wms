@@ -36,7 +36,31 @@ const draggedColumn = ref<string | null>(null);
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
-const configurableColumns = computed(() => definition.fields);
+const fixedColumnKeys = new Set(["__id", "__name", "__actions"]);
+const configurableColumns = computed(() => [
+    {
+        key: "__id",
+        label: "#",
+    },
+    {
+        key: "__name",
+        label:
+            props.entity === "kizes"
+                ? "Код маркировки"
+                : props.entity === "client_individuals"
+                  ? "ФИО"
+                  : "Название",
+    },
+    ...definition.fields,
+    {
+        key: "status",
+        label: props.entity === "kizes" ? "Состояние" : "Статус",
+    },
+    {
+        key: "__actions",
+        label: "Действия",
+    },
+]);
 const allColumns = computed(() => {
     const known = new Map(
         configurableColumns.value.map((field) => [field.key, field]),
@@ -51,12 +75,16 @@ const orderedColumns = computed(() =>
     allColumns.value.filter((field) => !hiddenColumns.value.includes(field.key)),
 );
 const renderedSpecialColumns = new Set([
+    "__id",
+    "__name",
+    "__actions",
     "shortname",
     "code",
     "client_id",
     "doc_type_id",
     "doc_date",
     "amount",
+    "status",
 ]);
 const extraColumns = computed(() =>
     !isKiz && !isIntegration
@@ -66,6 +94,7 @@ const extraColumns = computed(() =>
         : [],
 );
 function isColumnVisible(key: string): boolean {
+    if (fixedColumnKeys.has(key)) return true;
     return !hiddenColumns.value.includes(key) && allColumns.value.some((field) => field.key === key);
 }
 function loadColumnSettings() {
@@ -96,6 +125,7 @@ function saveColumnSettings() {
     );
 }
 function toggleColumn(key: string) {
+    if (fixedColumnKeys.has(key)) return;
     hiddenColumns.value = hiddenColumns.value.includes(key)
         ? hiddenColumns.value.filter((item) => item !== key)
         : [...hiddenColumns.value, key];
@@ -146,7 +176,12 @@ const isFulfillment = ["warehouses", "type_warehouses", "marketplaces", "deliver
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz
-        ? orderedColumns.value.filter((field) => field.key !== "code")
+        ? orderedColumns.value.filter(
+              (field) =>
+                  !field.key.startsWith("__") &&
+                  field.key !== "code" &&
+                  field.key !== "status",
+          )
         : isIntegration
           ? definition.fields.filter((field) =>
                 ["lookup", "number", "datetime"].includes(field.kind ?? ""),
@@ -762,6 +797,7 @@ useCardRoute<ReferenceRow>({
                             <input
                                 type="checkbox"
                                 :checked="isColumnVisible(field.key)"
+                                :disabled="fixedColumnKeys.has(field.key)"
                                 @change="toggleColumn(field.key)"
                             />
                             {{ field.label }}
