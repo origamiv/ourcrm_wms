@@ -67,3 +67,9 @@ DB::transaction(function () {
     DB::table('clients.companies')->insert(['name' => 'Юрлицо другого клиента', 'shortname' => 'Другое', 'client_id' => $other, 'status' => 1, 'tenant_id' => 'test_org']);
     DB::table('clients.individuals')->insert(['name' => 'Физлицо другого клиента', 'client_id' => $other, 'status' => 1, 'tenant_id' => 'test_org']);
 });
+
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_10_000011_create_client_documents.php'))->up();
+    (require database_path('migrations/2026_09_10_000012_sync_client_documents.php'))->up();
+    DB::table('clients.documents')->insert(['name' => 'Счёт тестового клиента', 'client_id' => 1, 'doc_type_id' => 1, 'status' => 0, 'doc_date' => '2026-09-10', 'tenant_id' => 'test_org']);
+});

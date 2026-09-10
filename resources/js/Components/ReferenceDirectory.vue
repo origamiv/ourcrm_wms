@@ -20,6 +20,17 @@ interface ReferenceRow extends EntityRow {
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
 const isIndividual = props.entity === "client_individuals";
+const isDocument = props.entity === "client_documents";
+const isDocType = props.entity === "client_doc_types";
+const isClientSection = isIndividual || isDocument || isDocType;
+const basePath = isClientSection
+    ? `/clients/${props.entity.replace("client_", "")}`
+    : `/main/${props.entity}`;
+const endpoint = isIndividual ? null : basePath.replace("/main/", "/");
+const clientFilter = ref("");
+const docTypeFilter = ref("");
+const dateFilter = ref("");
+
 const page = usePage<any>();
 const clientScope = computed<{ id: string; name: string } | null>(() =>
     isIndividual ? (page.props.clientScope ?? null) : null,
@@ -69,15 +80,28 @@ const editing = ref(false),
     saving = ref(false),
     notice = ref("");
 const form = ref<Record<string, any>>({ name: "", status: 1 });
-const statusLabels: Record<string, string> = {
-    "0": "Новый",
-    "1": "Активен",
-    "2": "Отключен",
-    null: "Не указан",
-};
+const statusLabels: Record<string, string> = isDocument
+    ? { "0": "Новый", "1": "Активен", "2": "Отменен", "3": "Отправлен" }
+    : isDocType
+      ? { "1": "Активен", "2": "Отключен" }
+      : {
+            "0": "Новый",
+            "1": "Активен",
+            "2": "Отключен",
+            null: "Не указан",
+        };
 const filtered = computed(() =>
     rows.value
         .filter((row) => {
+            if (
+                isDocument &&
+                ((clientFilter.value &&
+                    String(row.client_id) !== clientFilter.value) ||
+                    (docTypeFilter.value &&
+                        String(row.doc_type_id) !== docTypeFilter.value) ||
+                    (dateFilter.value && row.doc_date !== dateFilter.value))
+            )
+                return false;
             if (
                 clientScope.value &&
                 String(row.client_id) !== clientScope.value.id
@@ -116,7 +140,10 @@ const pages = computed(() =>
 const visible = computed(() =>
     filtered.value.slice((currentPage.value - 1) * 25, currentPage.value * 25),
 );
-watch([query, shortQuery, statusFilter], () => (currentPage.value = 1));
+watch(
+    [query, shortQuery, statusFilter, clientFilter, docTypeFilter, dateFilter],
+    () => (currentPage.value = 1),
+);
 watch(
     pages,
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
@@ -146,7 +173,9 @@ function open(row: ReferenceRow | null, readOnly = false) {
         ...Object.fromEntries(
             definition.fields.map((field) => [
                 field.key,
-                row?.[field.key] ??
+                (field.kind === "datetime" && row?.[field.key]
+                    ? String(row[field.key]).replace(" ", "T").slice(0, 16)
+                    : row?.[field.key]) ??
                     (field.kind === "number" ||
                     field.kind === "flag" ||
                     field.kind === "lookup"
@@ -154,9 +183,15 @@ function open(row: ReferenceRow | null, readOnly = false) {
                         : ""),
             ]),
         ),
-        status: row ? row.status : 1,
+        status: row ? row.status : isDocument ? 0 : 1,
         ...(clientScope.value ? { client_id: clientScope.value.id } : {}),
     };
+    for (const field of definition.fields)
+        if (field.kind === "json")
+            form.value[field.key] =
+                row?.[field.key] == null
+                    ? ""
+                    : JSON.stringify(row[field.key], null, 2);
     viewing.value = readOnly || !!row?.deleted_at;
     notice.value = "";
     conflict.value = null;
@@ -167,11 +202,34 @@ async function save(remove = false) {
     saving.value = true;
     notice.value = "";
     try {
+        const payload = { ...form.value };
+        if (!remove)
+            for (const field of definition.fields)
+                if (field.kind === "json") {
+                    try {
+                        payload[field.key] = String(
+                            form.value[field.key] ?? "",
+                        ).trim()
+                            ? JSON.parse(form.value[field.key])
+                            : null;
+                    } catch {
+                        throw new Error(
+                            `Поле «${field.label}» содержит некорректный JSON.`,
+                        );
+                    }
+                    if (
+                        payload[field.key] !== null &&
+                        typeof payload[field.key] !== "object"
+                    )
+                        throw new Error(
+                            `Поле «${field.label}» должно содержать JSON-объект или массив.`,
+                        );
+                }
         const response = await http(
-            `/web/${isIndividual ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}individuals` : props.entity}${selected.value ? "/" + selected.value.id : ""}`,
+            `/web/${isIndividual ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}individuals` : endpoint!.replace(/^\//, "")}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
             {
-                ...(!remove ? form.value : {}),
+                ...(!remove ? payload : {}),
                 ...(selected.value ? { version: selected.value.version } : {}),
             },
         );
@@ -211,7 +269,7 @@ onUnmounted(() => {
 });
 
 useCardRoute<ReferenceRow>({
-    base: isIndividual ? "/clients/individuals" : `/main/${props.entity}`,
+    base: basePath,
     rows,
     ready,
     state: () =>
@@ -246,11 +304,13 @@ useCardRoute<ReferenceRow>({
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
-                    isIndividual ? "Клиенты" : "Администрирование › Справочники"
+                    isClientSection
+                        ? "Клиенты"
+                        : "Администрирование › Справочники"
                 }}
                 › {{ definition.title }}
             </div>
-            <ClientTabs v-if="isIndividual" /><AdminTabs v-else />
+            <ClientTabs v-if="isClientSection" /><AdminTabs v-else />
             <p v-if="clientScope" class="notice">
                 Клиент: <strong>{{ clientScope.name }}</strong>
             </p>
@@ -294,6 +354,8 @@ useCardRoute<ReferenceRow>({
                                         "modules",
                                         "features",
                                         "client_individuals",
+                                        "client_documents",
+                                        "client_doc_types",
                                     ].includes(props.entity)
                                         ? isIndividual
                                             ? "Краткое имя"
@@ -301,6 +363,12 @@ useCardRoute<ReferenceRow>({
                                         : "Категория"
                                 }}
                             </th>
+                            <th v-if="isDocType">ID</th>
+                            <template v-if="isDocument"
+                                ><th>Клиент</th>
+                                <th>Тип документа</th>
+                                <th>Дата документа</th></template
+                            >
                             <th>Статус</th>
                             <th>Действия</th>
                         </tr>
@@ -320,21 +388,71 @@ useCardRoute<ReferenceRow>({
                                             'modules',
                                             'features',
                                             'client_individuals',
+                                            'client_documents',
+                                            'client_doc_types',
                                         ].includes(props.entity)
                                             ? 'Поиск по краткому названию'
                                             : 'Поиск по категории'
                                     "
                                 />
                             </th>
+                            <th v-if="isDocType"></th>
+                            <template v-if="isDocument">
+                                <th>
+                                    <select
+                                        v-model="clientFilter"
+                                        aria-label="Фильтр клиента"
+                                    >
+                                        <option value="">Все клиенты</option>
+                                        <option
+                                            v-for="row in choices('clients')"
+                                            :key="row.id"
+                                            :value="String(row.id)"
+                                        >
+                                            {{ displayName(row) }}
+                                        </option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <select
+                                        v-model="docTypeFilter"
+                                        aria-label="Фильтр типа документа"
+                                    >
+                                        <option value="">Все типы</option>
+                                        <option
+                                            v-for="row in choices(
+                                                'client_doc_types',
+                                            )"
+                                            :key="row.id"
+                                            :value="String(row.id)"
+                                        >
+                                            {{ displayName(row) }}
+                                        </option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input
+                                        v-model="dateFilter"
+                                        type="date"
+                                        aria-label="Фильтр даты документа"
+                                    />
+                                </th>
+                            </template>
                             <th>
                                 <select
                                     v-model="statusFilter"
                                     aria-label="Фильтр статуса"
                                 >
                                     <option value="all">Все</option>
-                                    <option value="0">Новые</option>
-                                    <option value="1">Активные</option>
-                                    <option value="2">Отключенные</option>
+                                    <option
+                                        v-for="[value, label] in Object.entries(
+                                            statusLabels,
+                                        ).filter(([key]) => key !== 'null')"
+                                        :key="value"
+                                        :value="value"
+                                    >
+                                        {{ label }}
+                                    </option>
                                     <option value="deleted">Удалённые</option>
                                 </select>
                             </th>
@@ -356,6 +474,28 @@ useCardRoute<ReferenceRow>({
                                 </button>
                             </td>
                             <td>{{ row.shortname || "—" }}</td>
+                            <td v-if="isDocType">{{ row.id }}</td>
+                            <template v-if="isDocument">
+                                <td>
+                                    {{
+                                        lookupStores.clients?.rows.value.find(
+                                            (item) =>
+                                                String(item.id) ===
+                                                String(row.client_id),
+                                        )?.name || `Клиент №${row.client_id}`
+                                    }}
+                                </td>
+                                <td>
+                                    {{
+                                        lookupStores.client_doc_types?.rows.value.find(
+                                            (item) =>
+                                                String(item.id) ===
+                                                String(row.doc_type_id),
+                                        )?.name || `Тип №${row.doc_type_id}`
+                                    }}
+                                </td>
+                                <td>{{ row.doc_date || "—" }}</td>
+                            </template>
                             <td>
                                 <span
                                     class="badge"
@@ -413,7 +553,10 @@ useCardRoute<ReferenceRow>({
                             </td>
                         </tr>
                         <tr v-if="!visible.length">
-                            <td colspan="4" class="empty-state">
+                            <td
+                                :colspan="isDocument ? 7 : isDocType ? 5 : 4"
+                                class="empty-state"
+                            >
                                 {{
                                     ready
                                         ? "Записи не найдены"
@@ -503,7 +646,14 @@ useCardRoute<ReferenceRow>({
                             :key="field.key"
                             >{{ field.label }}
                             <textarea
-                                v-if="field.kind === 'textarea'"
+                                v-if="field.kind === 'json'"
+                                v-model="form[field.key]"
+                                :aria-label="field.label"
+                                rows="6"
+                                spellcheck="false"
+                            />
+                            <textarea
+                                v-else-if="field.kind === 'textarea'"
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
                                 maxlength="10000"
@@ -511,6 +661,7 @@ useCardRoute<ReferenceRow>({
                             />
                             <select
                                 v-else-if="field.kind === 'lookup'"
+                                :required="field.required"
                                 :disabled="
                                     field.key === 'client_id' && !!clientScope
                                 "
@@ -550,6 +701,12 @@ useCardRoute<ReferenceRow>({
                                 <option :value="0">Нет</option>
                             </select>
                             <input
+                                v-else-if="field.kind === 'datetime'"
+                                v-model="form[field.key]"
+                                :aria-label="field.label"
+                                type="datetime-local"
+                            />
+                            <input
                                 v-else-if="field.kind === 'date'"
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
@@ -577,7 +734,9 @@ useCardRoute<ReferenceRow>({
                                 <option
                                     v-if="
                                         form.status !== null &&
-                                        ![0, 1, 2].includes(form.status)
+                                        !Object.keys(statusLabels).includes(
+                                            String(form.status),
+                                        )
                                     "
                                     :value="form.status"
                                     disabled
@@ -585,14 +744,24 @@ useCardRoute<ReferenceRow>({
                                     Выберите статус
                                 </option>
                                 <option
-                                    v-if="props.entity !== 'files'"
+                                    v-if="
+                                        props.entity !== 'files' &&
+                                        !isDocument &&
+                                        !isDocType
+                                    "
                                     :value="null"
                                 >
                                     Не указан
                                 </option>
-                                <option :value="0">Новый</option>
-                                <option :value="1">Активен</option>
-                                <option :value="2">Отключен</option>
+                                <option
+                                    v-for="[value, label] in Object.entries(
+                                        statusLabels,
+                                    ).filter(([key]) => key !== 'null')"
+                                    :key="value"
+                                    :value="Number(value)"
+                                >
+                                    {{ label }}
+                                </option>
                             </select></label
                         ><button v-if="!viewing" type="submit" class="primary">
                             {{

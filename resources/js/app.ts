@@ -1,3 +1,5 @@
+import DocTypes from "./Pages/DocTypes.vue";
+import Documents from "./Pages/Documents.vue";
 import ClientIndividuals from "./Pages/ClientIndividuals.vue";
 import ClientCompanies from "./Pages/ClientCompanies.vue";
 import Files from "./Pages/Files.vue";
@@ -18,6 +20,8 @@ import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
 const pages: Record<string, any> = {
     Home,
+    DocTypes,
+    Documents,
     ClientIndividuals,
     ClientCompanies,
     Files,

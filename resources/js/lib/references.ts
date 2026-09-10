@@ -1,8 +1,17 @@
 export interface ReferenceField {
     key: string;
     label: string;
-    kind?: "text" | "textarea" | "number" | "flag" | "lookup" | "date";
-    lookup?: "modules" | "companies" | "users" | "clients";
+    kind?:
+        | "text"
+        | "textarea"
+        | "number"
+        | "flag"
+        | "lookup"
+        | "date"
+        | "datetime"
+        | "json";
+    required?: boolean;
+    lookup?: "modules" | "companies" | "users" | "clients" | "client_doc_types";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -18,6 +27,43 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    client_documents: {
+        title: "Документы",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            {
+                key: "client_id",
+                label: "Клиент",
+                kind: "lookup",
+                lookup: "clients",
+                required: true,
+            },
+            {
+                key: "doc_type_id",
+                label: "Тип документа",
+                kind: "lookup",
+                lookup: "client_doc_types",
+                required: true,
+            },
+            { key: "comment", label: "Комментарий", kind: "textarea" },
+            {
+                key: "internal_comment",
+                label: "Внутренний комментарий",
+                kind: "textarea",
+            },
+            { key: "src", label: "Дополнительные данные (JSON)", kind: "json" },
+            { key: "doc_date", label: "Дата документа", kind: "date" },
+            { key: "accepted_at", label: "Дата подписания", kind: "datetime" },
+            { key: "payed_at", label: "Дата оплаты", kind: "datetime" },
+            { key: "canceled_at", label: "Дата отмены", kind: "datetime" },
+        ] as ReferenceField[],
+    },
+    client_doc_types: {
+        title: "Типы документов",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
+    },
     client_individuals: {
         title: "Физ.лица",
         fields: [

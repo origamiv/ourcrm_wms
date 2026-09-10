@@ -1489,3 +1489,100 @@ test("client actions lock both party directories to the selected client", async 
         fullPage: true,
     });
 });
+
+test("documents retain comments JSON dates and statuses; document types dropdown", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Клиенты", exact: true })
+        .click();
+    await page.getByRole("link", { name: "Документы", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Добавить запись", exact: true })
+        .click();
+    await page
+        .getByLabel("Название *", { exact: true })
+        .fill("Документ браузерной проверки");
+    await page
+        .getByRole("combobox", { name: "Клиент", exact: true })
+        .selectOption("1");
+    await page
+        .getByRole("combobox", { name: "Тип документа", exact: true })
+        .selectOption("1");
+    await page
+        .getByLabel("Комментарий", { exact: true })
+        .fill("Комментарий к документу");
+    await page
+        .getByLabel("Внутренний комментарий", { exact: true })
+        .fill("Для сотрудников");
+    await page
+        .getByLabel("Дополнительные данные (JSON)", { exact: true })
+        .fill('{"number":"42","nested":{"ok":true}}');
+    await page.getByLabel("Дата документа", { exact: true }).fill("2026-09-10");
+    await page
+        .getByLabel("Дата подписания", { exact: true })
+        .fill("2026-09-10T12:30");
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Комментарий", { exact: true })).toHaveValue(
+        "Комментарий к документу",
+    );
+    await expect(
+        page.getByLabel("Внутренний комментарий", { exact: true }),
+    ).toHaveValue("Для сотрудников");
+    await expect(
+        page.getByLabel("Дата подписания", { exact: true }),
+    ).toHaveValue("2026-09-10T12:30");
+    expect(
+        JSON.parse(
+            await page.getByLabel("Дополнительные данные (JSON)").inputValue(),
+        ),
+    ).toEqual({ number: "42", nested: { ok: true } });
+    await page
+        .getByRole("combobox", { name: "Статус", exact: true })
+        .selectOption("3");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Закрыть карточку" }).click();
+    await page.getByLabel("Фильтр статуса", { exact: true }).selectOption("3");
+    await expect(
+        page.getByRole("button", {
+            name: "Документ браузерной проверки",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    await page
+        .getByRole("link", { name: "Типы документов", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Счёт-фактура", exact: true }),
+    ).toBeVisible();
+    await context.setOffline(true);
+    await page.getByRole("link", { name: "Документы", exact: true }).click();
+    await page
+        .getByRole("button", {
+            name: "Просмотр: Документ браузерной проверки",
+            exact: true,
+        })
+        .click();
+    await expect(
+        page.getByLabel("Внутренний комментарий", { exact: true }),
+    ).toHaveValue("Для сотрудников");
+    await page.screenshot({ path: "/tmp/wms-documents.png", fullPage: true });
+    await context.setOffline(false);
+});

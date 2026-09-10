@@ -29,6 +29,7 @@ final class ClientService
                 abort_if($client->trashed(), 422, 'Клиент уже удалён.');
             }
             if ($delete) {
+                abort_if(\App\Models\Document::where('client_id', $id)->exists(), 422, 'У клиента есть документы. Сначала удалите или перенесите их.');
                 abort_if(\App\Models\ClientCompany::where('client_id', $id)->exists() || \App\Models\ClientIndividual::where('client_id', $id)->exists(), 422, 'У клиента есть юридические или физические лица. Сначала удалите или перенесите их.');
                 $client->delete();
             } else {
