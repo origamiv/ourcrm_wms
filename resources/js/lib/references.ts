@@ -178,8 +178,8 @@ export const references = {
     cells: {
         title: "Ячейки",
         fields: [
-            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses" },
-            { key: "zone_id", label: "Зона", kind: "lookup", lookup: "zones" },
+            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
+            { key: "zone_id", label: "Зона", kind: "lookup", lookup: "zones", required: true },
             { key: "shortname", label: "Краткое название" },
             { key: "row", label: "Ряд", kind: "number" },
             { key: "level", label: "Уровень", kind: "number" },

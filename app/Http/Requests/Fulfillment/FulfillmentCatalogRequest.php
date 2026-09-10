@@ -47,7 +47,7 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
         if ($this->route('catalog') === 'cells') {
             $rules += [
                 'warehouse_id' => ['required', 'integer', 'min:1'],
-                'zone_id' => ['nullable', 'integer', 'min:1'],
+                'zone_id' => ['required', 'integer', 'min:1'],
                 'row' => ['nullable', 'integer', 'min:0'],
                 'level' => ['nullable', 'integer', 'min:0'],
                 'number' => ['nullable', 'integer', 'min:0'],

@@ -1433,7 +1433,7 @@ useCardRoute<ReferenceRow>({
                                     v-model="form[field.key]"
                                     :aria-label="field.label"
                                 >
-                                    <option :value="null">Не выбрано</option>
+                                    <option v-if="!field.required" :value="null">Не выбрано</option>
                                     <option
                                         v-if="
                                             form[field.key] &&
