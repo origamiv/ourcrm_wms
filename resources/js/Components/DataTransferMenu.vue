@@ -16,8 +16,8 @@ const pendingFormat = ref("");
 const exportFormats = ["XLS", "CSV", "TXT", "PDF"];
 const importFormats = ["XLS", "CSV", "TXT", "PDF", "JPG", "PNG"];
 function formatIconPath(format: string) {
-    return format === "XLS"
-        ? "/design/formats/xls.png"
+    return ["XLS", "CSV", "PDF"].includes(format)
+        ? `/design/formats/${format.toLowerCase()}.png`
         : `/design/formats/${format.toLowerCase()}.svg`;
 }
 async function exportData(format: string) {
