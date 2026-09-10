@@ -10,7 +10,7 @@ final class DeliveryService extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['status' => 'integer', 'is_order_edit' => 'integer'];
+    protected $casts = ['status' => 'integer', 'is_order_edit' => 'integer', 'from_integration_only' => 'integer'];
 
     public function marketplace(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

@@ -66,6 +66,7 @@ export const references = {
                 label: "Разрешено редактирование заказа",
                 kind: "flag",
             },
+            { key: "from_integration_only", label: "Только из интеграции", kind: "flag" },
             { key: "prefix", label: "Префикс" },
             { key: "folder", label: "Папка" },
         ] as ReferenceField[],

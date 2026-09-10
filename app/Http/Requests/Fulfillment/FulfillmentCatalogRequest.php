@@ -21,6 +21,7 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
             $rules += [
                 'marketplace_id' => ['nullable', 'integer', 'min:1'],
                 'color' => ['nullable', 'string', 'max:32'],
+                'from_integration_only' => ['nullable', 'integer', 'in:0,1'],
                 'is_order_edit' => ['nullable', 'integer', 'in:0,1'],
                 'prefix' => ['nullable', 'string', 'max:255'],
                 'folder' => ['nullable', 'string', 'max:255'],
