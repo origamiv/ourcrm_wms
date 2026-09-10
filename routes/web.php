@@ -1,28 +1,24 @@
 <?php
 
 declare(strict_types=1);
-
-use Livewire\Volt\Volt;
-
+use App\Http\Controllers\WmsAuthController;
+use App\Http\Controllers\WmsUserController;
+use App\Http\Middleware\EnsureWmsAccess;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Livewire\Auth\Login;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-//Route::get('/', function () {
-//    $rows = \Illuminate\Support\Facades\DB::table('messenger.accounts')->get()->toArray();
-//    return view('start', ['rows' => $rows]);
-//});
-//
-//Route::get('/web/{module}', function (string $module) {
-//    $rows = \Illuminate\Support\Facades\DB::table('messenger.accounts')->get()->toArray();
-//    return view('start', ['rows' => $rows, 'module' => $module]);
-//});
-Route::get('/web/{module}/{chapter}', 'App\Http\Controllers\Web\StartController@index');
-Route::get('/hook/telegram/{ident}', 'App\Http\Controllers\Web\TelegramController@index');
-Route::post('/hook/telegram/{ident}', 'App\Http\Controllers\Web\TelegramController@index');
-
-
-//Volt::route('/', 'users.index');
-//$menus=\Modules\Lists\Models\Menu::query()->where('shortname','like','messenger.%')->get();
-//foreach($menus as $menu){
-//    Volt::route($menu->page, 'table.index');
-//    //\Illuminate\Support\Facades\Route::get($menu->page, 'App\Http\Controllers\\ListController@index');
-//};
+Route::get('/login', Login::class)->name('login');
+Route::post('/logout', [WmsAuthController::class, 'logout'])->name('logout');
+Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group(function () {
+    Route::get('/', fn () => Inertia::render('Home'))->name('home');
+    Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::get('/users', fn () => Inertia::render('Users'))->name('users');
+        Route::get('/web/users/sync', [WmsUserController::class, 'index']);
+        Route::get('/web/users/{id}', [WmsUserController::class, 'show'])->whereNumber('id');
+        Route::post('/web/users', [WmsUserController::class, 'store']);
+        Route::put('/web/users/{id}', [WmsUserController::class, 'update'])->whereNumber('id');
+        Route::post('/web/users/{id}/{action}', [WmsUserController::class, 'action'])->whereNumber('id')->whereIn('action', ['activate', 'block', 'delete', 'restore', 'password']);
+    });
+});

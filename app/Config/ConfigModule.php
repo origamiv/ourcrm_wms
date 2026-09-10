@@ -151,12 +151,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -318,12 +312,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -425,12 +413,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -511,12 +493,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -612,12 +588,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -749,12 +719,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -844,12 +808,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -934,12 +892,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1024,12 +976,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1126,12 +1072,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1254,12 +1194,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1381,12 +1315,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1502,12 +1430,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1607,12 +1529,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1723,12 +1639,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1834,12 +1744,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -1930,12 +1834,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2060,12 +1958,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2156,12 +2048,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2246,12 +2132,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2342,12 +2222,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2463,12 +2337,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2565,12 +2433,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2735,12 +2597,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2825,12 +2681,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -2915,12 +2765,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3016,12 +2860,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3132,12 +2970,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3226,12 +3058,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3372,12 +3198,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3524,12 +3344,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3614,12 +3428,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3704,12 +3512,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3821,12 +3623,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -3953,12 +3749,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4061,12 +3851,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4166,12 +3950,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4301,12 +4079,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4392,12 +4164,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4496,12 +4262,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4593,12 +4353,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4700,12 +4454,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4789,12 +4537,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -4903,12 +4645,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5073,12 +4809,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5168,12 +4898,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5276,12 +5000,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5365,12 +5083,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5472,12 +5184,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5582,12 +5288,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5700,12 +5400,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5790,12 +5484,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5891,12 +5579,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -5972,12 +5654,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6058,12 +5734,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6164,12 +5834,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6259,12 +5923,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6361,12 +6019,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6462,12 +6114,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6563,12 +6209,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6657,12 +6297,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -6776,12 +6410,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7015,12 +6643,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7258,12 +6880,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7362,12 +6978,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7492,12 +7102,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7605,12 +7209,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7694,12 +7292,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7817,12 +7409,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -7932,12 +7518,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8018,12 +7598,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8104,12 +7678,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8206,12 +7774,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8301,12 +7863,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8413,12 +7969,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8514,12 +8064,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8712,12 +8256,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8795,12 +8333,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -8900,12 +8432,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -9252,12 +8778,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -9368,12 +8888,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -9491,12 +9005,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -9600,12 +9108,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -9697,12 +9199,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10009,12 +9505,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10106,12 +9596,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10196,12 +9680,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10298,12 +9776,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10427,12 +9899,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10631,12 +10097,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10740,12 +10200,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10842,12 +10296,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -10932,12 +10380,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11028,12 +10470,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11117,12 +10553,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11207,12 +10637,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11324,12 +10748,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11486,12 +10904,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11591,12 +11003,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11697,12 +11103,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -11839,12 +11239,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12011,12 +11405,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12142,12 +11530,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12260,12 +11642,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12369,12 +11745,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12470,12 +11840,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12627,12 +11991,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12793,12 +12151,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -12908,12 +12260,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13002,12 +12348,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13095,12 +12435,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13188,12 +12522,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13286,12 +12614,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13396,12 +12718,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13509,12 +12825,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13627,12 +12937,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13750,12 +13054,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13848,12 +13146,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -13948,12 +13240,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14043,12 +13329,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14132,12 +13412,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14227,12 +13501,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14350,12 +13618,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14453,12 +13715,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14546,12 +13802,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14705,12 +13955,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14799,12 +14043,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -14902,12 +14140,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15060,12 +14292,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15161,12 +14387,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15250,12 +14470,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15407,12 +14621,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15504,12 +14712,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15594,12 +14796,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15712,12 +14908,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15825,12 +15015,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -15919,12 +15103,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16023,12 +15201,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16134,12 +15306,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16223,12 +15389,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16337,12 +15497,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16426,12 +15580,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16515,12 +15663,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16604,12 +15746,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16693,12 +15829,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16782,12 +15912,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16871,12 +15995,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -16960,12 +16078,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17049,12 +16161,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17138,12 +16244,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17236,12 +16336,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17328,12 +16422,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17417,12 +16505,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17529,12 +16611,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17618,12 +16694,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17751,12 +16821,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -17843,12 +16907,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18012,12 +17070,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18255,12 +17307,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18347,12 +17393,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18476,12 +17516,6 @@ class ConfigModule
                         'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                         'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                         'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                        'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                         'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18567,12 +17601,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18706,12 +17734,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18797,12 +17819,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18888,12 +17904,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',
@@ -18979,12 +17989,6 @@ class ConfigModule
                     'call' => '$this->call(' . $model . 'Seeder::class);',    // для database_seeder в модулях
                     'rule' => "'{name}'=>'{additional}{type}',",          // для requests
                     'attribute' => "\$attributes['{name}']='{comment}';", // для requests
-                    'swagger' => '*                 @OA\Property(
-         *                     property="{name}",
-         *                     type="{type}",
-         *                     description="{comment}",
-         *                     example="{example}"
-         *                 ),', // для swagger
                     'menu' => "Menu::create([
                     'name' => '$titleMenu',
                     'shortname' => '$modelLower',

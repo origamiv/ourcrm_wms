@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+
+final class AccessService
+{
+    public function active(User $user): bool
+    {
+        return ! $user->trashed() && $user->status === 1 && trim((string) $user->tenant_id) !== '';
+    }
+
+    public function isAdmin(User $user): bool
+    {
+        return $this->active($user) && $this->adminAssignments($user->tenant_id)->where('ru.user_id', $user->id)->exists();
+    }
+
+    public function adminAssignments(string $tenant)
+    {
+        return DB::table('main.role_user as ru')->join('main.roles as r', 'r.id', '=', 'ru.role_id')
+            ->where('ru.tenant_id', $tenant)->where('r.slug', 'admin')->where('ru.status', 1)->where('r.status', 1)
+            ->whereNull('ru.deleted_at')->whereNull('r.deleted_at');
+    }
+}

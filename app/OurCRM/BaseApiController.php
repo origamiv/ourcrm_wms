@@ -12,28 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use OpenApi\Attributes as OA;
 
-
-#[
-    OA\Info(
-        title: 'Модуль Задачи (Tasks)',
-        version: '1.0.0',
-//        description: 'Swagger OpenApi Description',
-//        contact: new OA\Contact(email: 'admin@admin.com'),
-//        license: new OA\License(name: 'Apache 2.0', url: 'http://www.apache.org/licenses/LICENSE-2.0.html'),
-    ),
-
-    OA\SecurityScheme(
-        securityScheme: 'bearerAuth',
-        type: 'http',
-        name: 'Authorization',
-        in: 'header',
-        scheme: 'bearer'
-    ),
-
-    OA\Server(url: L5_SWAGGER_CONST_HOST, description: 'Demo Server'),
-]
 
 class BaseApiController
 {

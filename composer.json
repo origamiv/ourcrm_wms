@@ -10,10 +10,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "ext-pgsql": "*",
         "ext-simplexml": "*",
-        "darkaonline/l5-swagger": "^9.0",
+        "dedoc/scramble": "^0.13",
         "directorytree/imapengine": "^1.15",
         "hosmelq/laravel-pulse-schedule": "^1.0",
+        "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/helpers": "^1.7",
         "laravel/pulse": "^1.4",
@@ -26,8 +28,7 @@
         "spatie/laravel-route-attributes": "^1.25",
         "spatie/valuestore": "^1.3",
         "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.2",
-        "yajra/laravel-acl": "^12.0",
-        "ext-pgsql": "*"
+        "yajra/laravel-acl": "^12.0"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.5",
@@ -81,7 +82,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "yajra/laravel-acl"
+            ]
         }
     },
     "config": {

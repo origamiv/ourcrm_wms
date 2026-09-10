@@ -135,20 +135,7 @@ class ToolsCreateCommand extends Command
             }
             if ($generate == 'controller') {
                 $this->replace['DummyClass'] = $config['model'] . 'Controller';
-                //----------- swagger for controllers -------------
-                $swaggers = [];
-                $templateSwagger = $config['templates']['swagger'];
-                foreach ($config['fields'] as $fieldName => $field) {
-                    $swagger = $templateSwagger;
-                    $comment = (!empty($field['comment'])) ? $field['comment'] : '';
-                    $example = (!empty($field['example'])) ? $field['example'] : '';
-                    $swagger = str_replace('{type}', $field['type'], $swagger);
-                    $swagger = str_replace('{name}', $fieldName, $swagger);
-                    $swagger = str_replace('{comment}', $comment, $swagger);
-                    $swagger = str_replace('{example}', $example, $swagger);
-                    $swaggers[] = $swagger;
-                }
-                $this->replace['//{$swagger}'] = implode("\r\n", $swaggers);
+
             }
             if ($generate == 'migration') {
 

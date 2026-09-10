@@ -14,6 +14,7 @@ declare(strict_types=1);
 */
 
 pest()->extend(Tests\TestCase::class)
+    ->use(Tests\Support\UsesTestPostgres::class)
     // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
