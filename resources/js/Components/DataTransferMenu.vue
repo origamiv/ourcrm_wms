@@ -15,6 +15,14 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const pendingFormat = ref("");
 const exportFormats = ["XLS", "CSV", "TXT", "PDF"];
 const importFormats = ["XLS", "CSV", "TXT", "PDF", "JPG", "PNG"];
+const formatIcons: Record<string, string> = {
+    XLS: "📗",
+    CSV: "📊",
+    TXT: "📄",
+    PDF: "📕",
+    JPG: "🖼️",
+    PNG: "🌄",
+};
 async function exportData(format: string) {
     emit("export", format);
     const columns = props.columns.length
@@ -66,15 +74,15 @@ function receiveFile(event: Event) {
             <summary title="Экспорт" aria-label="Экспорт">⇩</summary>
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
-                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format); closeMenu($event)">{{ format }}</button>
+                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format); closeMenu($event)"><span class="format-icon" aria-hidden="true">{{ formatIcons[format] }}</span>{{ format }}</button>
             </div>
         </details>
         <details>
             <summary title="Импорт" aria-label="Импорт">⇧</summary>
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
-                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)">{{ format }}</button>
-                <button type="button" @click="chooseImport('Буфер обмена'); closeMenu($event)">Буфер обмена</button>
+                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)"><span class="format-icon" aria-hidden="true">{{ formatIcons[format] }}</span>{{ format }}</button>
+                <button type="button" @click="chooseImport('Буфер обмена'); closeMenu($event)"><span class="format-icon" aria-hidden="true">📋</span>Буфер обмена</button>
             </div>
         </details>
         <input ref="fileInput" class="data-transfer-file" type="file" accept=".xls,.xlsx,.csv,.txt,.pdf,.jpg,.jpeg,.png" @change="receiveFile" />
@@ -90,5 +98,6 @@ function receiveFile(event: Event) {
 .data-transfer-close { position: absolute; top: 4px; right: 5px; width: 22px; padding: 2px !important; font-size: 18px; line-height: 1; text-align: center !important; }
 .data-transfer-dropdown button { border: 0; background: transparent; padding: 7px 10px; text-align: left; color: #344054; cursor: pointer; }
 .data-transfer-dropdown button:hover { background: #eef7f0; color: #2274a5; }
+.format-icon { display: inline-block; width: 22px; margin-right: 5px; font-size: 16px; text-align: center; vertical-align: middle; }
 .data-transfer-file { display: none; }
 </style>
