@@ -384,6 +384,7 @@ h3 {
     overflow: auto;
     flex: 1;
     min-height: 120px;
+    position: relative;
 }
 table {
     width: 100%;

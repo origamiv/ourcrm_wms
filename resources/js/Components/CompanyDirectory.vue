@@ -5,6 +5,7 @@ import { Head, usePage, router } from "@inertiajs/vue3";
 import DadataInput from "./DadataInput.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
+import TableColumnSettings from "./TableColumnSettings.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
@@ -421,16 +422,6 @@ useCardRoute<DirectoryRow>({
                 </p>
             </div>
             <div class="table-scroll">
-                <div v-if="columnSettingsOpen" class="column-settings-panel" :class="{ 'column-settings-panel--compact': columnFields.length <= 6 }" role="dialog" aria-label="Настройка колонок">
-                    <div class="column-settings-title">
-                        <span>Показывать колонки</span>
-                        <button type="button" class="column-settings-close" @click.stop="columnSettingsOpen = false">×</button>
-                    </div>
-                    <label v-for="field in columnFields" :key="field.key" class="column-settings-control">
-                        <input type="checkbox" :checked="isColumnVisible(field.key)" @change="toggleColumn(field.key)" />
-                        <span>{{ field.label }}</span>
-                    </label>
-                </div>
                 <table>
                     <thead>
                         <tr>
@@ -456,7 +447,7 @@ useCardRoute<DirectoryRow>({
                                     <th v-if="isColumnVisible(key)">{{ label }}</th>
                                 </template>
                             </template>
-                            <th>Действия <button type="button" class="column-settings-button" title="Настроить колонки" aria-label="Настроить колонки" @click.stop="columnSettingsOpen = !columnSettingsOpen">⚙</button></th>
+                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" :storage-key="columnStorageKey" /></th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>

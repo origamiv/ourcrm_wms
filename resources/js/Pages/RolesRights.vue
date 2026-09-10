@@ -197,7 +197,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                     <thead>
                         <tr>
                             <th scope="col" class="id-column">#</th>
-                            <th scope="col">Право / Роль <details class="column-settings-native"><summary aria-label="Настроить колонки" title="Настроить колонки">⚙</summary><div class="column-settings-native-menu"><strong>Колонки</strong><label><input type="checkbox" checked />Право / Роль</label><label><input type="checkbox" checked />Роли</label></div></details></th>
+                            <th scope="col">Право / Роль</th>
                             <th
                                 v-for="role in activeRoles"
                                 :key="role.id"

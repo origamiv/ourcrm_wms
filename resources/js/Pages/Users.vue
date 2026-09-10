@@ -7,7 +7,15 @@ import AdminTabs from "../Components/AdminTabs.vue";
 import { createUsers } from "../lib/users";
 import type { UserRow } from "../lib/cache";
 import { http, HttpError, endSession } from "../lib/http";
+import TableColumnSettings from "../Components/TableColumnSettings.vue";
 const page = usePage<any>();
+const columnSettingsOpen = ref(false);
+const columnFields = [
+    { key: "name", label: "ФИО" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Телефон" },
+    { key: "status", label: "Статус" },
+];
 const store = createUsers(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
 );
@@ -320,7 +328,7 @@ useCardRoute<UserRow>({
                             </th>
                             <th>Телефон</th>
                             <th>Статус</th>
-                            <th>Действия <details class="column-settings-native"><summary aria-label="Настроить колонки" title="Настроить колонки">⚙</summary><div class="column-settings-native-menu"><strong>Колонки</strong><label v-for="field in ['ФИО', 'Email', 'Телефон', 'Статус']" :key="field"><input type="checkbox" checked />{{ field }}</label></div></details></th>
+                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" storage-key="users-columns" /></th>
                         </tr>
                         <tr class="column-filters">
                             <th class="id-column"></th>

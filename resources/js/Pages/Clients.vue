@@ -7,6 +7,7 @@ import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
+import TableColumnSettings from "../Components/TableColumnSettings.vue";
 interface ClientRow extends EntityRow {
     name: string | null;
     shortname: string | null;
@@ -14,6 +15,12 @@ interface ClientRow extends EntityRow {
     deleted_at: string | null;
 }
 const page = usePage<any>();
+const columnSettingsOpen = ref(false);
+const columnFields = [
+    { key: "name", label: "Название" },
+    { key: "shortname", label: "Краткое название" },
+    { key: "status", label: "Статус" },
+];
 const store = createEntitySync<ClientRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
     "clients",
@@ -227,7 +234,7 @@ useCardRoute<ClientRow>({
                             </th>
                             <th>Краткое название</th>
                             <th>Статус</th>
-                            <th>Действия <details class="column-settings-native"><summary aria-label="Настроить колонки" title="Настроить колонки">⚙</summary><div class="column-settings-native-menu"><strong>Колонки</strong><label v-for="field in ['Название', 'Краткое название', 'Статус']" :key="field"><input type="checkbox" checked />{{ field }}</label></div></details></th>
+                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" storage-key="clients-columns" /></th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>

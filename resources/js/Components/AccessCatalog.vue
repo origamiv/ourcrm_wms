@@ -7,6 +7,7 @@ import ConfirmDelete from "./ConfirmDelete.vue";
 import AdminTabs from "./AdminTabs.vue";
 import { createEntitySync } from "../lib/entitySync";
 import type { EntityRow } from "../lib/cache";
+import TableColumnSettings from "./TableColumnSettings.vue";
 interface CatalogRow extends EntityRow {
     name: string;
     slug: string | null;
@@ -18,6 +19,14 @@ interface CatalogRow extends EntityRow {
 }
 const props = defineProps<{ entity: "roles" | "permissions"; title: string }>();
 const page = usePage<any>();
+const columnSettingsOpen = ref(false);
+const columnFields = computed(() => [
+    { key: "name", label: "Название" },
+    { key: "slug", label: "Код" },
+    { key: "details", label: props.entity === "roles" ? "Описание" : "Ресурс" },
+    { key: "system", label: "Системная запись" },
+    { key: "status", label: "Статус" },
+]);
 const store = createEntitySync<CatalogRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
     props.entity,
@@ -269,7 +278,7 @@ useCardRoute<CatalogRow>({
                             </th>
                             <th>Системная запись</th>
                             <th>Статус</th>
-                            <th>Действия <details class="column-settings-native"><summary aria-label="Настроить колонки" title="Настроить колонки">⚙</summary><div class="column-settings-native-menu"><strong>Колонки</strong><label v-for="field in ['Название', 'Код', entity === 'roles' ? 'Описание' : 'Ресурс', 'Системная запись', 'Статус']" :key="field"><input type="checkbox" checked />{{ field }}</label></div></details></th>
+                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" :storage-key="`${entity}-columns`" /></th>
                         </tr>
                         <tr class="column-filters">
                             <th class="id-column"></th>
