@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh WMS DaData destination addresses
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=5min
+Unit=wms-dadata-egress.service
+
+[Install]
+WantedBy=timers.target

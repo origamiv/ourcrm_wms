@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+"""Обновить только HTTPS-исключения DaData перед маркировкой www-data."""
+import fcntl
+import pwd
+import shlex
+import socket
+import subprocess
+
+with open('/run/lock/wms-dadata-egress.lock', 'w') as lock:
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit(0)
+    # При ошибке DNS действующие правила сохраняются.
+    addresses = sorted({entry[4][0] for entry in socket.getaddrinfo(
+        'suggestions.dadata.ru', 443, socket.AF_INET, socket.SOCK_STREAM)})
+    if not addresses:
+        raise SystemExit('DaData DNS returned no IPv4 addresses')
+    command = ['/usr/sbin/iptables', '-w', '-t', 'mangle']
+    lines = subprocess.check_output(command + ['-S', 'OUTPUT'], text=True).splitlines()
+    rules = [shlex.split(line) for line in lines if line.startswith('-A ')]
+    tag = 'wms-dadata-https'
+    own = [rule for rule in rules if '--comment' in rule and rule[rule.index('--comment') + 1] == tag]
+    uid = str(pwd.getpwnam('www-data').pw_uid)
+    desired = [
+        ['-A', 'OUTPUT', '-d', address + '/32', '-p', 'tcp', '-m', 'owner',
+         '--uid-owner', uid, '-m', 'tcp', '--dport', '443', '-m', 'comment',
+         '--comment', tag, '-j', 'RETURN']
+        for address in addresses
+    ]
+    def signature(rule):
+        return {key: rule[rule.index(key) + 1] for key in
+                ['-d', '-p', '--uid-owner', '--dport', '--comment', '-j'] if key in rule}
+    if (len(own) == len(desired) and rules[:len(own)] == own
+            and [signature(rule) for rule in own] == [signature(rule) for rule in desired]):
+        raise SystemExit(0)
+    for rule in own:
+        subprocess.run(command + ['-D'] + rule[1:], check=True)
+    for rule in reversed(desired):
+        subprocess.run(command + ['-I', 'OUTPUT', '1'] + rule[2:], check=True)

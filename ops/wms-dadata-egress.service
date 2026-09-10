@@ -1,0 +1,8 @@
+[Unit]
+Description=WMS DaData HTTPS egress exception
+Wants=network-online.target
+After=network-online.target netbird.service wms-normal-egress.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/wms-dadata-egress
