@@ -128,17 +128,21 @@ function close() {
         conflict.value = null;
     }
 }
-async function save(action = "update") {
-    if (!online.value || saving.value) return;
+async function deleteUser(row: UserRow) {
     if (
-        ["delete", "block"].includes(action) &&
-        !window.confirm(
-            action === "delete"
-                ? "Удалить пользователя? Его можно будет восстановить."
-                : "Заблокировать вход пользователя?",
-        )
+        !online.value ||
+        saving.value ||
+        row.deleted_at ||
+        row.id === page.props.auth.id
     )
         return;
+    if (!window.confirm("Удалить пользователя? Его можно будет восстановить."))
+        return;
+    open(row);
+    await save("delete");
+}
+async function save(action = "update") {
+    if (!online.value || saving.value) return;
     saving.value = true;
     notice.value = "";
     conflict.value = null;
@@ -383,6 +387,22 @@ onUnmounted(store.stop);
                                     >
                                         <img src="/design/crm/key.svg" alt="" />
                                     </button>
+                                    <button
+                                        @click.stop="deleteUser(row)"
+                                        aria-label="Удалить пользователя"
+                                        title="Удалить пользователя"
+                                        :disabled="
+                                            !online ||
+                                            saving ||
+                                            !!row.deleted_at ||
+                                            row.id === page.props.auth.id
+                                        "
+                                    >
+                                        <img
+                                            src="/design/crm/delete.svg"
+                                            alt=""
+                                        />
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -579,33 +599,7 @@ onUnmounted(store.stop);
                             @click="save('activate')"
                             :disabled="!online || saving || !!conflict"
                         >
-                            Активировать</button
-                        ><button
-                            v-if="selected.status !== 2"
-                            @click="save('block')"
-                            :disabled="
-                                !online ||
-                                saving ||
-                                selected.id === page.props.auth.id ||
-                                !!conflict
-                            "
-                        >
-                            Отключить</button
-                        ><button
-                            class="danger"
-                            @click="save('delete')"
-                            :disabled="
-                                !online ||
-                                saving ||
-                                selected.id === page.props.auth.id ||
-                                !!conflict
-                            "
-                        >
-                            <img
-                                class="action-icon"
-                                src="/design/crm/delete.svg"
-                                alt=""
-                            />Удалить пользователя
+                            Активировать
                         </button></template
                     ><button
                         v-else

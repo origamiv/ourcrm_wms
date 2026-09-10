@@ -363,3 +363,44 @@ test("password action opens a separate panel and saves the new password", async 
         panel.getByLabel("Подтверждение пароля", { exact: true }),
     ).toHaveValue("");
 });
+
+test("delete action requires confirmation and removes the selected user", async ({
+    page,
+}) => {
+    await login(page);
+    const row = page.getByRole("row").filter({ hasText: "Иванов Михаил" });
+    await row
+        .getByRole("button", {
+            name: "Редактировать пользователя",
+            exact: true,
+        })
+        .click();
+    const panel = page.getByRole("complementary", {
+        name: "Карточка пользователя",
+        exact: true,
+    });
+    await expect(
+        panel.getByRole("button", {
+            name: "Удалить пользователя",
+            exact: true,
+        }),
+    ).toHaveCount(0);
+    await expect(
+        panel.getByRole("button", { name: "Отключить", exact: true }),
+    ).toHaveCount(0);
+    page.once("dialog", (dialog) => dialog.dismiss());
+    await row
+        .getByRole("button", { name: "Удалить пользователя", exact: true })
+        .click();
+    await expect(row).toBeVisible();
+    page.once("dialog", (dialog) => dialog.accept());
+    await row
+        .getByRole("button", { name: "Удалить пользователя", exact: true })
+        .click();
+    await expect(row).toHaveCount(0);
+    await page.reload();
+    await expect(
+        page.getByText("Данные синхронизированы", { exact: true }),
+    ).toBeVisible();
+    await expect(row).toHaveCount(0);
+});
