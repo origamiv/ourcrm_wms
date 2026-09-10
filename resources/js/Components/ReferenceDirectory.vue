@@ -1775,7 +1775,10 @@ useCardRoute<ReferenceRow>({
 }
 .column-settings-control input {
     flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
     margin: 0;
+    padding: 0;
 }
 .column-drag-handle {
     flex: 0 0 auto;
