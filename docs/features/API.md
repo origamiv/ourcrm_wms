@@ -34,3 +34,5 @@
 Подсказки DaData: `POST /api/companies/suggestions/{type}`, `type=party|bank`, `{query: string}`; доступ администратора, Bearer Token. Возвращает варианты и поля для заполнения без сохранения компании. [Контракт и настройки](COMPANIES.md#подсказки-dadata).
 
 [Клиенты](CLIENTS.md): `POST /api/clients`, `PUT /api/clients/{id}`, `DELETE /api/clients/{id}`, чтение через `GET /api/sync/clients`.
+
+[Справочники](REFERENCES.md): CRUD `/api/{reference}` и синхронизация `/api/sync/{reference}` для `modules`, `features`, `icons`, `files`. Модули и возможности общие для всех организаций.

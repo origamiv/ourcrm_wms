@@ -827,7 +827,9 @@ test("company contact action locks the company for viewing editing and creation"
     await expect(
         page.getByText("Изменения сохранены", { exact: true }),
     ).toBeVisible();
-    await expect(page).toHaveURL(/\/main\/company_contacts\/\d+\/edit\?company_id=\d+/);
+    await expect(page).toHaveURL(
+        /\/main\/company_contacts\/\d+\/edit\?company_id=\d+/,
+    );
     const contactUrl = page.url();
     await page.reload();
     await expect(page).toHaveURL(contactUrl);
@@ -1033,4 +1035,172 @@ test("canonical card links restore forms and support browser history", async ({
     await expect(
         page.getByRole("button", { name: "Создать клиента", exact: true }),
     ).toBeVisible();
+});
+
+test("reference submenu supports all four directories and cached navigation", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    const submenu = page.getByRole("navigation", {
+        name: "Справочники",
+        exact: true,
+    });
+    await expect(submenu).toBeVisible();
+    const triggerBox = await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .boundingBox();
+    const menuBox = await submenu.boundingBox();
+    expect(Math.abs(menuBox!.x - triggerBox!.x)).toBeLessThan(2);
+    expect(menuBox!.y).toBeGreaterThanOrEqual(
+        triggerBox!.y + triggerBox!.height,
+    );
+    const moduleBox = await submenu
+        .getByRole("link", { name: "Модули", exact: true })
+        .boundingBox();
+    const featureBox = await submenu
+        .getByRole("link", { name: "Возможности", exact: true })
+        .boundingBox();
+    expect(featureBox!.y).toBeGreaterThanOrEqual(
+        moduleBox!.y + moduleBox!.height,
+    );
+    await page.keyboard.press("Escape");
+    await expect(submenu).toHaveCount(0);
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .press("ArrowDown");
+    await expect(
+        submenu.getByRole("link", { name: "Модули", exact: true }),
+    ).toBeFocused();
+
+    for (const [title, entity] of [
+        ["Модули", "modules"],
+        ["Возможности", "features"],
+        ["Иконки", "icons"],
+        ["Файлы", "files"],
+    ]) {
+        if (
+            !(await page
+                .getByRole("navigation", { name: "Справочники", exact: true })
+                .isVisible())
+        )
+            await page
+                .getByRole("button", { name: "Справочники", exact: false })
+                .click();
+        await page
+            .getByRole("navigation", { name: "Справочники", exact: true })
+            .getByRole("link", { name: title, exact: true })
+            .click();
+        await expect(page).toHaveURL(`/main/${entity}`);
+        await page
+            .getByRole("button", { name: "Добавить запись", exact: true })
+            .click();
+        await expect(page).toHaveURL(`/main/${entity}/0/create`);
+        await page
+            .getByLabel("Название *", { exact: true })
+            .fill(`Новая запись ${entity}`);
+        if (entity === "features") {
+            await page
+                .getByLabel("Модуль", { exact: true })
+                .selectOption({ label: "Склад" });
+            await page.getByLabel("Ресурс", { exact: true }).selectOption("1");
+        }
+        if (["icons", "files"].includes(entity)) {
+            await page
+                .getByLabel("Путь", { exact: true })
+                .fill(`documents/${entity}.svg`);
+            await page.getByLabel("Категория", { exact: true }).fill("Склад");
+            await page.getByLabel("Размер, байт", { exact: true }).fill("128");
+        }
+        await page
+            .getByRole("button", { name: "Создать запись", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`/main/${entity}/\\d+/edit$`));
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name: `Просмотр: Новая запись ${entity}`,
+                exact: true,
+            })
+            .click();
+        await expect(
+            page.getByLabel("Название *", { exact: true }),
+        ).toBeDisabled();
+        await page.reload();
+        await expect(
+            page.getByLabel("Название *", { exact: true }),
+        ).toBeDisabled();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name: `Редактировать: Новая запись ${entity}`,
+                exact: true,
+            })
+            .click();
+        await page.getByLabel("Статус", { exact: true }).selectOption("2");
+        await page
+            .getByRole("button", { name: "Сохранить изменения", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name: `Удалить: Новая запись ${entity}`,
+                exact: true,
+            })
+            .click();
+        await page
+            .getByRole("dialog")
+            .getByRole("button", { name: "Удалить", exact: true })
+            .click();
+        await expect(
+            page.getByRole("button", {
+                name: `Новая запись ${entity}`,
+                exact: true,
+            }),
+        ).toHaveCount(0);
+    }
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    await page
+        .getByRole("navigation", { name: "Справочники", exact: true })
+        .getByRole("link", { name: "Модули", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Склад", exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    await page.screenshot({ path: "/tmp/wms-references.png", fullPage: true });
+    await page.keyboard.press("Escape");
+    await context.setOffline(true);
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    await page
+        .getByRole("navigation", { name: "Справочники", exact: true })
+        .getByRole("link", { name: "Файлы", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Документ", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Добавить запись", exact: true }),
+    ).toBeDisabled();
 });

@@ -2,6 +2,38 @@
 import RibbonTabs from "./RibbonTabs.vue";
 const tabs = [
     {
+        label: "Справочники",
+        url: "/main/references",
+        component: "",
+        icon: "administration",
+        children: [
+            {
+                label: "Модули",
+                url: "/main/modules",
+                component: "Modules",
+                icon: "workspace",
+            },
+            {
+                label: "Возможности",
+                url: "/main/features",
+                component: "Features",
+                icon: "permissions",
+            },
+            {
+                label: "Иконки",
+                url: "/main/icons",
+                component: "Icons",
+                icon: "view",
+            },
+            {
+                label: "Файлы",
+                url: "/main/files",
+                component: "Files",
+                icon: "roles",
+            },
+        ],
+    },
+    {
         label: "Роли и права",
         url: "/main/roles_rights",
         component: "RolesRights",

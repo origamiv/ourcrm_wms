@@ -47,3 +47,11 @@ DB::transaction(function () {
     DB::table('clients.clients')->insert(['name' => 'Тестовый клиент', 'shortname' => 'Клиент', 'status' => 1, 'tenant_id' => 'test_org']);
     (require database_path('migrations/2026_09_10_000008_sync_clients.php'))->up();
 });
+
+DB::transaction(function () {
+    DB::table('main.modules')->insert(['name' => 'Склад', 'shortname' => 'WMS', 'status' => 1]);
+    DB::table('main.features')->insert(['name' => 'Приёмка', 'shortname' => 'Приёмка', 'status' => 1, 'module_id' => 1]);
+    DB::table('main.icons')->insert(['name' => 'Значок склада', 'category' => 'Склад', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('main.files')->insert(['name' => 'Документ', 'category' => 'Склад', 'status' => 1, 'tenant_id' => 'test_org']);
+    (require database_path('migrations/2026_09_10_000009_sync_references.php'))->up();
+});

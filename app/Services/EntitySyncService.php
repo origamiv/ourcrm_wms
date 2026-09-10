@@ -12,13 +12,13 @@ use JsonException;
 
 final class EntitySyncService
 {
-    public function revision(string $tenant): string
+    public function revision(?string $tenant): string
     {
         return (string) $this->checkpoint($tenant)->revision;
     }
 
     /** @return array<string, mixed> */
-    public function current(string $entity, string $tenant, string|int $id): array
+    public function current(string $entity, ?string $tenant, string|int $id): array
     {
         $row = DB::table('public.entity_changes')->where('entity', $entity)->where('tenant_id', $tenant)->where('entity_id', $id)->orderByDesc('revision')->first();
         abort_unless($row && $row->data, 404);
@@ -27,7 +27,7 @@ final class EntitySyncService
     }
 
     /** @return array<string, mixed> */
-    public function page(string $entity, string $tenant, string $user, ?string $cursor, ?string $continuation): array
+    public function page(string $entity, ?string $tenant, string $user, ?string $cursor, ?string $continuation): array
     {
         $size = config('wms.sync_page_size');
         if ($continuation) {
@@ -43,7 +43,8 @@ final class EntitySyncService
                 'mode' => $cursor ? 'delta' : 'snapshot', 'from' => $from, 'target' => (string) $target->revision, 'after' => ''];
         }
         if ($state['mode'] === 'snapshot') {
-            $rows = DB::select('SELECT * FROM (SELECT DISTINCT ON (entity_id) * FROM public.entity_changes WHERE entity = ? AND tenant_id = ? AND revision <= ? ORDER BY entity_id, revision DESC) latest WHERE entity_id > ? AND operation = ? ORDER BY entity_id LIMIT ?', [$entity, $tenant, $state['target'], $state['after'], 'upsert', $size + 1]);
+            $tenantWhere = $tenant === null ? 'tenant_id IS NULL' : 'tenant_id = ?';
+            $rows = DB::select('SELECT * FROM (SELECT DISTINCT ON (entity_id) * FROM public.entity_changes WHERE entity = ? AND '.$tenantWhere.' AND revision <= ? ORDER BY entity_id, revision DESC) latest WHERE entity_id > ? AND operation = ? ORDER BY entity_id LIMIT ?', [$entity, ...($tenant === null ? [] : [$tenant]), $state['target'], $state['after'], 'upsert', $size + 1]);
         } else {
             $rows = DB::table('public.entity_changes')->where('entity', $entity)->where('tenant_id', $tenant)->where('revision', '>', max((int) $state['from'], (int) $state['after']))
                 ->where('revision', '<=', $state['target'])->orderBy('revision')->limit($size + 1)->get()->all();
@@ -61,7 +62,7 @@ final class EntitySyncService
             'cursor' => $more ? null : $this->encode(['entity' => $entity, 'tenant' => $tenant, 'user' => $user, 'format' => config('wms.cache_version'), 'generation' => $state['generation'], 'revision' => $state['target']])];
     }
 
-    public function checkpoint(string $tenant): object
+    public function checkpoint(?string $tenant): object
     {
         $state = DB::table('public.sync_state')->where('tenant_id', $tenant)->first();
         if (! $state) {
@@ -72,7 +73,7 @@ final class EntitySyncService
         return $state;
     }
 
-    private function generation(string $tenant): string
+    private function generation(?string $tenant): string
     {
         return (string) $this->checkpoint($tenant)->generation;
     }
@@ -82,7 +83,7 @@ final class EntitySyncService
         return Crypt::encryptString(json_encode($value));
     }
 
-    private function decode(string $token, string $tenant, string $user, string $entity): array
+    private function decode(string $token, ?string $tenant, string $user, string $entity): array
     {
         try {
             $value = json_decode(Crypt::decryptString($token), true, flags: JSON_THROW_ON_ERROR);

@@ -4,6 +4,35 @@ declare(strict_types=1);
 
 return [
     'entities' => [
+        'modules' => [
+            'entity' => App\Models\Module::class,
+            'table' => 'main.modules',
+            'global' => true,
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'shortname', 'descr', 'fn', 'domain', 'status', 'created_at', 'updated_at', 'deleted_at'],
+        ],
+        'features' => [
+            'entity' => App\Models\Feature::class,
+            'table' => 'main.features',
+            'global' => true,
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'shortname', 'is_resource', 'module_id', 'status', 'created_at', 'updated_at', 'deleted_at'],
+        ],
+        'icons' => [
+            'entity' => App\Models\Icon::class,
+            'table' => 'main.icons',
+            'global' => false,
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'path', 'category', 'size', 'ext', 'user_id', 'company_id', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
+        'files' => [
+            'entity' => App\Models\File::class,
+            'table' => 'main.files',
+            'global' => false,
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'path', 'category', 'size', 'ext', 'user_id', 'company_id', 'is_s3', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
+
         'clients' => [
             'entity' => App\Models\Client::class,
             'table' => 'clients.clients',

@@ -33,3 +33,8 @@ CREATE TABLE main.company_contacts (
 
 CREATE SCHEMA clients;
 CREATE TABLE clients.clients (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
+
+CREATE TABLE main.modules (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), descr text, fn varchar(255), domain varchar(255), status integer, created_at timestamp, updated_at timestamp, deleted_at timestamp);
+CREATE TABLE main.features (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), is_resource integer, module_id integer, status integer, created_at timestamp, updated_at timestamp, deleted_at timestamp);
+CREATE TABLE main.icons (id bigserial PRIMARY KEY, name varchar(255), path varchar(255), category varchar(255), size integer, ext varchar(255), user_id integer, company_id integer, status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
+CREATE TABLE main.files (id bigserial PRIMARY KEY, name varchar(255), path varchar(255), category varchar(255), size integer, ext varchar(255), user_id integer, company_id integer, is_s3 integer, status integer NOT NULL, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);

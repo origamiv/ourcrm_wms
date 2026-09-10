@@ -73,13 +73,7 @@ onUnmounted(() => {
                     href="/main/users"
                     aria-label="Администрирование"
                     :class="{
-                        active: [
-                            '/main/users',
-                            '/main/roles',
-                            '/main/permissions',
-                            '/main/companies',
-                            '/main/company_contacts',
-                        ].some((url) => page.url.startsWith(url)),
+                        active: page.url.startsWith('/main/'),
                     }"
                     @click.prevent="go('Users', '/main/users')"
                     ><img
@@ -114,13 +108,7 @@ onUnmounted(() => {
         <main class="main-panel">
             <header class="topbar">
                 <span class="section-title">{{
-                    [
-                        "/main/users",
-                        "/main/roles",
-                        "/main/permissions",
-                        "/main/companies",
-                        "/main/company_contacts",
-                    ].some((url) => page.url.startsWith(url))
+                    page.url.startsWith("/main/")
                         ? "Администрирование"
                         : page.url.startsWith("/clients/")
                           ? "Клиенты"

@@ -20,7 +20,7 @@ final class EntitySyncController extends BaseApiController
     {
         $definition = $registry->resolve($entity_type, $request->user());
         $input = $request->validate(['cursor' => ['nullable', 'string', 'max:4096'], 'continuation' => ['nullable', 'string', 'max:4096']]);
-        $page = $sync->page($definition['entity'], $request->user()->tenant_id, (string) $request->user()->id, $input['cursor'] ?? null, $input['continuation'] ?? null);
+        $page = $sync->page($definition['entity'], ($definition['global'] ?? false) ? null : $request->user()->tenant_id, (string) $request->user()->id, $input['cursor'] ?? null, $input['continuation'] ?? null);
 
         return response()->json(['entity_type' => $entity_type, ...$page]);
     }

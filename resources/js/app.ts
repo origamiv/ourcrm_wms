@@ -1,3 +1,7 @@
+import Files from "./Pages/Files.vue";
+import Icons from "./Pages/Icons.vue";
+import Features from "./Pages/Features.vue";
+import Modules from "./Pages/Modules.vue";
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
 import Shell from "./Components/Shell.vue";
@@ -12,6 +16,10 @@ import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
 const pages: Record<string, any> = {
     Home,
+    Files,
+    Icons,
+    Features,
+    Modules,
     Clients,
     Companies,
     CompanyContacts,

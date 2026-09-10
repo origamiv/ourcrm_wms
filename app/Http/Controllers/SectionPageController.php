@@ -13,7 +13,7 @@ final class SectionPageController
     public function __invoke(Request $request, string $left, string $top, ?string $id = null, ?string $action = null): Response
     {
         $pages = [
-            'main' => ['users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
+            'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
             'clients' => ['clients' => 'Clients'],
         ];
         $component = $pages[$left][$top] ?? null;
@@ -33,7 +33,11 @@ final class SectionPageController
                 abort_unless($id === '0', 404);
             } else {
                 $model = config('sync.entities.'.$top.'.entity');
-                $row = $model::withTrashed()->where('tenant_id', $request->user()->tenant_id)->findOrFail($id);
+                $query = $model::withTrashed();
+                if (! config('sync.entities.'.$top.'.global', false)) {
+                    $query->where('tenant_id', $request->user()->tenant_id);
+                }
+                $row = $query->findOrFail($id);
                 if ($top === 'company_contacts' && $request->has('company_id')) {
                     abort_unless((string) $row->company_id === (string) $request->query('company_id'), 404);
                 }
