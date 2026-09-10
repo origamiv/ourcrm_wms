@@ -792,15 +792,15 @@ useCardRoute<ReferenceRow>({
                         @dragover.prevent
                         @drop="dropColumn(field.key)"
                     >
-                        <span class="column-drag-handle" aria-hidden="true">⠿</span>
-                        <label>
+                        <label class="column-settings-control">
                             <input
                                 type="checkbox"
                                 :checked="isColumnVisible(field.key)"
                                 :disabled="fixedColumnKeys.has(field.key)"
                                 @change="toggleColumn(field.key)"
                             />
-                            {{ field.label }}
+                            <span class="column-drag-handle" aria-hidden="true">⠿</span>
+                            <span>{{ field.label }}</span>
                         </label>
                     </div>
                 </div>
@@ -1726,27 +1726,34 @@ useCardRoute<ReferenceRow>({
     font-size: 12px;
     padding: 0 6px;
 }
+.table-scroll {
+    position: relative;
+}
 .column-settings-panel {
-    display: flex;
-    flex-wrap: wrap;
+    position: absolute;
+    z-index: 20;
+    top: 42px;
+    right: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 8px;
-    padding: 8px 12px;
-    margin-bottom: 8px;
+    width: min(720px, calc(100vw - 32px));
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+    padding: 10px;
     border: 1px solid #d7e5db;
     border-radius: 8px;
     background: #fff;
     color: #344054;
+    box-shadow: 0 10px 24px rgb(16 24 40 / 14%);
 }
 .column-settings-title {
-    width: 100%;
+    grid-column: 1 / -1;
     font-size: 12px;
     font-weight: 700;
 }
 .column-settings-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 6px;
+    min-width: 0;
     border: 1px solid transparent;
     border-radius: 5px;
     cursor: grab;
@@ -1755,19 +1762,31 @@ useCardRoute<ReferenceRow>({
     border-color: #d7e5db;
     background: #f8fafc;
 }
-.column-settings-item label {
+.column-settings-control {
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-height: 30px;
+    padding: 4px 6px;
+    margin: 0;
+    cursor: grab;
+}
+.column-settings-control input {
+    flex: 0 0 auto;
     margin: 0;
 }
 .column-drag-handle {
+    flex: 0 0 auto;
     color: #98a2b3;
     font-size: 15px;
     cursor: grab;
 }
-.column-settings-item input {
-    accent-color: #2274a5;
+.column-settings-control > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .column-settings-button {
     margin-left: 6px;
