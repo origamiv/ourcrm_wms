@@ -876,9 +876,11 @@ useCardRoute<DirectoryRow>({
     top: 42px;
     right: 8px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
     gap: 8px;
-    width: min(600px, calc(100vw - 32px));
+    width: max-content;
+    min-width: 220px;
+    max-width: min(600px, calc(100vw - 32px));
     padding: 10px;
     border: 1px solid #d7e5db;
     border-radius: 8px;

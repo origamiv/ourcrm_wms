@@ -1751,9 +1751,11 @@ useCardRoute<ReferenceRow>({
     top: 42px;
     right: 8px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
     gap: 8px;
-    width: min(720px, calc(100vw - 32px));
+    width: max-content;
+    min-width: 220px;
+    max-width: min(720px, calc(100vw - 32px));
     max-height: min(70vh, 520px);
     overflow-y: auto;
     padding: 10px;

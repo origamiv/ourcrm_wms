@@ -657,7 +657,9 @@ fieldset > small {
     right: 0;
     display: grid;
     gap: 7px;
+    width: max-content;
     min-width: 180px;
+    max-width: min(600px, calc(100vw - 32px));
     padding: 10px;
     border: 1px solid #d7e5db;
     border-radius: 8px;
