@@ -32,7 +32,10 @@ export interface ReferenceField {
         | "good_cards"
         | "type_goods"
         | "unit_goods"
-        | "kind_kiz";
+        | "kind_kiz"
+        | "type_warehouses"
+        | "warehouses"
+        | "marketplaces";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -150,6 +153,46 @@ export const references = {
         ] as ReferenceField[],
     },
 
+    warehouses: {
+        title: "Склады",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "type_warehouse_id", label: "Тип склада", kind: "lookup", lookup: "type_warehouses" },
+        ] as ReferenceField[],
+    },
+    type_warehouses: {
+        title: "Типы складов",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    marketplaces: {
+        title: "Маркетплейсы",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "icon", label: "Иконка" },
+        ] as ReferenceField[],
+    },
+    delivery_services: {
+        title: "Службы доставки",
+        fields: [
+            {
+                key: "marketplace_id",
+                label: "Маркетплейс",
+                kind: "lookup",
+                lookup: "marketplaces",
+            },
+            { key: "shortname", label: "Краткое название" },
+            { key: "icon", label: "Иконка" },
+            { key: "color", label: "Цвет" },
+            {
+                key: "is_order_edit",
+                label: "Разрешено редактирование заказа",
+                kind: "flag",
+            },
+            { key: "from_integration_only", label: "Только из интеграции", kind: "flag" },
+            { key: "prefix", label: "Префикс" },
+            { key: "folder", label: "Папка" },
+        ] as ReferenceField[],
+    },
     kizes: {
         title: "Маркировка",
         fields: [

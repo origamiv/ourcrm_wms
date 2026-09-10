@@ -8,7 +8,7 @@ const collapsed = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
 function go(
-    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks",
+    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces",
     url: string,
 ) {
     if (navigator.onLine) router.visit(url);
@@ -128,6 +128,20 @@ onUnmounted(() => {
                         alt=""
                     /><span class="nav-label">Интеграции</span></a
                 >
+                    href="/fulfillment/marketplaces"
+                    aria-label="Фулфилмент"
+                    :class="{ active: page.url.startsWith('/fulfillment/') }"
+                    @click.prevent="
+                        go('Marketplaces', '/fulfillment/marketplaces')
+                    "
+                >
+                    <img
+                        class="nav-icon goods-icon"
+                        src="/design/crm/goods.svg"
+                        alt=""
+                    />
+                    <span class="nav-label">Фулфилмент</span>
+                </a>
             </nav>
             <div class="sidebar-bottom">
                 <span
@@ -150,6 +164,8 @@ onUnmounted(() => {
                             ? "Товары"
                             : page.url.startsWith("/integration/")
                               ? "Интеграции"
+                            : page.url.startsWith("/fulfillment/")
+                              ? "Фулфилмент"
                               : "Рабочий стол"
                 }}</span>
                 <div class="account">

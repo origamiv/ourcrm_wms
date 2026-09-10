@@ -10,6 +10,7 @@ import DocumentDownload from "./DocumentDownload.vue";
 import SearchableSelect from "./SearchableSelect.vue";
 import StringListInput from "./StringListInput.vue";
 import IntegrationTabs from "./IntegrationTabs.vue";
+import FulfillmentTabs from "./FulfillmentTabs.vue";
 import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
@@ -32,6 +33,9 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
+const isFulfillment = ["warehouses", "type_warehouses", "marketplaces", "delivery_services"].includes(
+    props.entity,
+);
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz
@@ -52,6 +56,8 @@ const isDocType = props.entity === "client_doc_types";
 const isClientSection = isIndividual || isDocument || isDocType;
 const basePath = isIntegration
     ? `/integration/${props.entity.replace("integration_", "")}`
+    : isFulfillment
+      ? `/fulfillment/${props.entity}`
     : isGoodsSection
       ? `/goods/${props.entity}`
       : isClientSection
@@ -572,6 +578,8 @@ useCardRoute<ReferenceRow>({
                 {{
                     isIntegration
                         ? "Интеграции"
+                        : isFulfillment
+                        ? "Фулфилмент › Справочники"
                         : isGoodsSection
                           ? "Товары"
                           : isClientSection
@@ -580,7 +588,9 @@ useCardRoute<ReferenceRow>({
                 }}
                 › {{ definition.title }}
             </div>
-            <IntegrationTabs v-if="isIntegration" /><GoodsTabs
+            <IntegrationTabs v-if="isIntegration" /><FulfillmentTabs
+                v-else-if="isFulfillment"
+            /><GoodsTabs
                 v-else-if="isGoodsSection"
             /><ClientTabs v-else-if="isClientSection" /><AdminTabs v-else />
             <p v-if="clientScope" class="notice">
@@ -654,6 +664,10 @@ useCardRoute<ReferenceRow>({
                                         "type_goods",
                                         "unit_goods",
                                         "kind_kiz",
+                                        "marketplaces",
+                                        "delivery_services",
+                                        "warehouses",
+                                        "type_warehouses",
                                         "modules",
                                         "features",
                                         "client_individuals",
@@ -697,6 +711,10 @@ useCardRoute<ReferenceRow>({
                                             'type_goods',
                                             'unit_goods',
                                             'kind_kiz',
+                                            'marketplaces',
+                                            'delivery_services',
+                                            'warehouses',
+                                            'type_warehouses',
                                             'modules',
                                             'features',
                                             'client_individuals',
