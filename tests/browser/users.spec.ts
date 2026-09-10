@@ -2231,14 +2231,20 @@ test("empty good category switch persists while categories with children cannot 
 });
 
 test("markings link to clients and kinds and retain edits in browser storage", async ({ page, context }) => {
+    execFileSync("psql", ["-h", "/var/run/postgresql", "-U", "root", "-d", "wms_browser_test", "-v", "ON_ERROR_STOP=1", "-c", "INSERT INTO goods.goods (name, code, tenant_id) VALUES ('Товар маркировки', 'KIZ-SEARCH-001', 'test_org')"]);
+
     await login(page);
     await page.locator(".sidebar").getByRole("link", { name: "Товары", exact: true }).click();
     await page.getByRole("link", { name: "Маркировка", exact: true }).click();
     await expect(page).toHaveURL("/goods/kizes");
     await page.getByRole("button", { name: "Добавить запись", exact: true }).click();
     await page.getByLabel("Код маркировки", { exact: true }).fill("000123-TEST");
-    await page.getByLabel("Клиент", { exact: true }).selectOption({ label: "Тестовый клиент" });
+    await page.getByRole("combobox", { name: "Клиент", exact: true }).fill("Тестовый");
+    await page.getByRole("option", { name: "Тестовый клиент", exact: true }).click();
     await page.getByLabel("Вид кода маркировки", { exact: true }).selectOption({ label: "IMEI" });
+    await page.getByRole("combobox", { name: "Товар", exact: true }).fill("KIZ-SEARCH-001");
+    await page.getByRole("option", { name: "Товар маркировки", exact: true }).click();
+
     await page.getByRole("button", { name: "Создать запись", exact: true }).click();
     await expect(page.getByText("Изменения сохранены", { exact: true })).toBeVisible();
     await page.getByLabel("Код маркировки", { exact: true }).fill("000124-TEST");
@@ -2246,7 +2252,8 @@ test("markings link to clients and kinds and retain edits in browser storage", a
     await expect(page.getByText("Изменения сохранены", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("Код маркировки", { exact: true })).toHaveValue("000124-TEST");
-    await expect(page.getByLabel("Клиент", { exact: true }).locator("option:checked")).toHaveText("Тестовый клиент");
+    await expect(page.getByRole("combobox", { name: "Клиент", exact: true })).toHaveValue("Тестовый клиент");
+    await expect(page.getByRole("combobox", { name: "Товар", exact: true })).toHaveValue("Товар маркировки");
     await page.getByRole("button", { name: "Закрыть карточку" }).click();
     await expect(page.getByRole("columnheader").first()).toHaveText("#");
     await context.setOffline(true);

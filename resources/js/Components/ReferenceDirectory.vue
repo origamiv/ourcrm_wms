@@ -1032,16 +1032,24 @@ useCardRoute<ReferenceRow>({
                                 :label="field.label"
                             />
                             <SearchableSelect
-                                v-else-if="isGood && field.key === 'parent_id'"
-                                v-model="form.parent_id"
+                                v-else-if="
+                                    (isGood && field.key === 'parent_id') ||
+                                    (isKiz &&
+                                        ['client_id', 'good_id'].includes(
+                                            field.key,
+                                        ))
+                                "
+                                v-model="form[field.key]"
                                 :label="field.label"
                                 :disabled="
                                     viewing || saving || !online || !!conflict
                                 "
                                 :options="
-                                    choices('goods')
+                                    choices(field.lookup!)
                                         .filter(
-                                            (row) => row.id !== selected?.id,
+                                            (row) =>
+                                                !isGood ||
+                                                row.id !== selected?.id,
                                         )
                                         .map((row) => ({
                                             id: row.id,
