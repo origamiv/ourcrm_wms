@@ -800,7 +800,7 @@ useCardRoute<ReferenceRow>({
                                 @change="toggleColumn(field.key)"
                             />
                             <span class="column-drag-handle" aria-hidden="true">⠿</span>
-                            <span>{{ field.label }}</span>
+                            <span class="column-settings-label">{{ field.label }}</span>
                         </label>
                     </div>
                 </div>
@@ -1783,7 +1783,11 @@ useCardRoute<ReferenceRow>({
     font-size: 15px;
     cursor: grab;
 }
-.column-settings-control > span:last-child {
+.column-settings-label {
+    display: block;
+    min-width: 0;
+    flex: 1 1 auto;
+    color: #344054;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
