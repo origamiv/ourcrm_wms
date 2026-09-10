@@ -6,6 +6,7 @@ import RussianDateInput from "./RussianDateInput.vue";
 import { formatDate } from "../lib/dates";
 import DocumentPrintFields from "./DocumentPrintFields.vue";
 import DocumentDownload from "./DocumentDownload.vue";
+import StringListInput from "./StringListInput.vue";
 import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
@@ -264,6 +265,11 @@ function open(row: ReferenceRow | null, readOnly = false) {
                 row?.[field.key] == null
                     ? ""
                     : JSON.stringify(row[field.key], null, 2);
+    for (const field of definition.fields)
+        if (field.kind === "string_list")
+            form.value[field.key] = Array.isArray(row?.[field.key])
+                ? row[field.key].map(String)
+                : [];
     if (isDocument && !row)
         form.value.src = JSON.stringify(
             { pdf: { number: "", basis: "", items: [], terms: "" } },
@@ -331,6 +337,12 @@ async function save(remove = false) {
                             `Поле «${field.label}» должно содержать JSON-объект или массив.`,
                         );
                 }
+        if (!remove)
+            for (const field of definition.fields)
+                if (field.kind === "string_list")
+                    payload[field.key] = form.value[field.key]
+                        .map((value: string) => value.trim())
+                        .filter((value: string) => value !== "");
         const response = await http(
             `/web/${isIndividual ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}individuals` : endpoint!.replace(/^\//, "")}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
@@ -777,110 +789,121 @@ useCardRoute<ReferenceRow>({
                                 required
                                 maxlength="255"
                         /></label>
-                        <label
+                        <template
                             v-for="field in definition.fields"
                             :key="field.key"
-                            >{{ field.label }}
-                            <textarea
-                                v-if="field.kind === 'json'"
+                        >
+                            <StringListInput
+                                v-if="field.kind === 'string_list'"
                                 v-model="form[field.key]"
-                                :aria-label="field.label"
-                                rows="6"
-                                spellcheck="false"
+                                :label="field.label"
                             />
-                            <textarea
-                                v-else-if="field.kind === 'textarea'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                                maxlength="10000"
-                                rows="4"
-                            />
-                            <select
-                                v-else-if="field.kind === 'lookup'"
-                                :required="field.required"
-                                @change="changeLookup(field.key)"
-                                :disabled="
-                                    field.key === 'client_id' && !!clientScope
-                                "
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                            >
-                                <option :value="null">Не выбрано</option>
-                                <option
-                                    v-if="
-                                        form[field.key] &&
-                                        !choices(field.lookup!).some(
-                                            (row) =>
-                                                String(row.id) ===
-                                                String(form[field.key]),
-                                        )
+                            <label v-else :key="field.key"
+                                >{{ field.label }}
+                                <textarea
+                                    v-if="field.kind === 'json'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                    rows="6"
+                                    spellcheck="false"
+                                />
+                                <textarea
+                                    v-else-if="field.kind === 'textarea'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                    maxlength="10000"
+                                    rows="4"
+                                />
+                                <select
+                                    v-else-if="field.kind === 'lookup'"
+                                    :required="field.required"
+                                    @change="changeLookup(field.key)"
+                                    :disabled="
+                                        field.key === 'client_id' &&
+                                        !!clientScope
                                     "
-                                    :value="form[field.key]"
-                                    disabled
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
                                 >
-                                    Недоступная запись №{{ form[field.key] }}
-                                </option>
-                                <option
-                                    v-for="row in choices(field.lookup!)"
-                                    :key="row.id"
-                                    :value="row.id"
+                                    <option :value="null">Не выбрано</option>
+                                    <option
+                                        v-if="
+                                            form[field.key] &&
+                                            !choices(field.lookup!).some(
+                                                (row) =>
+                                                    String(row.id) ===
+                                                    String(form[field.key]),
+                                            )
+                                        "
+                                        :value="form[field.key]"
+                                        disabled
+                                    >
+                                        Недоступная запись №{{
+                                            form[field.key]
+                                        }}
+                                    </option>
+                                    <option
+                                        v-for="row in choices(field.lookup!)"
+                                        :key="row.id"
+                                        :value="row.id"
+                                    >
+                                        {{ displayName(row) }}
+                                    </option>
+                                </select>
+                                <select
+                                    v-else-if="field.kind === 'flag12'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
                                 >
-                                    {{ displayName(row) }}
-                                </option>
-                            </select>
-                            <select
-                                v-else-if="field.kind === 'flag12'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                            >
-                                <option :value="null">Не указан</option>
-                                <option :value="1">Да</option>
-                                <option :value="2">Нет</option>
-                            </select>
-                            <select
-                                v-else-if="field.kind === 'flag'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                            >
-                                <option :value="null">Не указан</option>
-                                <option :value="1">Да</option>
-                                <option :value="0">Нет</option>
-                            </select>
-                            <RussianDateInput
-                                v-else-if="field.kind === 'datetime'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                                :with-time="true"
-                            />
-                            <RussianDateInput
-                                v-else-if="field.kind === 'date'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                            />
-                            <input
-                                v-else-if="field.kind === 'money'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                                inputmode="decimal"
-                                placeholder="0,00"
-                                pattern="[0-9]{1,16}([.,][0-9]{1,2})?"
-                            />
-                            <input
-                                v-else-if="field.kind === 'number'"
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                                type="number"
-                                :required="field.required"
-                                min="0"
-                                max="2147483647"
-                            />
-                            <input
-                                v-else
-                                v-model="form[field.key]"
-                                :aria-label="field.label"
-                                maxlength="255"
-                            />
-                        </label>
+                                    <option :value="null">Не указан</option>
+                                    <option :value="1">Да</option>
+                                    <option :value="2">Нет</option>
+                                </select>
+                                <select
+                                    v-else-if="field.kind === 'flag'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                >
+                                    <option :value="null">Не указан</option>
+                                    <option :value="1">Да</option>
+                                    <option :value="0">Нет</option>
+                                </select>
+                                <RussianDateInput
+                                    v-else-if="field.kind === 'datetime'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                    :with-time="true"
+                                />
+                                <RussianDateInput
+                                    v-else-if="field.kind === 'date'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                />
+                                <input
+                                    v-else-if="field.kind === 'money'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                    inputmode="decimal"
+                                    placeholder="0,00"
+                                    pattern="[0-9]{1,16}([.,][0-9]{1,2})?"
+                                />
+                                <input
+                                    v-else-if="field.kind === 'number'"
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                    type="number"
+                                    :required="field.required"
+                                    min="0"
+                                    max="2147483647"
+                                />
+                                <input
+                                    v-else
+                                    v-model="form[field.key]"
+                                    :aria-label="field.label"
+                                    maxlength="255"
+                                />
+                            </label>
+                        </template>
                         <DocumentPrintFields
                             v-if="isDocument"
                             v-model="form.src"

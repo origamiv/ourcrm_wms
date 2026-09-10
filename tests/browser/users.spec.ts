@@ -1707,9 +1707,38 @@ test("goods navigation CRUD articles and offline cache", async ({
     await page.getByLabel("Название *", { exact: true }).fill("Товар браузера");
     await page.getByLabel("Краткое название", { exact: true }).fill("Товар");
     await page.getByLabel("Код", { exact: true }).fill("G-001");
-    await page
-        .getByLabel("Артикулы (JSON)", { exact: true })
-        .fill('["ART-001","ART-002"]');
+    for (const [label, first, second] of [
+        ["Артикулы", "000123", "ART-002"],
+        ["Штрихкоды", "0000123456789", "0012345678901"],
+    ]) {
+        await page.getByLabel(label + ": 1", { exact: true }).fill(first);
+        await page
+            .getByRole("button", {
+                name: "Добавить строку: " + label + ", 1",
+                exact: true,
+            })
+            .click();
+        await page.getByLabel(label + ": 2", { exact: true }).fill("лишнее");
+        await page
+            .getByRole("button", {
+                name: "Добавить строку: " + label + ", 2",
+                exact: true,
+            })
+            .click();
+        await page.getByLabel(label + ": 3", { exact: true }).fill(second);
+        await page
+            .getByRole("button", {
+                name: "Удалить строку: " + label + ", 2",
+                exact: true,
+            })
+            .click();
+        await page
+            .getByRole("button", {
+                name: "Добавить строку: " + label + ", 2",
+                exact: true,
+            })
+            .click();
+    }
     await page
         .getByRole("button", { name: "Создать запись", exact: true })
         .click();
@@ -1717,9 +1746,36 @@ test("goods navigation CRUD articles and offline cache", async ({
         page.getByText("Изменения сохранены", { exact: true }),
     ).toBeVisible();
     await page.reload();
-    await expect(
-        page.getByLabel("Артикулы (JSON)", { exact: true }),
-    ).toHaveValue('[\n  "ART-001",\n  "ART-002"\n]');
+    await expect(page.getByLabel("Артикулы: 1", { exact: true })).toHaveValue(
+        "000123",
+    );
+    await expect(page.getByLabel("Артикулы: 2", { exact: true })).toHaveValue(
+        "ART-002",
+    );
+    await expect(page.getByLabel("Артикулы: 3", { exact: true })).toHaveCount(
+        0,
+    );
+    await expect(page.getByLabel("Штрихкоды: 1", { exact: true })).toHaveValue(
+        "0000123456789",
+    );
+    await expect(page.getByLabel("Штрихкоды: 2", { exact: true })).toHaveValue(
+        "0012345678901",
+    );
+    await page
+        .getByRole("button", {
+            name: "Удалить строку: Штрихкоды, 2",
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "Удалить строку: Штрихкоды, 1",
+            exact: true,
+        })
+        .click();
+    await expect(page.getByLabel("Штрихкоды: 1", { exact: true })).toHaveValue(
+        "",
+    );
     await page.getByLabel("Код", { exact: true }).fill("G-002");
     await page
         .getByRole("button", { name: "Сохранить изменения", exact: true })

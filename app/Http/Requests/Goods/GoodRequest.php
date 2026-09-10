@@ -18,7 +18,7 @@ abstract class GoodRequest extends \App\Http\BaseRequest
         foreach (['is_category', 'is_from_external'] as $key) {
             $rules[$key] = ['nullable', 'integer', 'in:1,2'];
         }
-        $rules['articul'] = ['nullable', 'array', 'list', 'max:500'];
+        $rules['articul'] = ['nullable', 'array', 'list'];
         $rules['articul.*'] = ['required', 'string', 'max:255'];
 
         return $rules;

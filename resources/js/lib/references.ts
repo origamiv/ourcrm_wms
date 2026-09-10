@@ -11,7 +11,8 @@ export interface ReferenceField {
         | "lookup"
         | "date"
         | "datetime"
-        | "json";
+        | "json"
+        | "string_list";
     required?: boolean;
     lookup?:
         | "modules"
@@ -56,7 +57,7 @@ export const references = {
         fields: [
             { key: "shortname", label: "Краткое название" },
             { key: "code", label: "Код" },
-            { key: "articul", label: "Артикулы (JSON)", kind: "json" },
+            { key: "articul", label: "Артикулы", kind: "string_list" },
             {
                 key: "parent_id",
                 label: "Родительская запись",
@@ -89,7 +90,7 @@ export const references = {
                 label: "Из внешней системы",
                 kind: "flag12",
             },
-            { key: "barcodes", label: "Штрихкоды (JSON)", kind: "json" },
+            { key: "barcodes", label: "Штрихкоды", kind: "string_list" },
         ] as ReferenceField[],
     },
     client_documents: {
