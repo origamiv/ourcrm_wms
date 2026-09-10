@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\BaseApiController;
 use App\Http\Requests\AccessCatalogs\CreateCatalogRequest;
+use App\Http\Requests\AccessCatalogs\DeleteRoleRequest;
 use App\Http\Requests\AccessCatalogs\UpdateCatalogRequest;
 use App\Services\AccessCatalogService;
 use Dedoc\Scramble\Attributes\BodyParameter;
@@ -14,6 +15,13 @@ use Illuminate\Http\JsonResponse;
 
 final class AccessCatalogController extends BaseApiController
 {
+    /** Удалить роль своей организации (SoftDeletes). Системные роли и admin защищены. */
+    #[Response(409, 'Запись изменена', type: 'array{message: string, current: array<string, mixed>}')]
+    public function destroyRole(DeleteRoleRequest $request, string $id, AccessCatalogService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->deleteRole($request->user(), $id, $request->validated('version'))]);
+    }
+
     /** Создать роль или право своей организации. catalog: roles или permissions. */
     #[BodyParameter('resource', description: 'Обязательно для permissions; запрещено для roles.', type: 'string')]
     #[BodyParameter('description', description: 'Необязательное описание только для roles.', type: 'string')]

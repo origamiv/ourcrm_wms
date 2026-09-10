@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
+import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import AdminTabs from "../Components/AdminTabs.vue";
 import { createUsers } from "../lib/users";
 import type { UserRow } from "../lib/cache";
@@ -23,6 +24,14 @@ const selected = ref<UserRow | null>(null),
     notice = ref(""),
     conflict = ref<UserRow | null>(null),
     passwordMode = ref(false);
+const deleting = ref<UserRow | null>(null);
+const deleteMessage = computed(() => {
+    const row = deleting.value;
+    const name =
+        row &&
+        [row.last_name, row.name, row.middle_name].filter(Boolean).join(" ");
+    return `Удалить пользователя ${name || row?.email || row?.id}?`;
+});
 const fields = {
     status: 0,
     name: "",
@@ -128,7 +137,7 @@ function close() {
         conflict.value = null;
     }
 }
-async function deleteUser(row: UserRow) {
+function deleteUser(row: UserRow) {
     if (
         !online.value ||
         saving.value ||
@@ -136,8 +145,12 @@ async function deleteUser(row: UserRow) {
         row.id === page.props.auth.id
     )
         return;
-    if (!window.confirm("Удалить пользователя? Его можно будет восстановить."))
-        return;
+    deleting.value = row;
+}
+async function confirmDelete() {
+    if (!deleting.value || !online.value || saving.value) return;
+    const row = deleting.value;
+    deleting.value = null;
     open(row);
     await save("delete");
 }
@@ -445,6 +458,13 @@ onUnmounted(store.stop);
                 </div>
             </footer>
         </section>
+        <ConfirmDelete
+            v-if="deleting"
+            :message="deleteMessage"
+            :disabled="!online || saving"
+            @cancel="deleting = null"
+            @confirm="confirmDelete"
+        />
         <aside
             v-if="editing"
             class="editor"

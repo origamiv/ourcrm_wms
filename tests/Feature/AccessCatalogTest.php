@@ -88,3 +88,21 @@ it('edits system role status using active and disabled values without locking ou
     $this->putJson('/web/roles/'.$ownRole, ['name' => 'Администратор', 'slug' => 'admin', 'status' => 2, 'version' => $version])->assertUnprocessable();
     $this->postJson('/web/roles', ['name' => 'Неверный статус', 'slug' => 'invalid', 'status' => 0])->assertUnprocessable();
 });
+
+it('soft deletes tenant roles with version and access protection', function () {
+    $admin = $this->makeUser([], true);
+    $role = DB::table('main.roles')->insertGetId(['name' => 'Склад', 'slug' => 'warehouse', 'tenant_id' => 'tenant_a', 'status' => 1]);
+    $foreign = DB::table('main.roles')->insertGetId(['name' => 'Чужая', 'slug' => 'foreign', 'tenant_id' => 'tenant_b']);
+    $system = DB::table('main.roles')->insertGetId(['name' => 'Системная', 'slug' => 'system_role', 'tenant_id' => 'tenant_a', 'system' => true]);
+    (require database_path('migrations/2026_09_10_000005_sync_access_catalogs.php'))->up();
+    $this->loginUser($admin);
+    $sync = app(App\Services\EntitySyncService::class);
+    $version = $sync->current(App\Models\Role::class, 'tenant_a', $role)['version'];
+    $this->deleteJson('/web/roles/'.$foreign, ['version' => '0'])->assertNotFound();
+    $this->deleteJson('/web/roles/'.$role, ['version' => '0'])->assertConflict();
+    $this->deleteJson('/web/roles/'.$system, ['version' => $sync->current(App\Models\Role::class, 'tenant_a', $system)['version']])->assertUnprocessable();
+    $this->deleteJson('/web/roles/'.$role, ['version' => $version])->assertOk();
+    expect(DB::table('main.roles')->where('id', $role)->value('deleted_at'))->not->toBeNull();
+    $this->loginUser($this->makeUser());
+    $this->deleteJson('/web/roles/'.$system, ['version' => '0'])->assertForbidden();
+});

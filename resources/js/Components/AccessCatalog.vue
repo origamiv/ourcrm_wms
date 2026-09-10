@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import { http, HttpError } from "../lib/http";
+import ConfirmDelete from "./ConfirmDelete.vue";
 import AdminTabs from "./AdminTabs.vue";
 import { createEntitySync } from "../lib/entitySync";
 import type { EntityRow } from "../lib/cache";
@@ -21,6 +22,8 @@ const store = createEntitySync<CatalogRow>(
     props.entity,
 );
 const { rows, ready, syncing, online, error, warning } = store;
+const viewing = ref(false);
+const deleting = ref<CatalogRow | null>(null);
 const editing = ref(false),
     saving = ref(false),
     selected = ref<CatalogRow | null>(null),
@@ -40,7 +43,9 @@ const protectedRecord = computed(
         (selected.value.system ||
             (props.entity === "roles" && selected.value.slug === "admin")),
 );
-function open(row: CatalogRow | null) {
+function open(row: CatalogRow | null, readOnly = false) {
+    if (saving.value) return;
+    viewing.value = readOnly || !!row?.deleted_at;
     selected.value = row;
     form.value = {
         name: row?.name ?? "",
@@ -54,8 +59,29 @@ function open(row: CatalogRow | null) {
     notice.value = "";
     editing.value = true;
 }
+async function confirmDelete() {
+    const row = deleting.value;
+    if (!row || !online.value || saving.value) return;
+    deleting.value = null;
+    open(row, true);
+    saving.value = true;
+    try {
+        const response = await http(`/web/roles/${row.id}`, "DELETE", {
+            version: row.version,
+        });
+        await store.apply(response.data);
+        editing.value = false;
+    } catch (error) {
+        if (error instanceof HttpError && error.status === 409)
+            conflict.value = error.body.current;
+        formError.value =
+            error instanceof Error ? error.message : "Не удалось удалить роль";
+    } finally {
+        saving.value = false;
+    }
+}
 async function save() {
-    if (!online.value || saving.value) return;
+    if (!online.value || saving.value || viewing.value) return;
     saving.value = true;
     formError.value = "";
     notice.value = "";
@@ -282,6 +308,17 @@ onUnmounted(() => store.stop());
                             <td>
                                 <div class="row-actions">
                                     <button
+                                        v-if="entity === 'roles'"
+                                        @click.stop="open(row, true)"
+                                        :aria-label="`Просмотр: ${row.name}`"
+                                        title="Просмотр"
+                                    >
+                                        <img
+                                            src="/design/crm/view.svg"
+                                            alt=""
+                                        />
+                                    </button>
+                                    <button
                                         :disabled="saving || !!row.deleted_at"
                                         :aria-label="`Редактировать: ${row.name}`"
                                         title="Редактировать"
@@ -289,6 +326,24 @@ onUnmounted(() => store.stop());
                                     >
                                         <img
                                             src="/design/crm/edit.svg"
+                                            alt=""
+                                        />
+                                    </button>
+                                    <button
+                                        v-if="entity === 'roles'"
+                                        @click.stop="deleting = row"
+                                        :aria-label="`Удалить: ${row.name}`"
+                                        title="Удалить"
+                                        :disabled="
+                                            !online ||
+                                            saving ||
+                                            !!row.deleted_at ||
+                                            row.system ||
+                                            row.slug === 'admin'
+                                        "
+                                    >
+                                        <img
+                                            src="/design/crm/delete.svg"
                                             alt=""
                                         />
                                     </button>
@@ -337,11 +392,22 @@ onUnmounted(() => store.stop());
                 </button>
             </div>
         </section>
+        <ConfirmDelete
+            v-if="deleting"
+            :message="`Удалить роль ${deleting.name}?`"
+            :disabled="!online || saving"
+            @cancel="deleting = null"
+            @confirm="confirmDelete"
+        />
         <aside v-if="editing" class="editor" aria-label="Карточка записи">
             <header>
                 <div>
                     <small>{{
-                        selected ? "РЕДАКТИРОВАНИЕ" : "НОВАЯ ЗАПИСЬ"
+                        viewing
+                            ? "ПРОСМОТР"
+                            : selected
+                              ? "РЕДАКТИРОВАНИЕ"
+                              : "НОВАЯ ЗАПИСЬ"
                     }}</small>
                     <h2>{{ entity === "roles" ? "Роль" : "Право доступа" }}</h2>
                 </div>
@@ -370,77 +436,87 @@ onUnmounted(() => store.stop());
                     Код системной записи и роли admin защищён. У системного
                     права также защищены ресурс и статус.
                 </p>
-                <form class="catalog-form" @submit.prevent="save">
-                    <label
-                        >Название *<input
-                            v-model="form.name"
-                            required
-                            maxlength="255"
-                            :disabled="saving || !online"
-                    /></label>
-                    <label
-                        >Код *<input
-                            v-model="form.slug"
-                            required
-                            maxlength="255"
-                            :disabled="saving || !online || protectedRecord"
-                    /></label>
-                    <label v-if="entity === 'roles'"
-                        >Описание<textarea
-                            v-model="form.description"
-                            maxlength="10000"
-                            :disabled="saving || !online"
-                        />
-                    </label>
-                    <label v-else
-                        >Ресурс *<input
-                            v-model="form.resource"
-                            required
-                            maxlength="255"
-                            :disabled="saving || !online || protectedRecord"
-                    /></label>
-                    <label
-                        >Статус<select
-                            aria-label="Статус"
-                            v-model="form.status"
-                            :disabled="
-                                saving ||
-                                !online ||
-                                (entity === 'permissions' && protectedRecord)
-                            "
+                <form @submit.prevent="save">
+                    <fieldset class="catalog-form" :disabled="viewing">
+                        <label
+                            >Название *<input
+                                v-model="form.name"
+                                required
+                                maxlength="255"
+                                :disabled="saving || !online"
+                        /></label>
+                        <label
+                            >Код *<input
+                                v-model="form.slug"
+                                required
+                                maxlength="255"
+                                :disabled="
+                                    saving || !online || protectedRecord
+                                "
+                        /></label>
+                        <label v-if="entity === 'roles'"
+                            >Описание<textarea
+                                v-model="form.description"
+                                maxlength="10000"
+                                :disabled="saving || !online"
+                            />
+                        </label>
+                        <label v-else
+                            >Ресурс *<input
+                                v-model="form.resource"
+                                required
+                                maxlength="255"
+                                :disabled="
+                                    saving || !online || protectedRecord
+                                "
+                        /></label>
+                        <label
+                            >Статус<select
+                                aria-label="Статус"
+                                v-model="form.status"
+                                :disabled="
+                                    saving ||
+                                    !online ||
+                                    (entity === 'permissions' &&
+                                        protectedRecord)
+                                "
+                            >
+                                <template v-if="entity === 'roles'">
+                                    <option
+                                        v-if="
+                                            ![1, 2].includes(form.status ?? -1)
+                                        "
+                                        :value="form.status"
+                                        disabled
+                                    >
+                                        Выберите статус
+                                    </option>
+                                    <option :value="1">Активен</option>
+                                    <option :value="2">Отключен</option>
+                                </template>
+                                <template v-else>
+                                    <option :value="null">Не указан</option>
+                                    <option :value="0">Неактивен</option>
+                                    <option :value="1">Активен</option>
+                                    <option :value="2">2</option>
+                                    <option :value="3">3</option>
+                                </template>
+                            </select></label
                         >
-                            <template v-if="entity === 'roles'">
-                                <option
-                                    v-if="![1, 2].includes(form.status ?? -1)"
-                                    :value="form.status"
-                                    disabled
-                                >
-                                    Выберите статус
-                                </option>
-                                <option :value="1">Активен</option>
-                                <option :value="2">Отключен</option>
-                            </template>
-                            <template v-else>
-                                <option :value="null">Не указан</option>
-                                <option :value="0">Неактивен</option>
-                                <option :value="1">Активен</option>
-                                <option :value="2">2</option>
-                                <option :value="3">3</option>
-                            </template>
-                        </select></label
-                    >
-                    <button
-                        class="primary"
-                        :disabled="saving || !online || !!conflict"
-                    >
-                        {{
-                            saving
-                                ? "Сохраняем…"
-                                : selected
-                                  ? "Сохранить изменения"
-                                  : "Создать запись"
-                        }}
-                    </button>
+                        <button
+                            v-if="!viewing"
+                            class="primary"
+                            :disabled="saving || !online || !!conflict"
+                        >
+                            {{
+                                saving
+                                    ? "Сохраняем…"
+                                    : selected
+                                      ? "Сохранить изменения"
+                                      : "Создать запись"
+                            }}
+                        </button>
+                    </fieldset>
                 </form>
             </div>
         </aside>
@@ -452,6 +528,7 @@ onUnmounted(() => store.stop());
     gap: 18px;
 }
 .catalog-form label {
+    margin-top: 0;
     display: grid;
     gap: 6px;
 }

@@ -11,6 +11,28 @@ use Illuminate\Validation\ValidationException;
 
 final class AccessCatalogService
 {
+    public function deleteRole(User $actor, string $id, string $version): array
+    {
+        return DB::transaction(function () use ($actor, $id, $version) {
+            $tenant = $actor->tenant_id;
+            $sync = app(EntitySyncService::class);
+            $sync->checkpoint($tenant);
+            DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
+            $actor = User::findOrFail($actor->id);
+            abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
+            $role = \App\Models\Role::withTrashed()->where('tenant_id', $tenant)->findOrFail($id);
+            $current = $sync->current(\App\Models\Role::class, $tenant, $id);
+            if (! hash_equals($current['version'], $version)) {
+                throw new HttpResponseException(response()->json(['message' => 'Запись уже изменена. Загрузите актуальные данные.', 'current' => $current], 409));
+            }
+            abort_if($role->system || $role->slug === 'admin', 422, 'Системную роль и роль admin удалять нельзя.');
+            abort_if($role->trashed(), 422, 'Роль уже удалена.');
+            $role->delete();
+
+            return $sync->current(\App\Models\Role::class, $tenant, $id);
+        }, 3);
+    }
+
     public function save(User $actor, string $catalog, array $data, ?string $id = null): array
     {
         abort_unless(in_array($catalog, ['roles', 'permissions'], true), 404);

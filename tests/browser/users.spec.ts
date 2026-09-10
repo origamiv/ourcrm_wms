@@ -388,14 +388,43 @@ test("delete action requires confirmation and removes the selected user", async 
     await expect(
         panel.getByRole("button", { name: "Отключить", exact: true }),
     ).toHaveCount(0);
-    page.once("dialog", (dialog) => dialog.dismiss());
     await row
         .getByRole("button", { name: "Удалить пользователя", exact: true })
         .click();
+    const confirmation = page.getByRole("dialog", {
+        name: /Удалить пользователя Иванов Михаил/,
+    });
+    await expect(confirmation).toBeVisible();
+    await page.screenshot({ path: "/tmp/wms-delete-confirmation.png" });
+    await confirmation
+        .getByRole("button", { name: "Отмена", exact: true })
+        .click();
+    await expect(confirmation).toHaveCount(0);
     await expect(row).toBeVisible();
-    page.once("dialog", (dialog) => dialog.accept());
     await row
         .getByRole("button", { name: "Удалить пользователя", exact: true })
+        .click();
+    await page.keyboard.press("Escape");
+    await expect(confirmation).toHaveCount(0);
+    await row
+        .getByRole("button", { name: "Удалить пользователя", exact: true })
+        .click();
+    await confirmation
+        .getByRole("button", { name: "Закрыть подтверждение" })
+        .click();
+    await expect(confirmation).toHaveCount(0);
+    await panel
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await row
+        .getByRole("button", { name: "Удалить пользователя", exact: true })
+        .click();
+    const bounds = await confirmation.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+    await confirmation
+        .getByRole("button", { name: "Удалить", exact: true })
         .click();
     await expect(row).toHaveCount(0);
     await page.reload();
@@ -403,4 +432,46 @@ test("delete action requires confirmation and removes the selected user", async 
         page.getByText("Данные синхронизированы", { exact: true }),
     ).toBeVisible();
     await expect(row).toHaveCount(0);
+});
+
+test("roles have read-only viewing and confirmed deletion", async ({
+    page,
+}) => {
+    await login(page);
+    await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Просмотр: Кладовщик", exact: true })
+        .click();
+    await expect(page.getByLabel("Название *", { exact: true })).toBeDisabled();
+    await expect(
+        page.getByRole("button", { name: "Сохранить изменения", exact: true }),
+    ).toHaveCount(0);
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Удалить: Кладовщик", exact: true })
+        .click();
+    const dialog = page.getByRole("dialog", {
+        name: "Удалить роль Кладовщик?",
+        exact: true,
+    });
+    await dialog.getByRole("button", { name: "Отмена", exact: true }).click();
+    await expect(
+        page.getByRole("button", { name: "Просмотр: Кладовщик", exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Удалить: Кладовщик", exact: true })
+        .click();
+    await dialog.getByRole("button", { name: "Удалить", exact: true }).click();
+    await expect(
+        page.getByRole("button", { name: "Просмотр: Кладовщик", exact: true }),
+    ).toHaveCount(0);
+    await page.reload();
+    await expect(
+        page.getByText("Данные синхронизированы", { exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Просмотр: Кладовщик", exact: true }),
+    ).toHaveCount(0);
 });
