@@ -15,6 +15,11 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const pendingFormat = ref("");
 const exportFormats = ["XLS", "CSV", "TXT", "PDF"];
 const importFormats = ["XLS", "CSV", "TXT", "PDF", "JPG", "PNG"];
+function formatIconPath(format: string) {
+    return format === "XLS"
+        ? "/design/formats/xls.png"
+        : `/design/formats/${format.toLowerCase()}.svg`;
+}
 async function exportData(format: string) {
     emit("export", format);
     const columns = props.columns.length
@@ -66,14 +71,14 @@ function receiveFile(event: Event) {
             <summary title="Экспорт" aria-label="Экспорт"><img src="/design/formats/export.svg" alt="" /></summary>
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
-                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format); closeMenu($event)"><img class="format-icon" :src="`/design/formats/${format.toLowerCase()}.svg`" alt="" />{{ format }}</button>
+                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format); closeMenu($event)"><img class="format-icon" :src="formatIconPath(format)" alt="" />{{ format }}</button>
             </div>
         </details>
         <details>
             <summary title="Импорт" aria-label="Импорт"><img src="/design/formats/import.svg" alt="" /></summary>
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
-                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)"><img class="format-icon" :src="`/design/formats/${format.toLowerCase()}.svg`" alt="" />{{ format }}</button>
+                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)"><img class="format-icon" :src="formatIconPath(format)" alt="" />{{ format }}</button>
                 <button type="button" @click="chooseImport('Буфер обмена'); closeMenu($event)"><img class="format-icon" src="/design/formats/clipboard.svg" alt="" />Буфер обмена</button>
             </div>
         </details>
