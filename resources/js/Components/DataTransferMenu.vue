@@ -48,6 +48,9 @@ function chooseImport(format: string) {
     pendingFormat.value = format;
     fileInput.value?.click();
 }
+function closeMenu(event: Event) {
+    (event.currentTarget as HTMLElement).closest("details")?.removeAttribute("open");
+}
 function receiveFile(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) emit("import", pendingFormat.value, file);
@@ -60,14 +63,16 @@ function receiveFile(event: Event) {
         <details>
             <summary title="Экспорт" aria-label="Экспорт">⇩</summary>
             <div class="data-transfer-dropdown">
-                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format)">{{ format }}</button>
+                <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
+                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format); closeMenu($event)">{{ format }}</button>
             </div>
         </details>
         <details>
             <summary title="Импорт" aria-label="Импорт">⇧</summary>
             <div class="data-transfer-dropdown">
-                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format)">{{ format }}</button>
-                <button type="button" @click="chooseImport('Буфер обмена')">Буфер обмена</button>
+                <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
+                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)">{{ format }}</button>
+                <button type="button" @click="chooseImport('Буфер обмена'); closeMenu($event)">Буфер обмена</button>
             </div>
         </details>
         <input ref="fileInput" class="data-transfer-file" type="file" accept=".xls,.xlsx,.csv,.txt,.pdf,.jpg,.jpeg,.png" @change="receiveFile" />
@@ -79,7 +84,8 @@ function receiveFile(event: Event) {
 .data-transfer-menu details { position: relative; }
 .data-transfer-menu summary { display: grid; place-items: center; width: 30px; height: 30px; list-style: none; border: 1px solid #d7dce3; border-radius: 5px; background: #fff; color: #2274a5; font-size: 20px; line-height: 1; cursor: pointer; }
 .data-transfer-menu summary::-webkit-details-marker { display: none; }
-.data-transfer-dropdown { position: absolute; z-index: 25; top: 35px; right: 0; display: grid; min-width: 150px; padding: 6px; border: 1px solid #d7e5db; border-radius: 7px; background: #fff; box-shadow: 0 8px 20px rgb(16 24 40 / 14%); }
+.data-transfer-dropdown { position: absolute; z-index: 25; top: 35px; right: 0; display: grid; min-width: 150px; padding: 28px 6px 6px; border: 1px solid #d7e5db; border-radius: 7px; background: #fff; box-shadow: 0 8px 20px rgb(16 24 40 / 14%); }
+.data-transfer-close { position: absolute; top: 4px; right: 5px; width: 22px; padding: 2px !important; font-size: 18px; line-height: 1; text-align: center !important; }
 .data-transfer-dropdown button { border: 0; background: transparent; padding: 7px 10px; text-align: left; color: #344054; cursor: pointer; }
 .data-transfer-dropdown button:hover { background: #eef7f0; color: #2274a5; }
 .data-transfer-file { display: none; }
