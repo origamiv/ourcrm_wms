@@ -6,6 +6,7 @@ import RussianDateInput from "./RussianDateInput.vue";
 import { formatDate } from "../lib/dates";
 import DocumentPrintFields from "./DocumentPrintFields.vue";
 import DocumentDownload from "./DocumentDownload.vue";
+import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
 import { references } from "../lib/references";
@@ -23,13 +24,18 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
+const isGood = props.entity === "goods";
+const isGoodsSection =
+    isGood || ["type_goods", "unit_goods"].includes(props.entity);
 const isIndividual = props.entity === "client_individuals";
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
 const isClientSection = isIndividual || isDocument || isDocType;
-const basePath = isClientSection
-    ? `/clients/${props.entity.replace("client_", "")}`
-    : `/main/${props.entity}`;
+const basePath = isGoodsSection
+    ? `/goods/${props.entity}`
+    : isClientSection
+      ? `/clients/${props.entity.replace("client_", "")}`
+      : `/main/${props.entity}`;
 const endpoint = isIndividual ? null : basePath.replace("/main/", "/");
 const clientFilter = ref("");
 const docTypeFilter = ref("");
@@ -71,6 +77,10 @@ function choices(entity: string) {
         lookupStores[entity]?.rows.value.filter(
             (row) =>
                 !row.deleted_at &&
+                (!isGood ||
+                    entity !== "good_cards" ||
+                    (!!selected.value &&
+                        String(row.good_id) === String(selected.value.id))) &&
                 (!isDocument ||
                     ((entity !== "companies" ||
                         row.src?.is_own === true ||
@@ -133,7 +143,20 @@ const filtered = computed(() =>
             )
                 return false;
             return (
-                [row.name, row.shortname, row.category, row.path]
+                [
+                    row.name,
+                    row.shortname,
+                    row.category,
+                    row.path,
+                    ...(isGood
+                        ? [
+                              row.code,
+                              ...(Array.isArray(row.articul)
+                                  ? row.articul
+                                  : []),
+                          ]
+                        : []),
+                ]
                     .join(" ")
                     .toLocaleLowerCase("ru")
                     .includes(query.value.toLocaleLowerCase("ru")) &&
@@ -247,6 +270,21 @@ function open(row: ReferenceRow | null, readOnly = false) {
             null,
             2,
         );
+    if (isGood && !row)
+        Object.assign(form.value, {
+            level: 0,
+            is_category: 2,
+            is_from_external: 2,
+        });
+    if (isGood)
+        for (const field of [
+            "parent_id",
+            "goodcard_id",
+            "type_good",
+            "type_unit",
+        ]) {
+            if (String(form.value[field]) === "0") form.value[field] = null;
+        }
     viewing.value = readOnly || !!row?.deleted_at;
     notice.value = "";
     conflict.value = null;
@@ -372,13 +410,17 @@ useCardRoute<ReferenceRow>({
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
-                    isClientSection
-                        ? "Клиенты"
-                        : "Администрирование › Справочники"
+                    isGoodsSection
+                        ? "Товары"
+                        : isClientSection
+                          ? "Клиенты"
+                          : "Администрирование › Справочники"
                 }}
                 › {{ definition.title }}
             </div>
-            <ClientTabs v-if="isClientSection" /><AdminTabs v-else />
+            <GoodsTabs v-if="isGoodsSection" /><ClientTabs
+                v-else-if="isClientSection"
+            /><AdminTabs v-else />
             <p v-if="clientScope" class="notice">
                 Клиент: <strong>{{ clientScope.name }}</strong>
             </p>
@@ -420,6 +462,9 @@ useCardRoute<ReferenceRow>({
                             <th>
                                 {{
                                     [
+                                        "goods",
+                                        "type_goods",
+                                        "unit_goods",
                                         "modules",
                                         "features",
                                         "client_individuals",
@@ -432,6 +477,7 @@ useCardRoute<ReferenceRow>({
                                         : "Категория"
                                 }}
                             </th>
+                            <th v-if="isGood">Код</th>
                             <template v-if="isDocument"
                                 ><th>Клиент</th>
                                 <th>Тип документа</th>
@@ -455,6 +501,9 @@ useCardRoute<ReferenceRow>({
                                     v-model="shortQuery"
                                     :aria-label="
                                         [
+                                            'goods',
+                                            'type_goods',
+                                            'unit_goods',
                                             'modules',
                                             'features',
                                             'client_individuals',
@@ -466,6 +515,7 @@ useCardRoute<ReferenceRow>({
                                     "
                                 />
                             </th>
+                            <th v-if="isGood"></th>
                             <template v-if="isDocument">
                                 <th>
                                     <select
@@ -544,6 +594,7 @@ useCardRoute<ReferenceRow>({
                                 </button>
                             </td>
                             <td>{{ row.shortname || "—" }}</td>
+                            <td v-if="isGood">{{ row.code || "—" }}</td>
                             <template v-if="isDocument">
                                 <td>
                                     {{
@@ -639,7 +690,7 @@ useCardRoute<ReferenceRow>({
                         </tr>
                         <tr v-if="!visible.length">
                             <td
-                                :colspan="isDocument ? 9 : 5"
+                                :colspan="isDocument ? 9 : isGood ? 6 : 5"
                                 class="empty-state"
                             >
                                 {{
@@ -778,6 +829,15 @@ useCardRoute<ReferenceRow>({
                                 </option>
                             </select>
                             <select
+                                v-else-if="field.kind === 'flag12'"
+                                v-model="form[field.key]"
+                                :aria-label="field.label"
+                            >
+                                <option :value="null">Не указан</option>
+                                <option :value="1">Да</option>
+                                <option :value="2">Нет</option>
+                            </select>
+                            <select
                                 v-else-if="field.kind === 'flag'"
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
@@ -810,6 +870,7 @@ useCardRoute<ReferenceRow>({
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
                                 type="number"
+                                :required="field.required"
                                 min="0"
                                 max="2147483647"
                             />

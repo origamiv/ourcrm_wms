@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\Good;
+use App\Models\GoodCard;
+use App\Models\GoodType;
+use App\Models\GoodUnit;
+use App\Models\User;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+final class GoodService
+{
+    public function save(User $actor, array $data, ?string $id = null, bool $delete = false): array
+    {
+        return DB::transaction(function () use ($actor, $data, $id, $delete) {
+            $tenant = $actor->tenant_id;
+            $sync = app(EntitySyncService::class);
+            $sync->checkpoint($tenant);
+            DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
+            $actor = User::findOrFail($actor->id);
+            abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
+            $row = $id ? Good::withTrashed()->where('tenant_id', $tenant)->findOrFail($id) : new Good;
+            if ($id) {
+                $current = $sync->current(Good::class, $tenant, $id);
+                if (! hash_equals($current['version'], $data['version'])) {
+                    throw new HttpResponseException(response()->json(['message' => 'Запись уже изменена. Загрузите актуальные данные.', 'current' => $current], 409));
+                }
+                abort_if($row->trashed(), 422, 'Товар уже удалён.');
+            }
+            if ($delete) {
+                abort_if(Good::where('parent_id', $id)->exists(), 422, 'У записи есть дочерние товары. Сначала перенесите или удалите их.');
+                $row->delete();
+            } else {
+                foreach (['parent_id' => Good::class, 'goodcard_id' => GoodCard::class, 'type_good' => GoodType::class, 'type_unit' => GoodUnit::class] as $field => $model) {
+                    $value = array_key_exists($field, $data) ? $data[$field] : $row->{$field};
+                    $related = $model::where('tenant_id', $tenant)->whereKey($value);
+                    if ($field === 'goodcard_id') {
+                        $related->where('good_id', $id ?? '0');
+                    }
+                    if ($value !== null && ! $related->exists()) {
+                        throw ValidationException::withMessages([$field => 'Выберите доступную запись своей организации.']);
+                    }
+                }
+                $parent = $data['parent_id'] ?? null;
+                $seen = $id ? [$id => true] : [];
+                while ($parent !== null) {
+                    if (isset($seen[(string) $parent])) {
+                        throw ValidationException::withMessages(['parent_id' => 'Родительская связь не может образовывать цикл.']);
+                    }
+                    $seen[(string) $parent] = true;
+                    $parent = Good::where('tenant_id', $tenant)->whereKey($parent)->value('parent_id');
+                }
+                $fields = array_diff(config('sync.entities.goods.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']);
+                $row->forceFill(array_intersect_key($data, array_flip($fields)));
+                if (! $id) {
+                    $row->tenant_id = $tenant;
+                }
+                $row->save();
+            }
+
+            return $sync->current(Good::class, $tenant, $row->id);
+        }, 3);
+    }
+}

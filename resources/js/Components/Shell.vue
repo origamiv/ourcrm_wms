@@ -7,7 +7,7 @@ const collapsed = ref(false),
     leaving = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
-function go(component: "Home" | "Users" | "Clients", url: string) {
+function go(component: "Home" | "Users" | "Clients" | "Goods", url: string) {
     if (navigator.onLine) router.visit(url);
     else
         router.push({
@@ -99,6 +99,18 @@ onUnmounted(() => {
                         alt=""
                     /><span class="nav-label">Клиенты</span></a
                 >
+                <a
+                    v-if="page.props.auth.is_admin"
+                    href="/goods/goods"
+                    aria-label="Товары"
+                    :class="{ active: page.url.startsWith('/goods/') }"
+                    @click.prevent="go('Goods', '/goods/goods')"
+                    ><img
+                        class="nav-icon goods-icon"
+                        src="/design/crm/goods.svg"
+                        alt=""
+                    /><span class="nav-label">Товары</span></a
+                >
             </nav>
             <div class="sidebar-bottom">
                 <span
@@ -117,7 +129,9 @@ onUnmounted(() => {
                         ? "Администрирование"
                         : page.url.startsWith("/clients/")
                           ? "Клиенты"
-                          : "Рабочий стол"
+                          : page.url.startsWith("/goods/")
+                            ? "Товары"
+                            : "Рабочий стол"
                 }}</span>
                 <div class="account">
                     <span class="header-avatar"
@@ -161,6 +175,12 @@ onUnmounted(() => {
         hue-rotate(161deg);
 }
 .sidebar nav a.active .clients-icon {
+    filter: brightness(0) invert(1);
+}
+</style>
+
+<style scoped>
+.sidebar a.active .goods-icon {
     filter: brightness(0) invert(1);
 }
 </style>

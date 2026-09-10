@@ -1682,3 +1682,144 @@ test("Russian calendar ignores browser locale and shows Monday first and 24-hour
         fullPage: true,
     });
 });
+
+test("goods navigation CRUD articles and offline cache", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Товары", exact: true })
+        .click();
+    await expect(page).toHaveURL("/goods/goods");
+    await expect(
+        page
+            .getByRole("navigation", { name: "Разделы товаров" })
+            .getByRole("link", { name: "Товары", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.locator("thead tr").first().locator("th").first(),
+    ).toHaveText("#");
+    await page
+        .getByRole("button", { name: "Добавить запись", exact: true })
+        .click();
+    await page.getByLabel("Название *", { exact: true }).fill("Товар браузера");
+    await page.getByLabel("Краткое название", { exact: true }).fill("Товар");
+    await page.getByLabel("Код", { exact: true }).fill("G-001");
+    await page
+        .getByLabel("Артикулы (JSON)", { exact: true })
+        .fill('["ART-001","ART-002"]');
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+        page.getByLabel("Артикулы (JSON)", { exact: true }),
+    ).toHaveValue('[\n  "ART-001",\n  "ART-002"\n]');
+    await page.getByLabel("Код", { exact: true }).fill("G-002");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Закрыть карточку" }).click();
+    await page.getByLabel("Поиск: Товары", { exact: true }).fill("ART-002");
+    await expect(
+        page.getByRole("button", { name: "Товар браузера", exact: true }),
+    ).toBeVisible();
+    await context.setOffline(true);
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Главная", exact: true })
+        .click();
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Товары", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Товар браузера", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Добавить запись", exact: true }),
+    ).toBeDisabled();
+    await context.setOffline(false);
+    await page.screenshot({ path: "/tmp/wms-goods.png", fullPage: true });
+    await page
+        .getByRole("button", { name: "Удалить: Товар браузера", exact: true })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Удалить", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Товар браузера", exact: true }),
+    ).toHaveCount(0);
+});
+
+test("goods reference dropdown creates edits and caches both catalogs", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Товары", exact: true })
+        .click();
+    for (const [label, path] of [
+        ["Типы товаров", "type_goods"],
+        ["Единицы измерения", "unit_goods"],
+    ]) {
+        await page
+            .getByRole("button", { name: "Справочники", exact: false })
+            .click();
+        await page
+            .getByRole("navigation", { name: "Справочники", exact: true })
+            .getByRole("link", { name: label, exact: true })
+            .click();
+        await expect(page).toHaveURL(`/goods/${path}`);
+        await page
+            .getByRole("button", { name: "Добавить запись", exact: true })
+            .click();
+        await page
+            .getByLabel("Название *", { exact: true })
+            .fill(`Новая запись ${path}`);
+        await page
+            .getByRole("button", { name: "Создать запись", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await page.getByLabel("Краткое название", { exact: true }).fill("Тест");
+        await page
+            .getByRole("button", { name: "Сохранить изменения", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await page.reload();
+        await expect(
+            page.getByLabel("Краткое название", { exact: true }),
+        ).toHaveValue("Тест");
+        await page.getByRole("button", { name: "Закрыть карточку" }).click();
+    }
+    await context.setOffline(true);
+    await page
+        .getByRole("button", { name: "Справочники", exact: false })
+        .click();
+    await page.getByRole("link", { name: "Типы товаров", exact: true }).click();
+    await expect(
+        page.getByRole("button", {
+            name: "Новая запись type_goods",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Добавить запись", exact: true }),
+    ).toBeDisabled();
+    await context.setOffline(false);
+});

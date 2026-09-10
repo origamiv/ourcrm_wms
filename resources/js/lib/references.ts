@@ -6,6 +6,7 @@ export interface ReferenceField {
         | "textarea"
         | "money"
         | "number"
+        | "flag12"
         | "flag"
         | "lookup"
         | "date"
@@ -18,7 +19,11 @@ export interface ReferenceField {
         | "users"
         | "clients"
         | "client_doc_types"
-        | "client_companies";
+        | "client_companies"
+        | "goods"
+        | "good_cards"
+        | "type_goods"
+        | "unit_goods";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -34,6 +39,59 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    type_goods: {
+        title: "Типы товаров",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
+    },
+    unit_goods: {
+        title: "Единицы измерения",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
+    },
+    goods: {
+        title: "Товары",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "code", label: "Код" },
+            { key: "articul", label: "Артикулы (JSON)", kind: "json" },
+            {
+                key: "parent_id",
+                label: "Родительская запись",
+                kind: "lookup",
+                lookup: "goods",
+            },
+            { key: "parent_code", label: "Код родителя" },
+            {
+                key: "type_good",
+                label: "Тип товара",
+                kind: "lookup",
+                lookup: "type_goods",
+            },
+            {
+                key: "type_unit",
+                label: "Единица измерения",
+                kind: "lookup",
+                lookup: "unit_goods",
+            },
+            {
+                key: "goodcard_id",
+                label: "Основная карточка товара",
+                kind: "lookup",
+                lookup: "good_cards",
+            },
+            { key: "level", label: "Уровень", kind: "number", required: true },
+            { key: "is_category", label: "Категория", kind: "flag12" },
+            {
+                key: "is_from_external",
+                label: "Из внешней системы",
+                kind: "flag12",
+            },
+            { key: "barcodes", label: "Штрихкоды (JSON)", kind: "json" },
+        ] as ReferenceField[],
+    },
     client_documents: {
         title: "Документы",
         fields: [

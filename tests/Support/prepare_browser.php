@@ -13,7 +13,7 @@ if (DB::selectOne('select current_database() as name')->name !== 'wms_browser_te
     throw new RuntimeException('Неверная тестовая БД');
 }
 DB::transaction(function () {
-    DB::unprepared('DROP SCHEMA IF EXISTS clients CASCADE; DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
+    DB::unprepared('DROP SCHEMA IF EXISTS goods CASCADE; DROP SCHEMA IF EXISTS clients CASCADE; DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
     DB::unprepared(file_get_contents(__DIR__.'/schema.sql'));
     DB::unprepared(file_get_contents(database_path('sql/user_sync.sql')));
     (require database_path('migrations/2026_09_10_000003_create_shared_entity_changes.php'))->up();
@@ -79,4 +79,11 @@ DB::transaction(function () {
         (require database_path('migrations/2026_09_10_000015_add_document_amount.php'))->up();
     (require database_path('migrations/2026_09_10_000014_add_document_type_print_settings.php'))->up();
     DB::table('main.companies')->where('id', 1)->update(['src' => json_encode(['is_own' => true])]);
+});
+
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_10_000016_relate_good_cards_to_goods.php'))->up();
+    (require database_path('migrations/2026_09_10_000017_sync_goods.php'))->up();
+    DB::table('goods.type_goods')->insert(['name' => 'Товар', 'tenant_id' => 'test_org']);
+    DB::table('goods.unit_goods')->insert(['name' => 'Штука', 'shortname' => 'шт.', 'tenant_id' => 'test_org']);
 });

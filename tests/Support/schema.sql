@@ -52,3 +52,13 @@ CREATE TABLE clients.individuals (
  passport_kem varchar(255), passport_code varchar(255), address_reg varchar(255), vodud_date date, vodud_nomer varchar(255),
  user_id integer, manager_id integer, client_id integer, status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp
 );
+
+CREATE SCHEMA goods;
+CREATE TABLE goods.goods (
+ id bigserial PRIMARY KEY, parent_id integer, parent_code varchar(255), name varchar(255), shortname varchar(255), code varchar(255),
+ type_good integer, type_unit integer, barcodes json, is_from_external integer DEFAULT 2, is_category integer DEFAULT 2,
+ status integer DEFAULT 1, created_at timestamp, updated_at timestamp, deleted_at timestamp, level integer NOT NULL, goodcard_id integer NOT NULL, tenant_id varchar(255)
+);
+CREATE TABLE goods.good_cards (id bigserial PRIMARY KEY, name varchar(255), unit_id integer, status integer DEFAULT 1, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
+CREATE TABLE goods.type_goods (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), status integer DEFAULT 1, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
+CREATE TABLE goods.unit_goods (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), status integer DEFAULT 1, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
