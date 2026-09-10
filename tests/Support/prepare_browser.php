@@ -103,4 +103,6 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000023_create_fulfillment_catalogs.php'))->up();
     (require database_path('migrations/2026_09_10_000024_seed_delivery_services.php'))->up();
     (require database_path('migrations/2026_09_10_000025_seed_marketplaces_and_delivery_links.php'))->up();
+    (require database_path('migrations/2026_09_10_000026_lowercase_fulfillment_shortnames.php'))->up();
+    (require database_path('migrations/2026_09_10_000027_unique_fulfillment_shortnames.php'))->up();
 });

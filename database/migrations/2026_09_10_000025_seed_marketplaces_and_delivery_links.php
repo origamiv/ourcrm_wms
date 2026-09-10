@@ -15,14 +15,14 @@ return new class extends Migration
             DB::table('wms.delivery_services')->lockForUpdate()->get();
 
             $marketplaces = [
-                ['name' => 'Wildberries', 'shortname' => 'WB'],
-                ['name' => 'OZON', 'shortname' => 'OZ'],
-                ['name' => 'СберМегаМаркет', 'shortname' => 'SMM'],
-                ['name' => 'ЛеруаМерлен', 'shortname' => 'LM'],
-                ['name' => 'Yandex Market', 'shortname' => 'YM'],
-                ['name' => 'AliExpress', 'shortname' => 'Ali'],
-                ['name' => 'МВидео', 'shortname' => 'MVideo'],
-                ['name' => 'Сайт', 'shortname' => 'SITE'],
+                ['name' => 'Wildberries', 'shortname' => 'wb'],
+                ['name' => 'OZON', 'shortname' => 'oz'],
+                ['name' => 'СберМегаМаркет', 'shortname' => 'smm'],
+                ['name' => 'ЛеруаМерлен', 'shortname' => 'lm'],
+                ['name' => 'Yandex Market', 'shortname' => 'ym'],
+                ['name' => 'AliExpress', 'shortname' => 'ali'],
+                ['name' => 'МВидео', 'shortname' => 'mvideo'],
+                ['name' => 'Сайт', 'shortname' => 'site'],
             ];
 
             $marketplaceIds = [];
@@ -47,13 +47,13 @@ return new class extends Migration
             }
 
             $shortnames = [
-                'Wildberries FBS' => 'WB', 'OZON FBS' => 'OZ', 'СберМегаМаркет' => 'SMM',
-                'ЛеруаМерлен' => 'LM', 'Курьер' => 'COURIER', 'Wildberries FBO' => 'WB',
-                'OZON FBO' => 'OZ', 'OZON Real FBS' => 'OZ', 'YandexMarket FBS' => 'YM',
-                'YandexMarket DBS' => 'YM', 'OZON FBP' => 'OZ', 'AliExpress' => 'Ali',
-                'МВидео' => 'MVideo', 'Yandex FBP' => 'YM', 'Сайт' => 'SITE',
-                'Далли' => 'DALLI', 'СДЭК' => 'CDEK', 'Почта РФ' => 'POSTRF',
-                'Пятёрочка' => 'PYAT', 'dubaiexpress.ru' => 'DUBAI',
+                'Wildberries FBS' => 'wb_fbs', 'OZON FBS' => 'oz_fbs', 'СберМегаМаркет' => 'smm',
+                'ЛеруаМерлен' => 'lm', 'Курьер' => 'courier', 'Wildberries FBO' => 'wb_fbo',
+                'OZON FBO' => 'oz_fbo', 'OZON Real FBS' => 'oz_real_fbs', 'YandexMarket FBS' => 'ym_fbs',
+                'YandexMarket DBS' => 'ym_dbs', 'OZON FBP' => 'oz_fbp', 'AliExpress' => 'ali',
+                'МВидео' => 'mvideo', 'Yandex FBP' => 'ym_fbp', 'Сайт' => 'site',
+                'Далли' => 'dalli', 'СДЭК' => 'cdek', 'Почта РФ' => 'postrf',
+                'Пятёрочка' => 'pyat', 'dubaiexpress.ru' => 'dubai',
             ];
             $links = [
                 'Wildberries FBS' => 'Wildberries', 'Wildberries FBO' => 'Wildberries',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Fulfillment;
 
 use App\Http\BaseRequest;
+use Illuminate\Validation\Rule;
 
 abstract class FulfillmentCatalogRequest extends BaseRequest
 {
@@ -12,7 +13,12 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'shortname' => ['nullable', 'string', 'max:255'],
+            'shortname' => [
+                'nullable', 'string', 'max:255', 'regex:/^[a-z][a-z0-9_]*$/',
+                Rule::unique($this->route('catalog') === 'marketplaces' ? 'wms.marketplaces' : 'wms.delivery_services', 'shortname')
+                    ->ignore($this->route('id'))
+                    ->whereNull('deleted_at'),
+            ],
             'status' => ['required', 'integer', 'in:0,1,2'],
             'icon' => ['nullable', 'string', 'max:255'],
             'tenant_id' => ['prohibited'],
