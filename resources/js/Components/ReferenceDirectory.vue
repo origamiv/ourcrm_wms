@@ -21,6 +21,9 @@ const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
 const isIndividual = props.entity === "client_individuals";
 const page = usePage<any>();
+const clientScope = computed<{ id: string; name: string } | null>(() =>
+    isIndividual ? (page.props.clientScope ?? null) : null,
+);
 const store = createEntitySync<ReferenceRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
     props.entity,
@@ -42,6 +45,13 @@ const lookupStores = Object.fromEntries(
     ]),
 );
 function choices(entity: string) {
+    if (entity === "clients" && clientScope.value)
+        return [
+            {
+                id: clientScope.value.id,
+                name: clientScope.value.name,
+            } as ReferenceRow,
+        ];
     return (
         lookupStores[entity]?.rows.value.filter((row) => !row.deleted_at) ?? []
     );
@@ -68,6 +78,11 @@ const statusLabels: Record<string, string> = {
 const filtered = computed(() =>
     rows.value
         .filter((row) => {
+            if (
+                clientScope.value &&
+                String(row.client_id) !== clientScope.value.id
+            )
+                return false;
             if (
                 statusFilter.value === "deleted"
                     ? !row.deleted_at
@@ -106,11 +121,25 @@ watch(
     pages,
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
 );
+watch(
+    () => clientScope.value?.id,
+    () => {
+        editing.value = false;
+        deleting.value = null;
+        currentPage.value = 1;
+    },
+);
 function displayName(row: ReferenceRow) {
     return row.name || row.shortname || `Запись №${row.id}`;
 }
 function open(row: ReferenceRow | null, readOnly = false) {
-    if (saving.value) return;
+    if (
+        saving.value ||
+        (clientScope.value &&
+            row &&
+            String(row.client_id) !== clientScope.value.id)
+    )
+        return;
     selected.value = row;
     form.value = {
         name: row?.name ?? "",
@@ -126,6 +155,7 @@ function open(row: ReferenceRow | null, readOnly = false) {
             ]),
         ),
         status: row ? row.status : 1,
+        ...(clientScope.value ? { client_id: clientScope.value.id } : {}),
     };
     viewing.value = readOnly || !!row?.deleted_at;
     notice.value = "";
@@ -138,7 +168,7 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const response = await http(
-            `/web/${isIndividual ? "clients/individuals" : props.entity}${selected.value ? "/" + selected.value.id : ""}`,
+            `/web/${isIndividual ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}individuals` : props.entity}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
             {
                 ...(!remove ? form.value : {}),
@@ -221,6 +251,9 @@ useCardRoute<ReferenceRow>({
                 › {{ definition.title }}
             </div>
             <ClientTabs v-if="isIndividual" /><AdminTabs v-else />
+            <p v-if="clientScope" class="notice">
+                Клиент: <strong>{{ clientScope.name }}</strong>
+            </p>
             <div class="page-heading">
                 <h1>{{ definition.title }}</h1>
                 <button
@@ -478,6 +511,9 @@ useCardRoute<ReferenceRow>({
                             />
                             <select
                                 v-else-if="field.kind === 'lookup'"
+                                :disabled="
+                                    field.key === 'client_id' && !!clientScope
+                                "
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
                             >

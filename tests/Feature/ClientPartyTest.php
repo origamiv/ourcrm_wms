@@ -70,3 +70,36 @@ it('supports individual dates and documents through bearer API', function () {
     $this->deleteJson('/api/clients/individuals/'.$row['id'], ['version' => $row['version']])->assertOk();
     expect(ClientIndividual::withTrashed()->find($row['id'])->trashed())->toBeTrue();
 });
+
+it('locks creation updates deletion and direct pages to the client in scoped routes', function () {
+    $this->loginUser($this->makeUser([], true));
+    $first = DB::table('clients.clients')->insertGetId(['name' => 'Первый', 'tenant_id' => 'tenant_a']);
+    $second = DB::table('clients.clients')->insertGetId(['name' => 'Второй', 'tenant_id' => 'tenant_a']);
+    $foreign = DB::table('clients.clients')->insertGetId(['name' => 'Чужой', 'tenant_id' => 'tenant_b']);
+    foreach (['companies', 'individuals'] as $party) {
+        $payload = ['name' => 'Запись', 'shortname' => 'Запись', 'status' => 1];
+        $base = '/web/clients/'.$first.'/'.$party;
+        $row = $this->postJson($base, $payload)->assertCreated()->assertJsonPath('data.client_id', $first)->json('data');
+        $this->postJson($base, [...$payload, 'client_id' => $second])->assertUnprocessable();
+        $this->postJson($base, [...$payload, 'client_id' => null])->assertUnprocessable();
+        $this->postJson('/web/clients/'.$foreign.'/'.$party, $payload)->assertNotFound();
+        $this->get('/clients/'.$party.'?client_id='.$first)->assertOk();
+        $this->get('/clients/'.$party.'?client_id='.$foreign)->assertNotFound();
+        $this->get('/clients/'.$party.'/'.$row['id'].'/view?client_id='.$first)->assertOk();
+        $this->get('/clients/'.$party.'/'.$row['id'].'/edit?client_id='.$second)->assertNotFound();
+        $this->putJson('/web/clients/'.$second.'/'.$party.'/'.$row['id'], [...$payload, 'version' => $row['version']])->assertNotFound();
+        $this->putJson($base.'/'.$row['id'], [...$payload, 'client_id' => $second, 'version' => $row['version']])->assertUnprocessable();
+        $updated = $this->putJson($base.'/'.$row['id'], [...$payload, 'name' => 'Обновлено', 'version' => $row['version']])->assertOk()->assertJsonPath('data.client_id', $first)->json('data');
+        $this->deleteJson('/web/clients/'.$second.'/'.$party.'/'.$row['id'], ['version' => $updated['version']])->assertNotFound();
+        $this->deleteJson($base.'/'.$row['id'], ['version' => $updated['version']])->assertOk();
+    }
+});
+
+it('enforces client scope through the bearer API as well', function () {
+    $admin = $this->makeUser([], true);
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Клиент', 'tenant_id' => 'tenant_a']);
+    $token = $this->postJson('/api/auth/token', ['email' => $admin->email, 'password' => 'Test_password_123'])->assertOk()->json('token');
+    foreach (['companies', 'individuals'] as $party) {
+        $this->withToken($token)->postJson('/api/clients/'.$client.'/'.$party, ['name' => 'API', 'shortname' => 'API', 'status' => 1])->assertCreated()->assertJsonPath('data.client_id', $client);
+    }
+});

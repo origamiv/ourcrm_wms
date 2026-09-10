@@ -15,6 +15,10 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::post('/web/clients/{clientId}/{party}', [App\Http\Controllers\ClientPartyController::class, 'storeScoped'])->whereIn('party', ['companies', 'individuals'])->whereNumber('clientId');
+        Route::put('/web/clients/{clientId}/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'updateScoped'])->whereIn('party', ['companies', 'individuals'])->whereNumber('clientId')->whereNumber('id');
+        Route::delete('/web/clients/{clientId}/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'destroyScoped'])->whereIn('party', ['companies', 'individuals'])->whereNumber('clientId')->whereNumber('id');
+
         Route::post('/web/clients/{party}', [App\Http\Controllers\ClientPartyController::class, 'store'])->whereIn('party', ['companies', 'individuals']);
         Route::put('/web/clients/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'update'])->whereIn('party', ['companies', 'individuals'])->whereNumber('id');
         Route::delete('/web/clients/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'destroy'])->whereIn('party', ['companies', 'individuals'])->whereNumber('id');

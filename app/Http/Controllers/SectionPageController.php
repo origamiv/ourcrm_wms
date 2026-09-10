@@ -19,6 +19,15 @@ final class SectionPageController
         $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
+        $clientScope = null;
+        if ($left === 'clients' && in_array($top, ['companies', 'individuals'], true)) {
+            $input = $request->validate(['client_id' => ['sometimes', 'required', 'integer', 'min:1']]);
+            if (isset($input['client_id'])) {
+                $client = \App\Models\Client::where('tenant_id', $request->user()->tenant_id)->findOrFail($input['client_id']);
+                $clientScope = ['id' => (string) $client->id, 'name' => $client->name ?: ($client->shortname ?: 'Клиент №'.$client->id)];
+            }
+        }
+
         abort_unless(($id === null) === ($action === null), 404);
         if ($id !== null) {
             abort_if($top === 'roles_rights', 404);
@@ -38,6 +47,9 @@ final class SectionPageController
                 if (! config('sync.entities.'.$entity.'.global', false)) {
                     $query->where('tenant_id', $request->user()->tenant_id);
                 }
+                if ($clientScope !== null) {
+                    $query->where('client_id', $clientScope['id']);
+                }
                 $row = $query->findOrFail($id);
                 if ($top === 'company_contacts' && $request->has('company_id')) {
                     abort_unless((string) $row->company_id === (string) $request->query('company_id'), 404);
@@ -48,6 +60,6 @@ final class SectionPageController
             return app(CompanyDirectoryController::class)->contactsPage($request);
         }
 
-        return Inertia::render($component);
+        return Inertia::render($component, ['clientScope' => $clientScope]);
     }
 }

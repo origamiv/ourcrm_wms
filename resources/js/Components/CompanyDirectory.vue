@@ -37,6 +37,9 @@ const clients = isClientCompany
 const scope = computed<{ id: string; name: string } | null>(() =>
     !isCompany ? (page.props.companyScope ?? null) : null,
 );
+const clientScope = computed<{ id: string; name: string } | null>(() =>
+    isClientCompany ? (page.props.clientScope ?? null) : null,
+);
 const singular = isCompany ? "компанию" : "контактное лицо";
 const labels: Record<string, string> = isCompany
     ? {
@@ -105,6 +108,11 @@ function companyName(id: unknown) {
 const filtered = computed(() =>
     rows.value
         .filter((row) => {
+            if (
+                clientScope.value &&
+                String(row.client_id) !== clientScope.value.id
+            )
+                return false;
             if (scope.value && String(row.company_id) !== scope.value.id)
                 return false;
             if (flagFilter.value && !row.src?.[flagFilter.value]) return false;
@@ -171,6 +179,9 @@ watch(
 function open(row: DirectoryRow | null, readOnly = false) {
     if (
         saving.value ||
+        (clientScope.value &&
+            row &&
+            String(row.client_id) !== clientScope.value.id) ||
         (scope.value && row && String(row.company_id) !== scope.value.id)
     )
         return;
@@ -182,7 +193,11 @@ function open(row: DirectoryRow | null, readOnly = false) {
         ),
         status: row ? row.status : 1,
         ...(isClientCompany
-            ? { client_id: row?.client_id ? String(row.client_id) : null }
+            ? {
+                  client_id:
+                      clientScope.value?.id ??
+                      (row?.client_id ? String(row.client_id) : null),
+              }
             : {}),
         ...(isCompany
             ? {
@@ -237,6 +252,14 @@ watch(
         currentPage.value = 1;
     },
 );
+watch(
+    () => clientScope.value?.id,
+    () => {
+        editing.value = false;
+        deleting.value = null;
+        currentPage.value = 1;
+    },
+);
 function applySuggestion(fields: Record<string, any>) {
     if (viewing.value || saving.value || !online.value || conflict.value)
         return;
@@ -252,7 +275,7 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const response = await http(
-            `${scope.value ? `/web/companies/${scope.value.id}/contacts` : `/web/${isClientCompany ? "clients/companies" : props.entity}`}${selected.value ? "/" + selected.value.id : ""}`,
+            `${scope.value ? `/web/companies/${scope.value.id}/contacts` : `/web/${isClientCompany ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}companies` : props.entity}`}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
             {
                 ...(!remove ? form.value : {}),
@@ -336,6 +359,9 @@ useCardRoute<DirectoryRow>({
                     {{ title }}
                 </div>
                 <ClientTabs v-if="isClientCompany" /><AdminTabs v-else />
+                <p v-if="clientScope" class="company-scope">
+                    Клиент: <strong>{{ clientScope.name }}</strong>
+                </p>
                 <p v-if="scope" class="company-scope">
                     Компания:
                     <strong>{{
@@ -684,10 +710,18 @@ useCardRoute<DirectoryRow>({
                             >Клиент<select
                                 v-model="form.client_id"
                                 aria-label="Клиент"
+                                :disabled="!!clientScope"
                             >
-                                <option :value="null">Не выбран</option>
+                                <option
+                                    v-if="clientScope"
+                                    :value="clientScope.id"
+                                >
+                                    {{ clientScope.name }}
+                                </option>
+                                <option v-else :value="null">Не выбран</option>
                                 <option
                                     v-if="
+                                        !clientScope &&
                                         form.client_id &&
                                         !clients.rows.value.some(
                                             (row) =>
@@ -702,9 +736,10 @@ useCardRoute<DirectoryRow>({
                                     Недоступный клиент №{{ form.client_id }}
                                 </option>
                                 <option
-                                    v-for="row in clients.rows.value.filter(
-                                        (row) => !row.deleted_at,
-                                    )"
+                                    v-for="row in (clientScope
+                                        ? []
+                                        : clients.rows.value
+                                    ).filter((row) => !row.deleted_at)"
                                     :key="row.id"
                                     :value="row.id"
                                 >

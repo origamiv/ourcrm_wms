@@ -9,7 +9,12 @@ const collapsed = ref(false),
     connected = ref(navigator.onLine);
 function go(component: "Home" | "Users" | "Clients", url: string) {
     if (navigator.onLine) router.visit(url);
-    else router.push({ url, component, props: page.props });
+    else
+        router.push({
+            url,
+            component,
+            props: { ...page.props, clientScope: null, companyScope: null },
+        });
 }
 function connection() {
     connected.value = navigator.onLine;

@@ -38,3 +38,5 @@
 [Справочники](REFERENCES.md): CRUD `/api/{reference}` и синхронизация `/api/sync/{reference}` для `modules`, `features`, `icons`, `files`. Модули и возможности общие для всех организаций.
 
 [Юридические и физические лица клиентов](CLIENT_PARTIES.md): CRUD `/api/clients/{party}`, `party=companies|individuals`; синхронизация `client_companies` и `client_individuals`.
+
+Работа с лицами выбранного клиента: `POST /api/clients/{clientId}/{party}`, `PUT|DELETE /api/clients/{clientId}/{party}/{id}`. Привязка к клиенту фиксируется сервером, подмена запрещена. [Подробности](CLIENT_PARTIES.md#открытие-из-клиента).

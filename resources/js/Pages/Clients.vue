@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
-import { Head, usePage } from "@inertiajs/vue3";
+import { Head, usePage, router } from "@inertiajs/vue3";
 import ClientTabs from "../Components/ClientTabs.vue";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -85,6 +85,22 @@ watch(
 );
 function displayName(row: ClientRow) {
     return row.name || row.shortname || `Клиент №${row.id}`;
+}
+function openParties(row: ClientRow, party: "companies" | "individuals") {
+    if (saving.value || row.deleted_at) return;
+    const url = `/clients/${party}?client_id=${encodeURIComponent(row.id)}`;
+    if (online.value) router.visit(url);
+    else
+        router.push({
+            url,
+            component:
+                party === "companies" ? "ClientCompanies" : "ClientIndividuals",
+            props: {
+                ...page.props,
+                companyScope: null,
+                clientScope: { id: String(row.id), name: displayName(row) },
+            },
+        });
 }
 function open(row: ClientRow | null, readOnly = false) {
     if (saving.value) return;
@@ -271,6 +287,28 @@ useCardRoute<ClientRow>({
                             </td>
                             <td>
                                 <div class="row-actions">
+                                    <button
+                                        :aria-label="`Юрлица: ${displayName(row)}`"
+                                        title="Юрлица"
+                                        :disabled="saving || !!row.deleted_at"
+                                        @click="openParties(row, 'companies')"
+                                    >
+                                        <img
+                                            src="/design/crm/companies.svg"
+                                            alt=""
+                                        />
+                                    </button>
+                                    <button
+                                        :aria-label="`Физлица: ${displayName(row)}`"
+                                        title="Физлица"
+                                        :disabled="saving || !!row.deleted_at"
+                                        @click="openParties(row, 'individuals')"
+                                    >
+                                        <img
+                                            src="/design/crm/contacts.svg"
+                                            alt=""
+                                        />
+                                    </button>
                                     <button
                                         :aria-label="`Просмотр: ${displayName(row)}`"
                                         title="Просмотр"

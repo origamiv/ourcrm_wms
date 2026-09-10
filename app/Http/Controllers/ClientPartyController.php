@@ -61,4 +61,51 @@ final class ClientPartyController extends BaseApiController
     {
         return response()->json(['data' => $service->save($request->user(), 'client_'.$party, $request->validated(), $id, true)]);
     }
+
+    /** Создать юрлицо или физлицо только выбранного клиента. */
+    #[BodyParameter('shortname', 'Краткое название: обязательно для companies, необязательно для individuals.', required: false, type: 'string|null')]
+    #[BodyParameter('fullname', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('inn', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('kpp', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('ogrn', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('okpo', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('site', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('director_fio', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('director_position', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('bank', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('bik', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('korr_schet', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('rasch_schet', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('src', 'Дополнительные поля юрлица: telegram, opf, accountant_position, accountant_fio, legal_address, is_own, is_client, is_partner.', required: false, type: 'array<string, mixed>')]
+    public function storeScoped(CreateClientPartyRequest $request, string $clientId, string $party, CompanyDirectoryService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->save($request->user(), 'client_'.$party, $request->validated(), clientId: $clientId)], 201);
+    }
+
+    /** Изменить запись только выбранного клиента, без переноса к другому клиенту. */
+    #[Response(409, 'Запись изменена', type: 'array{message: string, current: array<string, mixed>}')]
+    #[BodyParameter('shortname', 'Краткое название: обязательно для companies, необязательно для individuals.', required: false, type: 'string|null')]
+    #[BodyParameter('fullname', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('inn', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('kpp', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('ogrn', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('okpo', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('site', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('director_fio', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('director_position', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('bank', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('bik', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('korr_schet', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('rasch_schet', 'Поле юрлица (party=companies).', required: false, type: 'string|null')]
+    #[BodyParameter('src', 'Дополнительные поля юрлица: telegram, opf, accountant_position, accountant_fio, legal_address, is_own, is_client, is_partner.', required: false, type: 'array<string, mixed>')]
+    public function updateScoped(UpdateClientPartyRequest $request, string $clientId, string $party, string $id, CompanyDirectoryService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->save($request->user(), 'client_'.$party, $request->validated(), $id, clientId: $clientId)]);
+    }
+
+    /** Мягко удалить запись только выбранного клиента. */
+    public function destroyScoped(DeleteClientPartyRequest $request, string $clientId, string $party, string $id, CompanyDirectoryService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->save($request->user(), 'client_'.$party, $request->validated(), $id, true, clientId: $clientId)]);
+    }
 }

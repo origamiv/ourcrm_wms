@@ -61,3 +61,9 @@ DB::transaction(function () {
     DB::table('clients.individuals')->insert(['name' => 'Тестовое физлицо', 'firstname' => 'Тестовое', 'lastname' => 'Физлицо', 'status' => 1, 'tenant_id' => 'test_org', 'client_id' => 1]);
     (require database_path('migrations/2026_09_10_000010_sync_client_parties.php'))->up();
 });
+
+DB::transaction(function () {
+    $other = DB::table('clients.clients')->insertGetId(['name' => 'Другой клиент', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('clients.companies')->insert(['name' => 'Юрлицо другого клиента', 'shortname' => 'Другое', 'client_id' => $other, 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('clients.individuals')->insert(['name' => 'Физлицо другого клиента', 'client_id' => $other, 'status' => 1, 'tenant_id' => 'test_org']);
+});

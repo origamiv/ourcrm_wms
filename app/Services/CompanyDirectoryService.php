@@ -13,11 +13,11 @@ use Illuminate\Validation\ValidationException;
 
 final class CompanyDirectoryService
 {
-    public function save(User $actor, string $directory, array $data, ?string $id = null, bool $delete = false, ?string $companyId = null): array
+    public function save(User $actor, string $directory, array $data, ?string $id = null, bool $delete = false, ?string $companyId = null, ?string $clientId = null): array
     {
         abort_unless(in_array($directory, ['companies', 'company_contacts', 'client_companies', 'client_individuals'], true), 404);
 
-        return DB::transaction(function () use ($actor, $directory, $data, $id, $delete, $companyId) {
+        return DB::transaction(function () use ($actor, $directory, $data, $id, $delete, $companyId, $clientId) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
             $sync->checkpoint($tenant);
@@ -32,9 +32,17 @@ final class CompanyDirectoryService
                 }
                 $data['company_id'] = $companyId;
             }
+            if ($clientId !== null) {
+                abort_unless(in_array($directory, ['client_companies', 'client_individuals'], true), 404);
+                \App\Models\Client::where('tenant_id', $tenant)->findOrFail($clientId);
+                if (array_key_exists('client_id', $data) && (string) $data['client_id'] !== $clientId) {
+                    throw ValidationException::withMessages(['client_id' => 'В этом разделе можно работать только с выбранным клиентом.']);
+                }
+                $data['client_id'] = $clientId;
+            }
             $definition = app(SyncEntityRegistry::class)->resolve($directory, $actor);
             $model = $definition['entity'];
-            $record = $id ? $model::withTrashed()->where('tenant_id', $tenant)->when($companyId !== null, fn ($query) => $query->where('company_id', $companyId))->findOrFail($id) : new $model;
+            $record = $id ? $model::withTrashed()->where('tenant_id', $tenant)->when($companyId !== null, fn ($query) => $query->where('company_id', $companyId))->when($clientId !== null, fn ($query) => $query->where('client_id', $clientId))->findOrFail($id) : new $model;
             if ($id) {
                 $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {

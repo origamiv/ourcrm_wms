@@ -1347,3 +1347,145 @@ test("client legal entities and individuals support cards, links and offline nav
         page.getByRole("button", { name: "Юрлицо браузера", exact: true }),
     ).toHaveCount(0);
 });
+
+test("client actions lock both party directories to the selected client", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    for (const [party, action, ownName, otherName] of [
+        [
+            "companies",
+            "Юрлица",
+            "ООО Клиентское юрлицо",
+            "Юрлицо другого клиента",
+        ],
+        [
+            "individuals",
+            "Физлица",
+            "Тестовое физлицо",
+            "Физлицо другого клиента",
+        ],
+    ]) {
+        await page
+            .locator(".sidebar")
+            .getByRole("link", { name: "Клиенты", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name: `${action}: Тестовый клиент`,
+                exact: true,
+            })
+            .click();
+        await expect(page).toHaveURL(
+            new RegExp(`/clients/${party}\\?client_id=1$`),
+        );
+        await expect(
+            page.getByRole("button", { name: otherName, exact: true }),
+        ).toHaveCount(0);
+        await page
+            .getByRole("button", { name: `Просмотр: ${ownName}`, exact: true })
+            .click();
+        await expect(
+            page.getByRole("combobox", { name: "Клиент", exact: true }),
+        ).toBeDisabled();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name: `Редактировать: ${ownName}`,
+                exact: true,
+            })
+            .click();
+        await expect(
+            page.getByRole("combobox", { name: "Клиент", exact: true }),
+        ).toBeDisabled();
+        await page.getByLabel("Телефон", { exact: true }).fill("+79990001122");
+        await page
+            .getByRole("button", { name: "Сохранить изменения", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name:
+                    party === "companies"
+                        ? "+ Добавить компанию"
+                        : "Добавить запись",
+                exact: true,
+            })
+            .click();
+        await expect(
+            page.getByRole("combobox", { name: "Клиент", exact: true }),
+        ).toBeDisabled();
+        await expect(
+            page.getByRole("combobox", { name: "Клиент", exact: true }),
+        ).toHaveValue("1");
+        await page
+            .getByLabel(
+                party === "companies" ? "Название компании *" : "ФИО *",
+                { exact: true },
+            )
+            .fill(`Новое ${action} клиента`);
+        if (party === "companies")
+            await page
+                .getByLabel("Краткое название *", { exact: true })
+                .fill("Клиентское");
+        await page
+            .getByRole("button", { name: "Создать запись", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await page.reload();
+        await expect(page).toHaveURL(
+            new RegExp(`/clients/${party}/\\d+/edit\\?client_id=1$`),
+        );
+        await expect(
+            page.getByRole("combobox", { name: "Клиент", exact: true }),
+        ).toBeDisabled();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await context.setOffline(true);
+        await page
+            .locator(".sidebar")
+            .getByRole("link", { name: "Клиенты", exact: true })
+            .click();
+        await page
+            .getByRole("button", {
+                name: `${action}: Тестовый клиент`,
+                exact: true,
+            })
+            .click();
+        await expect(
+            page.getByRole("button", {
+                name: `Новое ${action} клиента`,
+                exact: true,
+            }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: otherName, exact: true }),
+        ).toHaveCount(0);
+        await page
+            .getByRole("navigation", { name: "Разделы клиентов" })
+            .getByRole("link", {
+                name: party === "companies" ? "Юр.лица" : "Физ.лица",
+                exact: true,
+            })
+            .click();
+        await expect(
+            page.getByRole("button", { name: otherName, exact: true }),
+        ).toBeVisible();
+        await context.setOffline(false);
+    }
+    await page.screenshot({
+        path: "/tmp/wms-client-party-actions.png",
+        fullPage: true,
+    });
+});

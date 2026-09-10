@@ -99,7 +99,7 @@ function open(tab: RibbonTab) {
         router.push({
             url: tab.url,
             component: tab.component,
-            props: { ...page.props, companyScope: null },
+            props: { ...page.props, companyScope: null, clientScope: null },
         });
 }
 </script>
