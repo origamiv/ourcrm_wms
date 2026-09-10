@@ -8,9 +8,9 @@ use App\Models\User;
 
 final class UserSyncService
 {
-    public function revision(): string
+    public function revision(string $tenant): string
     {
-        return app(EntitySyncService::class)->revision();
+        return app(EntitySyncService::class)->revision($tenant);
     }
 
     /** @return array{id: string, name: ?string, last_name: ?string, middle_name: ?string, nick: ?string, email: ?string, phone: ?string, status: ?int, tenant_id: ?string, created_at: ?string, updated_at: ?string, deleted_at: ?string, version: string} */

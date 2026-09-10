@@ -16,15 +16,21 @@ try {
     $db->beginTransaction();
     $db->exec(file_get_contents(__DIR__.'/schema.sql'));
     $db->exec(file_get_contents(__DIR__.'/../../database/sql/user_sync.sql'));
-    foreach (['entity_sync_upgrade.sql', 'entity_sync_functions.sql', 'entity_sync_users.sql'] as $sql) {
+    foreach (['entity_sync_upgrade.sql', 'entity_sync_functions.sql', 'entity_sync_users.sql', 'tenant_sync_upgrade.sql', 'tenant_sync_append.sql'] as $sql) {
         $db->exec(file_get_contents(__DIR__.'/../../database/sql/'.$sql));
     }
-    $db->exec("INSERT INTO public.users(id,name,tenant_id) VALUES (1,'Первый','a'),(2,'Второй','a')");
+    $db->exec("INSERT INTO public.users(id,name,tenant_id) VALUES (1,'Первый','a'),(2,'Второй','a'),(3,'Другой тенант','b')");
     $db->commit();
     $reader = connection();
-    $before = $reader->query('SELECT revision FROM wms.sync_state')->fetchColumn();
+    $before = $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'a'")->fetchColumn();
     $db->beginTransaction();
     $db->exec("UPDATE public.users SET name='Первый commit' WHERE id=1");
+    // Запись другого тенанта завершается, пока транзакция a удерживает свой счётчик.
+    $reader->exec("SET statement_timeout = '1s'; UPDATE public.users SET name='Независимая запись' WHERE id=3");
+    if ((int) $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'b'")->fetchColumn() !== 2) {
+        throw new RuntimeException('Счётчик другого тенанта не обновился');
+    }
+
     $process = proc_open([PHP_BINARY, __FILE__, 'writer'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
     $deadline = microtime(true) + 5;
     do {
@@ -34,7 +40,7 @@ try {
         }
         usleep(50000);
     } while (microtime(true) < $deadline);
-    if (! $waiting || $reader->query('SELECT revision FROM wms.sync_state')->fetchColumn() !== $before) {
+    if (! $waiting || $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'a'")->fetchColumn() !== $before) {
         throw new RuntimeException('Нарушена видимость незавершённой транзакции');
     }
     $db->commit();
@@ -44,14 +50,14 @@ try {
     if (proc_close($process) !== 0) {
         throw new RuntimeException($stderr);
     }
-    $ids = $reader->query('SELECT entity_id FROM public.entity_changes WHERE revision > '.(int) $before.' ORDER BY revision')->fetchAll(PDO::FETCH_COLUMN);
+    $ids = $reader->query("SELECT entity_id FROM public.entity_changes WHERE tenant_id = 'a' AND revision > ".(int) $before.' ORDER BY revision')->fetchAll(PDO::FETCH_COLUMN);
     if (array_map('intval', $ids) !== [1, 2]) {
         throw new RuntimeException('Нарушен порядок commit');
     }
-    echo "Параллельные записи: ревизии следуют порядку commit, незавершённые изменения не видны.\n";
+    echo "Параллельные записи: внутри тенанта соблюдён порядок commit; другой тенант пишет без ожидания.\n";
 } finally {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    $db->exec('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
+    $db->exec('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
 }

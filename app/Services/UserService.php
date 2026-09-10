@@ -24,9 +24,11 @@ final class UserService
     public function save(User $actor, array $data, ?string $id = null, string $action = 'update'): array
     {
         return DB::transaction(function () use ($actor, $data, $id, $action) {
-            DB::table('wms.sync_state')->where('id', 1)->lockForUpdate()->first();
+            $tenant = $actor->tenant_id;
+            app(EntitySyncService::class)->checkpoint($tenant);
+            DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
-            abort_unless($this->access->isAdmin($actor), 403);
+            abort_unless($actor->tenant_id === $tenant && $this->access->isAdmin($actor), 403);
             $user = $id ? $this->find($actor, $id) : new User;
             if ($id) {
                 $current = $this->sync->current($id);
@@ -46,6 +48,8 @@ final class UserService
             }
             if (in_array($action, ['create', 'update'], true)) {
                 $email = mb_strtolower(trim($data['email']));
+                // Email общий для приложений и организаций: сериализуем проверки одного адреса.
+                DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [$email]);
                 if (User::withTrashed()->whereRaw('lower(email) = ?', [$email])->when($id, fn ($q) => $q->where('id', '<>', $id))->exists()) {
                     throw ValidationException::withMessages(['email' => 'Этот email уже используется.']);
                 }

@@ -45,11 +45,11 @@ it('captures hard deletion soft deletion restoration and tenant moves without ti
 it('rolls back revisions together with changes and never journals secrets', function () {
     $u = $this->makeUser();
     $sync = app(UserSyncService::class);
-    $revision = $sync->revision();
+    $revision = $sync->revision('tenant_a');
     DB::beginTransaction();
     DB::table('public.users')->where('id', $u->id)->update(['name' => 'Откат']);
     DB::rollBack();
-    expect($sync->revision())->toBe($revision);
+    expect($sync->revision('tenant_a'))->toBe($revision);
     $data = json_decode(DB::table('public.entity_changes')->first()->data, true);
     expect($data)->not->toHaveKeys(['password', 'remember_token']);
 });
@@ -79,12 +79,15 @@ it('rolls back only WMS infrastructure and preserves shared users', function () 
     $user = $this->makeUser();
     $migration = require database_path('migrations/2026_09_10_000001_create_wms_user_sync.php');
     $shared = require database_path('migrations/2026_09_10_000003_create_shared_entity_changes.php');
+    $tenants = require database_path('migrations/2026_09_10_000004_move_sync_state_to_public.php');
+    $tenants->down();
     $shared->down();
     $migration->down();
     expect(DB::table('public.users')->where('id', $user->id)->exists())->toBeTrue();
     expect(DB::selectOne("select to_regclass('public.entity_changes') as relation")->relation)->toBeNull();
     $migration->up();
     $shared->up();
+    $tenants->up();
     expect(app(UserSyncService::class)->current($user->id)['name'])->toBe('Тест');
 });
 
@@ -92,6 +95,6 @@ it('invalidates old cursors when the journal is recreated', function () {
     $admin = $this->makeUser([], true);
     $this->loginUser($admin);
     $cursor = $this->getJson('/web/users/sync')->json('cursor');
-    DB::table('wms.sync_state')->where('id', 1)->update(['generation' => 'new_generation']);
+    DB::table('public.sync_state')->where('tenant_id', 'tenant_a')->update(['generation' => 'new_generation']);
     $this->getJson('/web/users/sync?cursor='.urlencode($cursor))->assertConflict();
 });

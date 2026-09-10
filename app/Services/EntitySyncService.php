@@ -12,9 +12,9 @@ use JsonException;
 
 final class EntitySyncService
 {
-    public function revision(): string
+    public function revision(string $tenant): string
     {
-        return (string) DB::table('wms.sync_state')->where('id', 1)->value('revision');
+        return (string) $this->checkpoint($tenant)->revision;
     }
 
     /** @return array<string, mixed> */
@@ -37,9 +37,10 @@ final class EntitySyncService
             $checkpoint = $cursor ? $this->decode($cursor, $tenant, $user, $entity) : ['revision' => '0'];
             abort_unless(isset($checkpoint['revision']), 422, 'Ожидается курсор завершённой загрузки.');
             $from = $checkpoint['revision'];
+            $target = $this->checkpoint($tenant);
             $state = ['entity' => $entity, 'tenant' => $tenant, 'user' => $user, 'format' => config('wms.cache_version'),
-                'generation' => $this->generation(),
-                'mode' => $cursor ? 'delta' : 'snapshot', 'from' => $from, 'target' => $this->revision(), 'after' => ''];
+                'generation' => $target->generation,
+                'mode' => $cursor ? 'delta' : 'snapshot', 'from' => $from, 'target' => (string) $target->revision, 'after' => ''];
         }
         if ($state['mode'] === 'snapshot') {
             $rows = DB::select('SELECT * FROM (SELECT DISTINCT ON (entity_id) * FROM public.entity_changes WHERE entity = ? AND tenant_id = ? AND revision <= ? ORDER BY entity_id, revision DESC) latest WHERE entity_id > ? AND operation = ? ORDER BY entity_id LIMIT ?', [$entity, $tenant, $state['target'], $state['after'], 'upsert', $size + 1]);
@@ -60,9 +61,20 @@ final class EntitySyncService
             'cursor' => $more ? null : $this->encode(['entity' => $entity, 'tenant' => $tenant, 'user' => $user, 'format' => config('wms.cache_version'), 'generation' => $state['generation'], 'revision' => $state['target']])];
     }
 
-    private function generation(): string
+    public function checkpoint(string $tenant): object
     {
-        return (string) DB::table('wms.sync_state')->where('id', 1)->value('generation');
+        $state = DB::table('public.sync_state')->where('tenant_id', $tenant)->first();
+        if (! $state) {
+            DB::table('public.sync_state')->insertOrIgnore(['tenant_id' => $tenant]);
+            $state = DB::table('public.sync_state')->where('tenant_id', $tenant)->firstOrFail();
+        }
+
+        return $state;
+    }
+
+    private function generation(string $tenant): string
+    {
+        return (string) $this->checkpoint($tenant)->generation;
     }
 
     private function encode(array $value): string
@@ -80,7 +92,7 @@ final class EntitySyncService
         abort_unless(is_array($value) && ($value['tenant'] ?? null) === $tenant && ($value['user'] ?? null) === $user, 403);
         abort_unless(($value['format'] ?? null) === config('wms.cache_version'), 409, 'Формат кэша изменён.');
         abort_unless(($value['entity'] ?? null) === $entity, 403);
-        abort_unless(($value['generation'] ?? null) === $this->generation(), 409, 'Журнал обновлён. Требуется повторная загрузка.');
+        abort_unless(($value['generation'] ?? null) === $this->generation($tenant), 409, 'Журнал обновлён. Требуется повторная загрузка.');
 
         return $value;
     }

@@ -67,9 +67,12 @@ it('preserves events across migration and refuses rollback with other entities',
     $user = $this->makeUser();
     $migration = require database_path('migrations/2026_09_10_000003_create_shared_entity_changes.php');
     $before = DB::table('public.entity_changes')->orderBy('revision')->get()->toJson();
+    $tenants = require database_path('migrations/2026_09_10_000004_move_sync_state_to_public.php');
+    $tenants->down();
     $migration->down();
     expect(DB::table('wms.user_changes')->count())->toBe(1);
     $migration->up();
+    $tenants->up();
     expect(DB::table('public.entity_changes')->orderBy('revision')->get()->toJson())->toBe($before);
     expect(DB::selectOne("select to_regclass('wms.user_changes') as relation")->relation)->toBeNull();
     registerTestItems();
