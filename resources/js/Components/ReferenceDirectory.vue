@@ -29,6 +29,113 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
+const columnSettingsOpen = ref(false);
+const columnOrder = ref<string[]>([]);
+const hiddenColumns = ref<string[]>([]);
+const draggedColumn = ref<string | null>(null);
+const columnStorageKey = computed(
+    () => `reference-columns:${String(props.entity)}`,
+);
+const configurableColumns = computed(() => definition.fields);
+const allColumns = computed(() => {
+    const known = new Map(
+        configurableColumns.value.map((field) => [field.key, field]),
+    );
+    const saved = columnOrder.value.filter((key) => known.has(key));
+    const fresh = configurableColumns.value
+        .map((field) => field.key)
+        .filter((key) => !saved.includes(key));
+    return [...saved, ...fresh].map((key) => known.get(key)!);
+});
+const orderedColumns = computed(() =>
+    allColumns.value.filter((field) => !hiddenColumns.value.includes(field.key)),
+);
+const renderedSpecialColumns = new Set([
+    "shortname",
+    "code",
+    "client_id",
+    "doc_type_id",
+    "doc_date",
+    "amount",
+]);
+const extraColumns = computed(() =>
+    !isKiz && !isIntegration
+        ? orderedColumns.value.filter(
+              (field) => !renderedSpecialColumns.has(field.key),
+          )
+        : [],
+);
+function isColumnVisible(key: string): boolean {
+    return !hiddenColumns.value.includes(key) && allColumns.value.some((field) => field.key === key);
+}
+function loadColumnSettings() {
+    try {
+        const saved = JSON.parse(
+            localStorage.getItem(columnStorageKey.value) ?? "null",
+        );
+        if (Array.isArray(saved)) {
+            columnOrder.value = saved.map(String);
+        } else if (saved && typeof saved === "object") {
+            columnOrder.value = Array.isArray(saved.order)
+                ? saved.order.map(String)
+                : configurableColumns.value.map((field) => field.key);
+            hiddenColumns.value = Array.isArray(saved.hidden)
+                ? saved.hidden.map(String)
+                : [];
+        } else {
+            columnOrder.value = configurableColumns.value.map((field) => field.key);
+        }
+    } catch {
+        columnOrder.value = configurableColumns.value.map((field) => field.key);
+    }
+}
+function saveColumnSettings() {
+    localStorage.setItem(
+        columnStorageKey.value,
+        JSON.stringify({ order: columnOrder.value, hidden: hiddenColumns.value }),
+    );
+}
+function toggleColumn(key: string) {
+    hiddenColumns.value = hiddenColumns.value.includes(key)
+        ? hiddenColumns.value.filter((item) => item !== key)
+        : [...hiddenColumns.value, key];
+    saveColumnSettings();
+}
+function startColumnDrag(key: string) {
+    draggedColumn.value = key;
+}
+function dropColumn(target: string) {
+    const source = draggedColumn.value;
+    if (!source || source === target) return;
+    const current = allColumns.value.map((field) => field.key);
+    const from = current.indexOf(source);
+    const to = current.indexOf(target);
+    if (from < 0 || to < 0) return;
+    current.splice(from, 1);
+    current.splice(to, 0, source);
+    columnOrder.value = current;
+    saveColumnSettings();
+    draggedColumn.value = null;
+}
+function columnValue(row: ReferenceRow, field: (typeof definition.fields)[number]) {
+    const value = row[field.key];
+    if (value == null || value === "") return "—";
+    if (field.lookup) {
+        return (
+            choices(field.lookup).find(
+                (item) => String(item.id) === String(value),
+            )?.name ?? `№${value}`
+        );
+    }
+    if (field.kind === "date" || field.kind === "datetime") {
+        return formatDate(value, field.kind === "datetime");
+    }
+    if (field.kind === "json") {
+        return typeof value === "string" ? value : JSON.stringify(value);
+    }
+    if (Array.isArray(value)) return value.join(", ");
+    return String(value);
+}
 const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
@@ -39,7 +146,7 @@ const isFulfillment = ["warehouses", "type_warehouses", "marketplaces", "deliver
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz
-        ? definition.fields.filter((field) => field.key !== "code")
+        ? orderedColumns.value.filter((field) => field.key !== "code")
         : isIntegration
           ? definition.fields.filter((field) =>
                 ["lookup", "number", "datetime"].includes(field.kind ?? ""),
@@ -529,6 +636,7 @@ async function confirmDelete() {
     await save(true);
 }
 onMounted(async () => {
+    loadColumnSettings();
     await Promise.all([
         store.start(),
         ...Object.values(lookupStores).map((store) => store.start()),
@@ -638,6 +746,28 @@ useCardRoute<ReferenceRow>({
                 <span>Категории — папки, товары — коробки</span>
             </div>
             <div class="table-scroll">
+                <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
+                    <div class="column-settings-title">Показывать колонки</div>
+                    <div
+                        v-for="field in allColumns"
+                        :key="field.key"
+                        class="column-settings-item"
+                        draggable="true"
+                        @dragstart="startColumnDrag(field.key)"
+                        @dragover.prevent
+                        @drop="dropColumn(field.key)"
+                    >
+                        <span class="column-drag-handle" aria-hidden="true">⠿</span>
+                        <label>
+                            <input
+                                type="checkbox"
+                                :checked="isColumnVisible(field.key)"
+                                @change="toggleColumn(field.key)"
+                            />
+                            {{ field.label }}
+                        </label>
+                    </div>
+                </div>
                 <table
                     :role="isGood ? 'treegrid' : undefined"
                     :aria-label="isGood ? 'Дерево товаров' : undefined"
@@ -657,7 +787,7 @@ useCardRoute<ReferenceRow>({
                                     {{ descending ? "▴" : "▾" }}
                                 </button>
                             </th>
-                            <th v-if="!isKiz">
+                            <th v-if="!isKiz && isColumnVisible('shortname')">
                                 {{
                                     [
                                         "goods",
@@ -680,18 +810,30 @@ useCardRoute<ReferenceRow>({
                                         : "Категория"
                                 }}
                             </th>
-                            <th v-if="isGood">Код</th>
+                            <th v-if="isGood && isColumnVisible('code')">Код</th>
                             <template v-if="isDocument"
-                                ><th>Клиент</th>
-                                <th>Тип документа</th>
-                                <th>Дата документа</th>
-                                <th>Сумма</th></template
+                                ><th v-if="isColumnVisible('client_id')">Клиент</th>
+                                <th v-if="isColumnVisible('doc_type_id')">Тип документа</th>
+                                <th v-if="isColumnVisible('doc_date')">Дата документа</th>
+                                <th v-if="isColumnVisible('amount')">Сумма</th></template
                             >
+                            <th v-for="field in extraColumns" :key="field.key">
+                                {{ field.label }}
+                            </th>
                             <th v-for="field in kizColumns" :key="field.key">
                                 {{ field.label }}
                             </th>
-                            <th>{{ isKiz ? "Состояние" : "Статус" }}</th>
-                            <th>Действия</th>
+                            <th v-if="isColumnVisible('status')">{{ isKiz ? "Состояние" : "Статус" }}</th>
+                            <th>
+                                Действия
+                                <button
+                                    type="button"
+                                    class="column-settings-button"
+                                    title="Настроить колонки"
+                                    aria-label="Настроить колонки"
+                                    @click.stop="columnSettingsOpen = !columnSettingsOpen"
+                                >⚙</button>
+                            </th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>
@@ -702,7 +844,7 @@ useCardRoute<ReferenceRow>({
                                     placeholder="Поиск"
                                 />
                             </th>
-                            <th v-if="!isKiz">
+                            <th v-if="!isKiz && isColumnVisible('shortname')">
                                 <input
                                     v-model="shortQuery"
                                     :aria-label="
@@ -726,9 +868,9 @@ useCardRoute<ReferenceRow>({
                                     "
                                 />
                             </th>
-                            <th v-if="isGood"></th>
+                            <th v-if="isGood && isColumnVisible('code')"></th>
                             <template v-if="isDocument">
-                                <th>
+                                <th v-if="isColumnVisible('client_id')">
                                     <select
                                         v-model="clientFilter"
                                         aria-label="Фильтр клиента"
@@ -743,7 +885,7 @@ useCardRoute<ReferenceRow>({
                                         </option>
                                     </select>
                                 </th>
-                                <th>
+                                <th v-if="isColumnVisible('doc_type_id')">
                                     <select
                                         v-model="docTypeFilter"
                                         aria-label="Фильтр типа документа"
@@ -760,19 +902,20 @@ useCardRoute<ReferenceRow>({
                                         </option>
                                     </select>
                                 </th>
-                                <th>
+                                <th v-if="isColumnVisible('doc_date')">
                                     <RussianDateInput
                                         v-model="dateFilter"
                                         aria-label="Фильтр даты документа"
                                     />
                                 </th>
-                                <th></th>
+                                <th v-if="isColumnVisible('amount')"></th>
                             </template>
+                            <th v-for="field in extraColumns" :key="field.key"></th>
                             <th
                                 v-for="field in kizColumns"
                                 :key="field.key"
                             ></th>
-                            <th>
+                            <th v-if="isColumnVisible('status')">
                                 <select
                                     v-model="statusFilter"
                                     aria-label="Фильтр статуса"
@@ -904,7 +1047,9 @@ useCardRoute<ReferenceRow>({
                                     {{ displayName(row) }}
                                 </button>
                             </td>
-                            <td v-if="!isKiz">{{ row.shortname || "—" }}</td>
+                            <td v-if="!isKiz && isColumnVisible('shortname')">
+                                {{ row.shortname || "—" }}
+                            </td>
                             <td v-for="field in kizColumns" :key="field.key">
                                 {{
                                     field.lookup
@@ -921,9 +1066,11 @@ useCardRoute<ReferenceRow>({
                                           : (row[field.key] ?? "—")
                                 }}
                             </td>
-                            <td v-if="isGood">{{ row.code || "—" }}</td>
+                            <td v-if="isGood && isColumnVisible('code')">
+                                {{ row.code || "—" }}
+                            </td>
                             <template v-if="isDocument">
-                                <td>
+                                <td v-if="isColumnVisible('client_id')">
                                     {{
                                         lookupStores.clients?.rows.value.find(
                                             (item) =>
@@ -932,7 +1079,7 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Клиент №${row.client_id}`
                                     }}
                                 </td>
-                                <td>
+                                <td v-if="isColumnVisible('doc_type_id')">
                                     {{
                                         lookupStores.client_doc_types?.rows.value.find(
                                             (item) =>
@@ -941,8 +1088,10 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Тип №${row.doc_type_id}`
                                     }}
                                 </td>
-                                <td>{{ formatDate(row.doc_date) }}</td>
-                                <td>
+                                <td v-if="isColumnVisible('doc_date')">
+                                    {{ formatDate(row.doc_date) }}
+                                </td>
+                                <td v-if="isColumnVisible('amount')">
                                     {{
                                         row.amount == null
                                             ? "—"
@@ -953,7 +1102,10 @@ useCardRoute<ReferenceRow>({
                                     }}
                                 </td>
                             </template>
-                            <td>
+                            <td v-for="field in extraColumns" :key="field.key">
+                                {{ columnValue(row, field) }}
+                            </td>
+                            <td v-if="isColumnVisible('status')">
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
@@ -1537,6 +1689,62 @@ useCardRoute<ReferenceRow>({
     width: auto;
     font-size: 12px;
     padding: 0 6px;
+}
+.column-settings-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid #d7e5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #344054;
+}
+.column-settings-title {
+    width: 100%;
+    font-size: 12px;
+    font-weight: 700;
+}
+.column-settings-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: grab;
+}
+.column-settings-item:hover {
+    border-color: #d7e5db;
+    background: #f8fafc;
+}
+.column-settings-item label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+}
+.column-drag-handle {
+    color: #98a2b3;
+    font-size: 15px;
+    cursor: grab;
+}
+.column-settings-item input {
+    accent-color: #2274a5;
+}
+.column-settings-button {
+    margin-left: 6px;
+    border: 0;
+    border-radius: 4px;
+    padding: 2px 4px;
+    background: transparent;
+    color: #667085;
+    cursor: pointer;
+}
+.column-settings-button:hover {
+    background: #eef7f0;
+    color: #2274a5;
 }
 .name-button {
     text-align: left;
