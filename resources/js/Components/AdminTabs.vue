@@ -40,7 +40,7 @@ function open(tab: (typeof tabs)[number]) {
         router.push({
             url: tab.url,
             component: tab.component,
-            props: page.props,
+            props: { ...page.props, companyScope: null },
         });
 }
 </script>

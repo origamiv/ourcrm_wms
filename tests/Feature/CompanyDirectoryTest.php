@@ -71,3 +71,29 @@ it('bootstraps existing companies safely and rolls back without changing source 
     expect($current['src']['is_own'])->toBeTrue();
     expect($current['src'])->not->toHaveKey('private_key');
 });
+
+it('restricts contact creation editing and deletion to the company in the route', function () {
+    $admin = $this->makeUser([], true);
+    $first = DB::table('main.companies')->insertGetId(['name' => 'Первая', 'shortname' => 'Первая', 'tenant_id' => 'tenant_a']);
+    $second = DB::table('main.companies')->insertGetId(['name' => 'Вторая', 'shortname' => 'Вторая', 'tenant_id' => 'tenant_a']);
+    $foreign = DB::table('main.companies')->insertGetId(['name' => 'Чужая', 'shortname' => 'Чужая', 'tenant_id' => 'tenant_b']);
+    $this->loginUser($admin);
+    $this->get('/company_contacts?company_id='.$first)->assertOk();
+    $this->get('/company_contacts?company_id='.$foreign)->assertNotFound();
+    $payload = ['name' => 'Иван', 'shortname' => 'Иван', 'status' => 1];
+    $contact = $this->postJson('/web/companies/'.$first.'/contacts', $payload)->assertCreated()->assertJsonPath('data.company_id', $first)->json('data');
+    $this->postJson('/web/companies/'.$first.'/contacts', [...$payload, 'company_id' => $second])->assertUnprocessable();
+    $this->postJson('/web/companies/'.$foreign.'/contacts', $payload)->assertNotFound();
+    $this->putJson('/web/companies/'.$second.'/contacts/'.$contact['id'], [...$payload, 'version' => $contact['version']])->assertNotFound();
+    $this->putJson('/web/companies/'.$first.'/contacts/'.$contact['id'], [...$payload, 'company_id' => $second, 'version' => $contact['version']])->assertUnprocessable();
+    $updated = $this->putJson('/web/companies/'.$first.'/contacts/'.$contact['id'], [...$payload, 'name' => 'Иван обновлён', 'version' => $contact['version']])->assertOk()->json('data');
+    $this->deleteJson('/web/companies/'.$second.'/contacts/'.$contact['id'], ['version' => $updated['version']])->assertNotFound();
+    $this->deleteJson('/web/companies/'.$first.'/contacts/'.$contact['id'], ['version' => $updated['version']])->assertOk();
+});
+
+it('supports company-scoped contacts through the Bearer API', function () {
+    $admin = $this->makeUser([], true);
+    $company = DB::table('main.companies')->insertGetId(['name' => 'Склад', 'shortname' => 'Склад', 'tenant_id' => 'tenant_a']);
+    $token = $this->postJson('/api/auth/token', ['email' => $admin->email, 'password' => 'Test_password_123'])->assertOk()->json('token');
+    $this->withToken($token)->postJson('/api/companies/'.$company.'/contacts', ['name' => 'API контакт', 'shortname' => 'API', 'status' => 1])->assertCreated()->assertJsonPath('data.company_id', $company);
+});

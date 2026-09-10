@@ -759,3 +759,109 @@ test("DaData fills company and bank details on create and edit while preserving 
         page.getByText("Изменения сохранены", { exact: true }),
     ).toBeVisible();
 });
+
+test("company contact action locks the company for viewing editing and creation", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page.getByRole("link", { name: "Компании", exact: true }).click();
+    await page
+        .getByRole("button", {
+            name: "Контактные лица: ООО Тестовый склад",
+            exact: true,
+        })
+        .click();
+    await expect(page).toHaveURL(/\/company_contacts\?company_id=\d+/);
+    const scopedUrl = page.url();
+    await expect(
+        page.getByRole("button", { name: "Другой контакт", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+        page.getByRole("button", { name: "Иван Тестовый", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("combobox", { name: "Фильтр компании", exact: true }),
+    ).toHaveCount(0);
+    await page
+        .getByRole("button", { name: "Просмотр: Иван Тестовый", exact: true })
+        .click();
+    await expect(page.getByLabel("ФИО *", { exact: true })).toBeDisabled();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "Редактировать: Иван Тестовый",
+            exact: true,
+        })
+        .click();
+    await expect(page.getByLabel("Компания", { exact: true })).toBeDisabled();
+    await page
+        .getByLabel("Контактное значение", { exact: true })
+        .fill("updated@example.test");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "+ Добавить контактное лицо",
+            exact: true,
+        })
+        .click();
+    await expect(page.getByLabel("Компания", { exact: true })).toBeDisabled();
+    await page
+        .getByLabel("ФИО *", { exact: true })
+        .fill("Контакт только склада");
+    await page.getByLabel("Краткое имя *", { exact: true }).fill("Контакт");
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(scopedUrl);
+    await expect(
+        page.getByRole("button", {
+            name: "Контакт только склада",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page.screenshot({
+        path: "/tmp/wms-company-scoped-contacts.png",
+        fullPage: true,
+    });
+    await context.setOffline(true);
+    await page.getByRole("link", { name: "Компании", exact: true }).click();
+    await page
+        .getByRole("button", {
+            name: "Контактные лица: ООО Тестовый склад",
+            exact: true,
+        })
+        .click();
+    await expect(
+        page.getByRole("button", {
+            name: "Контакт только склада",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("combobox", { name: "Фильтр компании", exact: true }),
+    ).toHaveCount(0);
+    await page
+        .getByRole("link", { name: "Контактные лица", exact: true })
+        .click();
+    await expect(
+        page.getByRole("combobox", { name: "Фильтр компании", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Другой контакт", exact: true }),
+    ).toBeVisible();
+});

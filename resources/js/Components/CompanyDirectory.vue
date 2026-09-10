@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
-import { Head, usePage } from "@inertiajs/vue3";
+import { Head, usePage, router } from "@inertiajs/vue3";
 import DadataInput from "./DadataInput.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
@@ -28,6 +28,9 @@ const companies =
         : createEntitySync<DirectoryRow>(namespace, "companies");
 const { rows, ready, syncing, online, error, warning } = store;
 const isCompany = props.entity === "companies";
+const scope = computed<{ id: string; name: string } | null>(() =>
+    !isCompany ? (page.props.companyScope ?? null) : null,
+);
 const singular = isCompany ? "компанию" : "контактное лицо";
 const labels: Record<string, string> = isCompany
     ? {
@@ -77,7 +80,11 @@ const form = ref<Record<string, any>>({});
 const notice = ref("");
 const companyOptions = computed(() =>
     companies.rows.value
-        .filter((row) => !row.deleted_at)
+        .filter(
+            (row) =>
+                !row.deleted_at &&
+                (!scope.value || String(row.id) === scope.value.id),
+        )
         .sort((a, b) => a.name.localeCompare(b.name, "ru")),
 );
 function companyName(id: unknown) {
@@ -89,6 +96,8 @@ function companyName(id: unknown) {
 const filtered = computed(() =>
     rows.value
         .filter((row) => {
+            if (scope.value && String(row.company_id) !== scope.value.id)
+                return false;
             if (flagFilter.value && !row.src?.[flagFilter.value]) return false;
             if (
                 statusFilter.value === "deleted"
@@ -151,7 +160,11 @@ watch(
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
 );
 function open(row: DirectoryRow | null, readOnly = false) {
-    if (saving.value) return;
+    if (
+        saving.value ||
+        (scope.value && row && String(row.company_id) !== scope.value.id)
+    )
+        return;
     selected.value = row;
     viewing.value = readOnly || !!row?.deleted_at;
     form.value = {
@@ -178,13 +191,40 @@ function open(row: DirectoryRow | null, readOnly = false) {
               }
             : {}),
         ...(!isCompany
-            ? { company_id: row?.company_id ? String(row.company_id) : "" }
+            ? {
+                  company_id:
+                      scope.value?.id ??
+                      (row?.company_id ? String(row.company_id) : ""),
+              }
             : {}),
     };
     notice.value = "";
     conflict.value = null;
     editing.value = true;
 }
+function openContacts(row: DirectoryRow) {
+    if (saving.value || row.deleted_at) return;
+    const url = `/company_contacts?company_id=${encodeURIComponent(row.id)}`;
+    if (online.value) router.visit(url);
+    else
+        router.push({
+            url,
+            component: "CompanyContacts",
+            props: {
+                ...page.props,
+                companyScope: { id: String(row.id), name: row.name },
+            },
+        });
+}
+watch(
+    () => scope.value?.id,
+    () => {
+        editing.value = false;
+        deleting.value = null;
+        companyFilter.value = "";
+        currentPage.value = 1;
+    },
+);
 function applySuggestion(fields: Record<string, any>) {
     if (viewing.value || saving.value || !online.value || conflict.value)
         return;
@@ -200,7 +240,7 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const response = await http(
-            `/web/${props.entity}${selected.value ? "/" + selected.value.id : ""}`,
+            `${scope.value ? `/web/companies/${scope.value.id}/contacts` : `/web/${props.entity}`}${selected.value ? "/" + selected.value.id : ""}`,
             remove ? "DELETE" : selected.value ? "PUT" : "POST",
             {
                 ...(!remove ? form.value : {}),
@@ -251,6 +291,14 @@ onUnmounted(() => {
                     Администрирование › {{ title }}
                 </div>
                 <AdminTabs />
+                <p v-if="scope" class="company-scope">
+                    Компания:
+                    <strong>{{
+                        companyName(scope.id) === "Компания недоступна"
+                            ? scope.name
+                            : companyName(scope.id)
+                    }}</strong>
+                </p>
                 <div class="page-heading">
                     <h1>{{ title }}</h1>
                     <button
@@ -312,7 +360,9 @@ onUnmounted(() => {
                                 />
                             </th>
                             <th v-if="!isCompany">
+                                <span v-if="scope">{{ scope.name }}</span>
                                 <select
+                                    v-else
                                     v-model="companyFilter"
                                     aria-label="Фильтр компании"
                                 >
@@ -412,6 +462,18 @@ onUnmounted(() => {
                             ></template>
                             <td>
                                 <div class="row-actions">
+                                    <button
+                                        v-if="isCompany"
+                                        :aria-label="`Контактные лица: ${row.name}`"
+                                        title="Контактные лица"
+                                        :disabled="saving || !!row.deleted_at"
+                                        @click="openContacts(row)"
+                                    >
+                                        <img
+                                            src="/design/crm/company_contacts.svg"
+                                            alt=""
+                                        />
+                                    </button>
                                     <button
                                         :aria-label="`Просмотр: ${row.name}`"
                                         title="Просмотр"
@@ -570,6 +632,7 @@ onUnmounted(() => {
                             >Компания *<select
                                 v-model="form.company_id"
                                 aria-label="Компания"
+                                :disabled="!!scope"
                                 required
                             >
                                 <option value="" disabled>
@@ -642,6 +705,11 @@ onUnmounted(() => {
     </div>
 </template>
 <style scoped>
+.company-scope {
+    color: #1e892f;
+    margin: -12px 0 20px;
+    overflow-wrap: anywhere;
+}
 .list-footer {
     flex-wrap: wrap;
 }

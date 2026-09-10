@@ -10,7 +10,8 @@ abstract class CompanyDirectoryRequest extends BaseRequest
 {
     public function rules(): array
     {
-        $contact = $this->route('directory') === 'company_contacts';
+        $scoped = $this->route('companyId') !== null;
+        $contact = $scoped || $this->route('directory') === 'company_contacts';
         $rules = ['name' => ['required', 'string', 'max:255'], 'shortname' => ['required', 'string', 'max:255'], 'status' => ['present', 'nullable', 'integer', 'in:0,1,2'], 'tenant_id' => ['prohibited']];
         foreach (['fullname', 'inn', 'kpp', 'ogrn', 'phone', 'email', 'site', 'director_fio', 'director_position', 'bank', 'bik', 'korr_schet', 'rasch_schet'] as $field) {
             $rules[$field] = $contact ? ['prohibited'] : ['nullable', 'string', 'max:255'];
@@ -18,7 +19,7 @@ abstract class CompanyDirectoryRequest extends BaseRequest
         if (! $contact) {
             $rules['email'][] = 'email';
         }
-        $rules['company_id'] = $contact ? ['required', 'integer', 'min:1', 'max:2147483647'] : ['prohibited'];
+        $rules['company_id'] = $contact ? [$scoped ? 'sometimes' : 'required', 'integer', 'min:1', 'max:2147483647'] : ['prohibited'];
         $rules['val'] = $contact ? ['nullable', 'string', 'max:255'] : ['prohibited'];
 
         $rules['src'] = $contact ? ['prohibited'] : ['sometimes', 'array:telegram,opf,accountant_position,accountant_fio,legal_address,is_own,is_client,is_partner'];

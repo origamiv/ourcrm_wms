@@ -38,5 +38,7 @@ DB::transaction(function () {
 DB::transaction(function () {
     $company = DB::table('main.companies')->insertGetId(['name' => 'ООО Тестовый склад', 'shortname' => 'Склад', 'inn' => '1234567890', 'status' => 1, 'tenant_id' => 'test_org']);
     DB::table('main.company_contacts')->insert(['name' => 'Иван Тестовый', 'shortname' => 'Иван', 'company_id' => $company, 'val' => 'ivan@example.test', 'status' => 1, 'tenant_id' => 'test_org']);
+    $otherCompany = DB::table('main.companies')->insertGetId(['name' => 'ООО Другая компания', 'shortname' => 'Другая', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('main.company_contacts')->insert(['name' => 'Другой контакт', 'shortname' => 'Другой', 'company_id' => $otherCompany, 'status' => 1, 'tenant_id' => 'test_org']);
     (require database_path('migrations/2026_09_10_000007_sync_companies.php'))->up();
 });

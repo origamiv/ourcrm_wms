@@ -13,20 +13,28 @@ use Illuminate\Validation\ValidationException;
 
 final class CompanyDirectoryService
 {
-    public function save(User $actor, string $directory, array $data, ?string $id = null, bool $delete = false): array
+    public function save(User $actor, string $directory, array $data, ?string $id = null, bool $delete = false, ?string $companyId = null): array
     {
         abort_unless(in_array($directory, ['companies', 'company_contacts'], true), 404);
 
-        return DB::transaction(function () use ($actor, $directory, $data, $id, $delete) {
+        return DB::transaction(function () use ($actor, $directory, $data, $id, $delete, $companyId) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
+            if ($companyId !== null) {
+                abort_unless($directory === 'company_contacts', 404);
+                Company::where('tenant_id', $tenant)->findOrFail($companyId);
+                if (isset($data['company_id']) && (string) $data['company_id'] !== $companyId) {
+                    throw ValidationException::withMessages(['company_id' => 'В этом разделе можно работать только с контактами выбранной компании.']);
+                }
+                $data['company_id'] = $companyId;
+            }
             $definition = app(SyncEntityRegistry::class)->resolve($directory, $actor);
             $model = $definition['entity'];
-            $record = $id ? $model::withTrashed()->where('tenant_id', $tenant)->findOrFail($id) : new $model;
+            $record = $id ? $model::withTrashed()->where('tenant_id', $tenant)->when($companyId !== null, fn ($query) => $query->where('company_id', $companyId))->findOrFail($id) : new $model;
             if ($id) {
                 $current = $sync->current($model, $tenant, $id);
                 if (! hash_equals($current['version'], $data['version'])) {
