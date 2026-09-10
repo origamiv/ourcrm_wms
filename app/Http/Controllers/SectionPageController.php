@@ -13,7 +13,7 @@ final class SectionPageController
     public function __invoke(Request $request, string $left, string $top, ?string $id = null, ?string $action = null): Response
     {
         $pages = [
-            'fulfillment' => ['marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices'],
+            'fulfillment' => ['warehouses' => 'Warehouses', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses'],
             'goods' => ['goods' => 'Goods', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals'],

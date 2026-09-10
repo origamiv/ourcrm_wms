@@ -28,7 +28,7 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
-const isFulfillment = ["marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
@@ -594,6 +594,8 @@ useCardRoute<ReferenceRow>({
                                         "kind_kiz",
                                         "marketplaces",
                                         "delivery_services",
+                                        "warehouses",
+                                        "type_warehouses",
                                         "modules",
                                         "features",
                                         "client_individuals",
@@ -639,6 +641,8 @@ useCardRoute<ReferenceRow>({
                                             'kind_kiz',
                                             'marketplaces',
                                             'delivery_services',
+                                            'warehouses',
+                                            'type_warehouses',
                                             'modules',
                                             'features',
                                             'client_individuals',

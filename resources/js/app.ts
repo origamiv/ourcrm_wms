@@ -1,5 +1,7 @@
 import Kizes from "./Pages/Kizes.vue";
 import Marketplaces from "./Pages/Marketplaces.vue";
+import Warehouses from "./Pages/Warehouses.vue";
+import TypeWarehouses from "./Pages/TypeWarehouses.vue";
 import DeliveryServices from "./Pages/DeliveryServices.vue";
 import KindKiz from "./Pages/KindKiz.vue";
 import GoodTypes from "./Pages/GoodTypes.vue";
@@ -32,6 +34,8 @@ const pages: Record<string, any> = {
     KindKiz,
     DeliveryServices,
     Marketplaces,
+    Warehouses,
+    TypeWarehouses,
     Kizes,
     GoodUnits,
     DocTypes,

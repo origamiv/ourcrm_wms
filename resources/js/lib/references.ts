@@ -26,6 +26,8 @@ export interface ReferenceField {
         | "type_goods"
         | "unit_goods"
         | "kind_kiz"
+        | "type_warehouses"
+        | "warehouses"
         | "marketplaces";
 }
 const assets: ReferenceField[] = [
@@ -42,6 +44,17 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    warehouses: {
+        title: "Склады",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "type_warehouse_id", label: "Тип склада", kind: "lookup", lookup: "type_warehouses" },
+        ] as ReferenceField[],
+    },
+    type_warehouses: {
+        title: "Типы складов",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
     marketplaces: {
         title: "Маркетплейсы",
         fields: [

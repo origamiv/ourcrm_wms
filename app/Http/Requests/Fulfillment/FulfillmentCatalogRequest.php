@@ -15,7 +15,12 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
             'name' => ['required', 'string', 'max:255'],
             'shortname' => [
                 'nullable', 'string', 'max:255', 'regex:/^[a-z][a-z0-9_]*$/',
-                Rule::unique($this->route('catalog') === 'marketplaces' ? 'wms.marketplaces' : 'wms.delivery_services', 'shortname')
+                Rule::unique(match ($this->route('catalog')) {
+                    'marketplaces' => 'pgsql.wms.marketplaces',
+                    'delivery_services' => 'pgsql.wms.delivery_services',
+                    'warehouses' => 'pgsql.wms.warehouses',
+                    default => 'pgsql.wms.type_warehouses',
+                }, 'shortname')
                     ->ignore($this->route('id'))
                     ->whereNull('deleted_at'),
             ],
@@ -23,6 +28,9 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
             'icon' => ['nullable', 'string', 'max:255'],
             'tenant_id' => ['prohibited'],
         ];
+        if ($this->route('catalog') === 'warehouses') {
+            $rules['type_warehouse_id'] = ['nullable', 'integer', 'min:1'];
+        }
         if ($this->route('catalog') === 'delivery_services') {
             $rules += [
                 'marketplace_id' => ['nullable', 'integer', 'min:1'],

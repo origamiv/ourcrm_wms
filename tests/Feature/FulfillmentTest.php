@@ -18,7 +18,7 @@ afterEach(function () {
 
 it('manages fulfillment catalogs and marketplace links with versioned sync', function () {
     $market = $this->postJson('/web/fulfillment/marketplaces', ['name' => 'Маркет', 'status' => 1, 'icon' => 'market'])->assertCreated()->json('data');
-    $payload = ['name' => 'Доставка', 'shortname' => 'ДС', 'status' => 1, 'marketplace_id' => $market['id'], 'icon' => 'truck', 'color' => '#123456', 'is_order_edit' => 1, 'prefix' => 'DS', 'folder' => 'delivery'];
+    $payload = ['name' => 'Доставка', 'shortname' => 'delivery', 'status' => 1, 'marketplace_id' => $market['id'], 'icon' => 'truck', 'color' => '#123456', 'is_order_edit' => 1, 'prefix' => 'DS', 'folder' => 'delivery'];
     $row = $this->postJson('/web/fulfillment/delivery_services', $payload)->assertCreated()->assertJsonPath('data.prefix', 'DS')->json('data');
     expect((string) DeliveryService::find($row['id'])->marketplace->id)->toBe($market['id']);
     $this->get('/fulfillment/marketplaces')->assertOk();

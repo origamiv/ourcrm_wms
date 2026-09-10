@@ -105,4 +105,5 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000025_seed_marketplaces_and_delivery_links.php'))->up();
     (require database_path('migrations/2026_09_10_000026_lowercase_fulfillment_shortnames.php'))->up();
     (require database_path('migrations/2026_09_10_000027_unique_fulfillment_shortnames.php'))->up();
+    (require database_path('migrations/2026_09_10_000028_create_warehouses.php'))->up();
 });
