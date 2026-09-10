@@ -891,7 +891,7 @@ fieldset > small {
     padding: 20px 0;
     gap: 0;
     flex: 1;
-    max-height: 638px;
+    max-height: none;
     align-content: start;
 }
 .sidebar nav a {
@@ -920,7 +920,7 @@ fieldset > small {
     color: #26547c;
 }
 .collapse-button {
-    top: 65px;
+    top: 90px;
     right: -12px;
 }
 .main-panel {
@@ -1284,5 +1284,46 @@ td {
     }
     .users-list > .notice {
         margin: 0 0 12px;
+    }
+}
+
+/* Меню и рабочая область используют одинаковые строки шапки и содержимого. */
+.workspace {
+    --header-height: 70px;
+}
+.sidebar {
+    display: grid;
+    grid-template-rows: var(--header-height) minmax(0, 1fr);
+    row-gap: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.sidebar .brand {
+    align-self: start;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+.sidebar nav {
+    min-height: 0;
+    overflow-y: auto;
+}
+.sidebar-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin-top: 6px;
+    padding: 0 10px;
+}
+@media (max-width: 767px) {
+    .workspace {
+        --header-height: 60px;
+        padding-bottom: 24px;
+    }
+    .sidebar .brand {
+        margin-top: 4px;
+    }
+    .sidebar-bottom {
+        padding: 0;
     }
 }
