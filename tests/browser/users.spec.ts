@@ -55,7 +55,7 @@ test("cache, mutations, other tabs, offline reading and logout", async ({
     await deltaRequest;
     await expect(page.getByRole("button", { name: /Новый/ })).toBeVisible();
     const other = await context.newPage();
-    await other.goto("/users");
+    await other.goto("/main/users");
     await expect(
         other.getByText("Данные синхронизированы", { exact: true }),
     ).toBeVisible();
@@ -200,7 +200,9 @@ test("creates and edits roles and permissions and updates another tab", async ({
             page.getByText("Изменения сохранены", { exact: true }),
         ).toBeVisible();
         const other = await context.newPage();
-        await other.goto(title === "Роли" ? "/roles" : "/permissions");
+        await other.goto(
+            title === "Роли" ? "/main/roles" : "/main/permissions",
+        );
         await expect(
             other.getByRole("button", { name: `Создано ${code}`, exact: true }),
         ).toBeVisible();
@@ -239,7 +241,7 @@ test("role rights matrix saves assignments and synchronizes tabs and offline vie
     await checkbox.click();
     await expect(checkbox).toBeChecked();
     const other = await context.newPage();
-    await other.goto("/roles_rights");
+    await other.goto("/main/roles_rights");
     await expect(
         other.getByRole("checkbox", { name, exact: true }),
     ).toBeChecked();
@@ -512,7 +514,7 @@ test("companies and contacts support CRUD, JSON fields, cached navigation and ot
         .getByRole("button", { name: "Закрыть карточку", exact: true })
         .click();
     const other = await context.newPage();
-    await other.goto("/companies");
+    await other.goto("/main/companies");
     await expect(
         other.getByRole("button", { name: "ООО Новая компания", exact: true }),
     ).toBeVisible();
@@ -772,8 +774,7 @@ test("company contact action locks the company for viewing editing and creation"
             exact: true,
         })
         .click();
-    await expect(page).toHaveURL(/\/company_contacts\?company_id=\d+/);
-    const scopedUrl = page.url();
+    await expect(page).toHaveURL(/\/main\/company_contacts\?company_id=\d+/);
     await expect(
         page.getByRole("button", { name: "Другой контакт", exact: true }),
     ).toHaveCount(0);
@@ -826,8 +827,10 @@ test("company contact action locks the company for viewing editing and creation"
     await expect(
         page.getByText("Изменения сохранены", { exact: true }),
     ).toBeVisible();
+    await expect(page).toHaveURL(/\/main\/company_contacts\/\d+\/edit\?company_id=\d+/);
+    const contactUrl = page.url();
     await page.reload();
-    await expect(page).toHaveURL(scopedUrl);
+    await expect(page).toHaveURL(contactUrl);
     await expect(
         page.getByRole("button", {
             name: "Контакт только склада",
@@ -967,4 +970,67 @@ test("clients ribbon, CRUD and offline cache", async ({ page, context }) => {
             exact: true,
         }),
     ).toHaveCount(0);
+});
+
+test("canonical card links restore forms and support browser history", async ({
+    page,
+}) => {
+    await login(page);
+    await expect(page).toHaveURL("/main/users");
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Клиенты", exact: true })
+        .click();
+    await expect(page).toHaveURL("/clients/clients");
+    await page
+        .getByRole("button", { name: "Просмотр: Тестовый клиент", exact: true })
+        .click();
+    await expect(page).toHaveURL(/\/clients\/clients\/\d+\/view$/);
+    const viewUrl = page.url();
+    await page.reload();
+    await expect(page.getByLabel("Название *", { exact: true })).toBeDisabled();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await expect(page).toHaveURL("/clients/clients");
+    await page.goBack();
+    await expect(page).toHaveURL(viewUrl);
+    await expect(page.getByLabel("Название *", { exact: true })).toBeDisabled();
+    await page.goForward();
+    await expect(page.getByLabel("Название *", { exact: true })).toHaveCount(0);
+    await page
+        .getByRole("button", {
+            name: "Редактировать: Тестовый клиент",
+            exact: true,
+        })
+        .click();
+    await expect(page).toHaveURL(/\/clients\/clients\/\d+\/edit$/);
+    await page.reload();
+    await expect(page.getByLabel("Название *", { exact: true })).toHaveValue(
+        "Тестовый клиент",
+    );
+    await expect(page.getByLabel("Название *", { exact: true })).toBeEnabled();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Удалить: Тестовый клиент", exact: true })
+        .click();
+    await expect(page).toHaveURL(/\/clients\/clients\/\d+\/delete$/);
+    await page.reload();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Отмена", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Тестовый клиент", exact: true }),
+    ).toBeVisible();
+    await page.goto("/clients/clients/0/create");
+    await expect(page.getByLabel("Название *", { exact: true })).toHaveValue(
+        "",
+    );
+    await expect(
+        page.getByRole("button", { name: "Создать клиента", exact: true }),
+    ).toBeVisible();
 });

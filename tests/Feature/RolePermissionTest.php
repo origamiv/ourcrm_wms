@@ -20,7 +20,7 @@ it('grants revokes restores and rejects stale versions in the role matrix', func
     $role = DB::table('main.roles')->insertGetId(['name' => 'Склад', 'status' => 1, 'tenant_id' => 'tenant_a']);
     $permission = DB::table('main.permissions')->insertGetId(['name' => 'Просмотр', 'slug' => 'view', 'resource' => 'inventory', 'status' => 1, 'tenant_id' => 'tenant_a']);
     $this->loginUser($admin);
-    $this->get('/roles_rights')->assertOk();
+    $this->get('/main/roles_rights')->assertOk();
     $url = "/web/roles/$role/permissions/$permission";
     $created = $this->putJson($url, ['enabled' => true, 'version' => '0'])->assertOk()->assertJsonPath('enabled', true)->json();
     expect(DB::table('main.permission_role')->where('role_id', $role)->count())->toBe(1);
@@ -44,7 +44,7 @@ it('enforces role and permission tenant ownership through both transports', func
     $this->putJson("/api/roles/$role/permissions/$permission", ['enabled' => true, 'version' => '0', 'tenant_id' => 'tenant_b'])->assertUnprocessable();
     $this->putJson("/api/roles/$role/permissions/$permission", ['enabled' => true, 'version' => '0'])->assertOk();
     $this->loginUser($this->makeUser());
-    $this->get('/roles_rights')->assertForbidden();
+    $this->get('/main/roles_rights')->assertForbidden();
     $this->putJson("/web/roles/$role/permissions/$permission", ['enabled' => false, 'version' => '0'])->assertForbidden();
 });
 

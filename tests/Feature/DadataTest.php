@@ -38,7 +38,7 @@ it('handles missing configuration and provider failures without invalidating the
     config(['dadata.token' => 'test_token']);
     Http::fake(['suggestions.dadata.ru/*' => Http::response(['secret' => 'provider_detail'], 403)]);
     $this->postJson('/web/companies/suggestions/party', ['query' => 'Склад'])->assertStatus(502)->assertJsonMissing(['secret' => 'provider_detail']);
-    $this->get('/companies')->assertOk();
+    $this->get('/main/companies')->assertOk();
     Http::fake(['suggestions.dadata.ru/*' => Http::failedConnection()]);
     $this->postJson('/web/companies/suggestions/party', ['query' => 'Склад'])->assertStatus(502);
 });

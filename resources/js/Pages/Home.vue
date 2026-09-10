@@ -2,8 +2,13 @@
 import { Head, usePage, router } from "@inertiajs/vue3";
 const page = usePage<any>();
 function openUsers() {
-    if (navigator.onLine) router.visit("/users");
-    else router.push({ url: "/users", component: "Users", props: page.props });
+    if (navigator.onLine) router.visit("/main/users");
+    else
+        router.push({
+            url: "/main/users",
+            component: "Users",
+            props: page.props,
+        });
 }
 </script>
 <template>

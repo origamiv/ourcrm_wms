@@ -143,7 +143,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                 <button
                     class="primary"
                     :disabled="!online || !!saving"
-                    @click="router.visit('/roles?create=1')"
+                    @click="router.visit('/main/roles/0/create')"
                 >
                     Добавить роль
                 </button>

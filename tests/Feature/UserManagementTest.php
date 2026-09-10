@@ -18,7 +18,7 @@ it('authenticates using Livewire and clears the password from component state', 
     $user = $this->makeUser(['email' => 'admin@example.test'], true);
     Livewire::test(Login::class)->set('email', $user->email)->set('password', 'Test_password_123')->call('login')->assertSet('password', '')->assertRedirect('/');
     $this->assertAuthenticatedAs($user);
-    $this->get('/users')->assertOk();
+    $this->get('/main/users')->assertOk();
     $this->postJson('/logout')->assertOk();
     $this->assertGuest();
 });

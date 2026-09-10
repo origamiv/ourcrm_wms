@@ -20,8 +20,8 @@ it('shows tenant catalogs to admins and captures direct SQL changes', function (
     $migration = require database_path('migrations/2026_09_10_000005_sync_access_catalogs.php');
     $migration->up();
     $this->loginUser($admin);
-    $this->get('/roles')->assertOk();
-    $this->get('/permissions')->assertOk();
+    $this->get('/main/roles')->assertOk();
+    $this->get('/main/permissions')->assertOk();
     $roles = $this->getJson('/web/sync/roles')->assertOk()->assertJsonCount(1, 'changes')->assertJsonPath('changes.0.data.name', 'Склад')->json();
     $permissions = $this->getJson('/web/sync/permissions')->assertOk()->assertJsonCount(1, 'changes')->assertJsonPath('changes.0.data.resource', 'inventory')->json();
     DB::table('main.roles')->where('id', $role)->update(['name' => 'Обновлённая роль', 'deleted_at' => now()]);
@@ -32,8 +32,8 @@ it('shows tenant catalogs to admins and captures direct SQL changes', function (
     expect(DB::table('main.roles')->where('id', $role)->exists())->toBeTrue();
     expect(DB::table('public.entity_changes')->where('entity', App\Models\Role::class)->exists())->toBeFalse();
     $this->loginUser($this->makeUser());
-    $this->get('/roles')->assertForbidden();
-    $this->get('/permissions')->assertForbidden();
+    $this->get('/main/roles')->assertForbidden();
+    $this->get('/main/permissions')->assertForbidden();
     $this->getJson('/web/sync/roles')->assertForbidden();
     $this->getJson('/web/sync/permissions')->assertForbidden();
 });

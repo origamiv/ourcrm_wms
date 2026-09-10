@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage, router } from "@inertiajs/vue3";
 import DadataInput from "./DadataInput.vue";
@@ -204,7 +205,7 @@ function open(row: DirectoryRow | null, readOnly = false) {
 }
 function openContacts(row: DirectoryRow) {
     if (saving.value || row.deleted_at) return;
-    const url = `/company_contacts?company_id=${encodeURIComponent(row.id)}`;
+    const url = `/main/company_contacts?company_id=${encodeURIComponent(row.id)}`;
     if (online.value) router.visit(url);
     else
         router.push({
@@ -281,6 +282,36 @@ onUnmounted(() => {
     store.stop();
     if (!isCompany) companies.stop();
 });
+
+useCardRoute<DirectoryRow>({
+    base: `/main/${props.entity}`,
+    rows,
+    ready,
+    state: () =>
+        deleting.value
+            ? { id: deleting.value.id, action: "delete" }
+            : editing.value
+              ? {
+                    id: selected.value?.id ?? "0",
+                    action: !selected.value
+                        ? "create"
+                        : viewing.value
+                          ? "view"
+                          : "edit",
+                }
+              : null,
+    open: (row, action) => {
+        if (action === "delete" && row) deleting.value = row;
+        else open(row, action === "view");
+    },
+    close: () => {
+        editing.value = false;
+        deleting.value = null;
+    },
+    missing: () => {
+        error.value = "Запись недоступна или ещё не загружена.";
+    },
+});
 </script>
 <template>
     <Head :title="title" />
@@ -303,7 +334,7 @@ onUnmounted(() => {
                     <h1>{{ title }}</h1>
                     <button
                         class="primary"
-                        :disabled="!online || saving"
+                        :disabled="!online || !ready || saving"
                         @click="open(null)"
                     >
                         + Добавить {{ singular }}
@@ -559,7 +590,7 @@ onUnmounted(() => {
         <ConfirmDelete
             v-if="deleting"
             :message="`Удалить ${singular} ${deleting.name}?`"
-            :disabled="!online || saving"
+            :disabled="!online || !ready || saving"
             @cancel="deleting = null"
             @confirm="confirmDelete"
         />

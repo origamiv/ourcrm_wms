@@ -70,18 +70,18 @@ onUnmounted(() => {
                 >
                 <a
                     v-if="page.props.auth.is_admin"
-                    href="/users"
+                    href="/main/users"
                     aria-label="Администрирование"
                     :class="{
                         active: [
-                            '/users',
-                            '/roles',
-                            '/permissions',
-                            '/companies',
-                            '/company_contacts',
+                            '/main/users',
+                            '/main/roles',
+                            '/main/permissions',
+                            '/main/companies',
+                            '/main/company_contacts',
                         ].some((url) => page.url.startsWith(url)),
                     }"
-                    @click.prevent="go('Users', '/users')"
+                    @click.prevent="go('Users', '/main/users')"
                     ><img
                         class="nav-icon"
                         src="/design/crm/administration.svg"
@@ -90,10 +90,10 @@ onUnmounted(() => {
                 >
                 <a
                     v-if="page.props.auth.is_admin"
-                    href="/clients"
+                    href="/clients/clients"
                     aria-label="Клиенты"
-                    :class="{ active: page.url.split('?')[0] === '/clients' }"
-                    @click.prevent="go('Clients', '/clients')"
+                    :class="{ active: page.url.startsWith('/clients/') }"
+                    @click.prevent="go('Clients', '/clients/clients')"
                     ><img
                         class="nav-icon clients-icon"
                         src="/design/crm/company_contacts.svg"
@@ -115,14 +115,14 @@ onUnmounted(() => {
             <header class="topbar">
                 <span class="section-title">{{
                     [
-                        "/users",
-                        "/roles",
-                        "/permissions",
-                        "/companies",
-                        "/company_contacts",
+                        "/main/users",
+                        "/main/roles",
+                        "/main/permissions",
+                        "/main/companies",
+                        "/main/company_contacts",
                     ].some((url) => page.url.startsWith(url))
                         ? "Администрирование"
-                        : page.url.split("?")[0] === "/clients"
+                        : page.url.startsWith("/clients/")
                           ? "Клиенты"
                           : "Рабочий стол"
                 }}</span>

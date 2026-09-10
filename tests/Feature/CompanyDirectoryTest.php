@@ -78,8 +78,8 @@ it('restricts contact creation editing and deletion to the company in the route'
     $second = DB::table('main.companies')->insertGetId(['name' => 'Вторая', 'shortname' => 'Вторая', 'tenant_id' => 'tenant_a']);
     $foreign = DB::table('main.companies')->insertGetId(['name' => 'Чужая', 'shortname' => 'Чужая', 'tenant_id' => 'tenant_b']);
     $this->loginUser($admin);
-    $this->get('/company_contacts?company_id='.$first)->assertOk();
-    $this->get('/company_contacts?company_id='.$foreign)->assertNotFound();
+    $this->get('/main/company_contacts?company_id='.$first)->assertOk();
+    $this->get('/main/company_contacts?company_id='.$foreign)->assertNotFound();
     $payload = ['name' => 'Иван', 'shortname' => 'Иван', 'status' => 1];
     $contact = $this->postJson('/web/companies/'.$first.'/contacts', $payload)->assertCreated()->assertJsonPath('data.company_id', $first)->json('data');
     $this->postJson('/web/companies/'.$first.'/contacts', [...$payload, 'company_id' => $second])->assertUnprocessable();

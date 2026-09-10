@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
@@ -24,6 +25,7 @@ const selected = ref<UserRow | null>(null),
     notice = ref(""),
     conflict = ref<UserRow | null>(null),
     passwordMode = ref(false);
+const viewing = ref(false);
 const deleting = ref<UserRow | null>(null);
 const deleteMessage = computed(() => {
     const row = deleting.value;
@@ -112,7 +114,8 @@ watch([query, emailQuery, phoneQuery, filter], () => {
 watch(pages, (n) => {
     currentPage.value = Math.min(currentPage.value, n);
 });
-function open(row: UserRow | null, forPassword = false) {
+function open(row: UserRow | null, forPassword = false, readOnly = false) {
+    viewing.value = readOnly;
     selected.value = row;
     creating.value = !row;
     editing.value = true;
@@ -155,7 +158,7 @@ async function confirmDelete() {
     await save("delete");
 }
 async function save(action = "update") {
-    if (!online.value || saving.value) return;
+    if (!online.value || saving.value || viewing.value) return;
     saving.value = true;
     notice.value = "";
     conflict.value = null;
@@ -235,6 +238,38 @@ function reviewConflict() {
 }
 onMounted(store.start);
 onUnmounted(store.stop);
+
+useCardRoute<UserRow>({
+    base: "/main/users",
+    rows,
+    ready,
+    state: () =>
+        deleting.value
+            ? { id: deleting.value.id, action: "delete" }
+            : editing.value
+              ? {
+                    id: selected.value?.id ?? "0",
+                    action: !selected.value
+                        ? "create"
+                        : passwordMode.value
+                          ? "password"
+                          : viewing.value
+                            ? "view"
+                            : "edit",
+                }
+              : null,
+    open: (row, action) => {
+        if (action === "delete" && row) deleting.value = row;
+        else open(row, action === "password", action === "view");
+    },
+    close: () => {
+        close();
+        deleting.value = null;
+    },
+    missing: () => {
+        error.value = "Запись недоступна или ещё не загружена.";
+    },
+});
 </script>
 <template>
     <Head title="Пользователи" />
@@ -372,7 +407,7 @@ onUnmounted(store.stop);
                             <td>
                                 <div class="row-actions">
                                     <button
-                                        @click.stop="open(row)"
+                                        @click.stop="open(row, false, true)"
                                         aria-label="Открыть пользователя"
                                     >
                                         <img
@@ -536,6 +571,7 @@ onUnmounted(store.stop);
                 >
                     <fieldset
                         :disabled="
+                            viewing ||
                             !online ||
                             saving ||
                             !!conflict ||
@@ -595,7 +631,11 @@ onUnmounted(store.stop);
                         <p v-if="creating && form.status !== 1" class="muted">
                             Для входа пользователю потребуется статус «Активен».
                         </p>
-                        <button type="submit" class="primary save-button">
+                        <button
+                            v-if="!viewing"
+                            type="submit"
+                            class="primary save-button"
+                        >
                             {{
                                 saving
                                     ? "Сохраняем…"
@@ -609,7 +649,7 @@ onUnmounted(store.stop);
                     </fieldset>
                 </form>
                 <div
-                    v-if="selected && !creating && !passwordMode"
+                    v-if="selected && !creating && !passwordMode && !viewing"
                     class="user-actions"
                 >
                     <h3>Действия</h3>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import RibbonTabs from "../Components/RibbonTabs.vue";
@@ -21,7 +22,7 @@ const { rows, ready, syncing, online, error, warning } = store;
 const tabs = [
     {
         label: "Клиенты",
-        url: "/clients",
+        url: "/clients/clients",
         component: "Clients",
         icon: "company_contacts",
     },
@@ -145,6 +146,36 @@ async function confirmDelete() {
 }
 onMounted(store.start);
 onUnmounted(store.stop);
+
+useCardRoute<ClientRow>({
+    base: "/clients/clients",
+    rows,
+    ready,
+    state: () =>
+        deleting.value
+            ? { id: deleting.value.id, action: "delete" }
+            : editing.value
+              ? {
+                    id: selected.value?.id ?? "0",
+                    action: !selected.value
+                        ? "create"
+                        : viewing.value
+                          ? "view"
+                          : "edit",
+                }
+              : null,
+    open: (row, action) => {
+        if (action === "delete" && row) deleting.value = row;
+        else open(row, action === "view");
+    },
+    close: () => {
+        editing.value = false;
+        deleting.value = null;
+    },
+    missing: () => {
+        error.value = "Запись недоступна или ещё не загружена.";
+    },
+});
 </script>
 <template>
     <Head title="Клиенты" />

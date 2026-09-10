@@ -38,7 +38,7 @@ it('synchronizes only tenant clients including direct SQL changes and restricts 
     DB::table('clients.clients')->where('id', $id)->update(['name' => 'Обновлён']);
     $this->getJson('/web/sync/clients?cursor='.urlencode($snapshot['cursor']))->assertOk()->assertJsonPath('changes.0.data.name', 'Обновлён');
     $this->loginUser($this->makeUser());
-    $this->get('/clients')->assertForbidden();
+    $this->get('/clients/clients')->assertForbidden();
     $this->getJson('/web/sync/clients')->assertForbidden();
     $this->postJson('/web/clients', ['name' => 'Нет', 'status' => 1])->assertForbidden();
 });

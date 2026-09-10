@@ -25,9 +25,16 @@ function open(tab: RibbonTab) {
             :key="tab.url"
             :href="tab.url"
             class="module-tab"
-            :class="{ active: page.url.split('?')[0] === tab.url }"
+            :class="{
+                active:
+                    page.url.split('?')[0] === tab.url ||
+                    page.url.startsWith(tab.url + '/'),
+            }"
             :aria-current="
-                page.url.split('?')[0] === tab.url ? 'page' : undefined
+                page.url.split('?')[0] === tab.url ||
+                page.url.startsWith(tab.url + '/')
+                    ? 'page'
+                    : undefined
             "
             @click.prevent="open(tab)"
             ><img

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import { http, HttpError } from "../lib/http";
@@ -183,10 +184,38 @@ watch(
 );
 onMounted(async () => {
     await store.start();
-    if (new URLSearchParams(page.url.split("?")[1]).get("create") === "1")
-        open(null);
 });
 onUnmounted(() => store.stop());
+
+useCardRoute<CatalogRow>({
+    base: `/main/${props.entity}`,
+    rows,
+    ready,
+    state: () =>
+        deleting.value
+            ? { id: deleting.value.id, action: "delete" }
+            : editing.value
+              ? {
+                    id: selected.value?.id ?? "0",
+                    action: !selected.value
+                        ? "create"
+                        : viewing.value
+                          ? "view"
+                          : "edit",
+                }
+              : null,
+    open: (row, action) => {
+        if (action === "delete" && row) deleting.value = row;
+        else open(row, action === "view");
+    },
+    close: () => {
+        editing.value = false;
+        deleting.value = null;
+    },
+    missing: () => {
+        error.value = "Запись недоступна или ещё не загружена.";
+    },
+});
 </script>
 <template>
     <Head :title="title" />
@@ -395,7 +424,7 @@ onUnmounted(() => store.stop());
         <ConfirmDelete
             v-if="deleting"
             :message="`Удалить роль ${deleting.name}?`"
-            :disabled="!online || saving"
+            :disabled="!online || !ready || saving"
             @cancel="deleting = null"
             @confirm="confirmDelete"
         />
