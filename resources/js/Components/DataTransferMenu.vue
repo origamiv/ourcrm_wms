@@ -1,0 +1,76 @@
+<script setup lang="ts">
+import { ref } from "vue";
+
+const props = withDefaults(defineProps<{
+    rows?: any[];
+    columns?: { key: string; label: string }[];
+    filename?: string;
+}>(), { rows: () => [], columns: () => [], filename: "export" });
+const emit = defineEmits<{
+    export: [format: string];
+    import: [format: string, file?: File, text?: string];
+}>();
+const fileInput = ref<HTMLInputElement | null>(null);
+const pendingFormat = ref("");
+const exportFormats = ["XLS", "CSV", "TXT", "PDF"];
+const importFormats = ["XLS", "CSV", "TXT", "PDF", "JPG", "PNG"];
+function exportData(format: string) {
+    emit("export", format);
+    const columns = props.columns.length
+        ? props.columns
+        : Object.keys(props.rows[0] ?? {}).map((key) => ({ key, label: key }));
+    if (format === "PDF") {
+        const table = `<table><thead><tr>${columns.map((column) => `<th>${column.label}</th>`).join("")}</tr></thead><tbody>${props.rows.map((row) => `<tr>${columns.map((column) => `<td>${String(row[column.key] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+        const printWindow = window.open("", "_blank");
+        if (printWindow) { printWindow.document.write(`<html><body>${table}</body></html>`); printWindow.document.close(); printWindow.print(); }
+        return;
+    }
+    const separator = format === "CSV" ? ";" : "\t";
+    const content = [columns.map((column) => column.label), ...props.rows.map((row) => columns.map((column) => String(row[column.key] ?? "")))].map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(separator)).join("\n");
+    const blob = new Blob([content], { type: format === "CSV" ? "text/csv;charset=utf-8" : "application/vnd.ms-excel;charset=utf-8" });
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${props.filename}.${format === "TXT" ? "txt" : format === "XLS" ? "xls" : "csv"}`; link.click(); URL.revokeObjectURL(link.href);
+}
+function chooseImport(format: string) {
+    if (format === "Буфер обмена") {
+        navigator.clipboard?.readText().then((text) => emit("import", format, undefined, text));
+        return;
+    }
+    pendingFormat.value = format;
+    fileInput.value?.click();
+}
+function receiveFile(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) emit("import", pendingFormat.value, file);
+    (event.target as HTMLInputElement).value = "";
+}
+</script>
+
+<template>
+    <div class="data-transfer-menu">
+        <details>
+            <summary title="Экспорт" aria-label="Экспорт">⇩</summary>
+            <div class="data-transfer-dropdown">
+                <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format)">{{ format }}</button>
+            </div>
+        </details>
+        <details>
+            <summary title="Импорт" aria-label="Импорт">⇧</summary>
+            <div class="data-transfer-dropdown">
+                <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format)">{{ format }}</button>
+                <button type="button" @click="chooseImport('Буфер обмена')">Буфер обмена</button>
+            </div>
+        </details>
+        <input ref="fileInput" class="data-transfer-file" type="file" accept=".xls,.xlsx,.csv,.txt,.pdf,.jpg,.jpeg,.png" @change="receiveFile" />
+    </div>
+</template>
+
+<style scoped>
+.data-transfer-menu { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; }
+.data-transfer-menu details { position: relative; }
+.data-transfer-menu summary { display: grid; place-items: center; width: 30px; height: 30px; list-style: none; border: 1px solid #d7dce3; border-radius: 5px; background: #fff; color: #2274a5; font-size: 20px; line-height: 1; cursor: pointer; }
+.data-transfer-menu summary::-webkit-details-marker { display: none; }
+.data-transfer-dropdown { position: absolute; z-index: 25; top: 35px; right: 0; display: grid; min-width: 150px; padding: 6px; border: 1px solid #d7e5db; border-radius: 7px; background: #fff; box-shadow: 0 8px 20px rgb(16 24 40 / 14%); }
+.data-transfer-dropdown button { border: 0; background: transparent; padding: 7px 10px; text-align: left; color: #344054; cursor: pointer; }
+.data-transfer-dropdown button:hover { background: #eef7f0; color: #2274a5; }
+.data-transfer-file { display: none; }
+</style>

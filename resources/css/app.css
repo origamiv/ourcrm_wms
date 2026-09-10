@@ -311,6 +311,10 @@ h3 {
     gap: 15px;
     padding: 26px 25px 21px;
 }
+.page-heading-actions {
+    display: inline-flex;
+    align-items: center;
+}
 .count {
     font-size: 13px;
     font-weight: 500;

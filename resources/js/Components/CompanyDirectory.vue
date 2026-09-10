@@ -6,6 +6,7 @@ import DadataInput from "./DadataInput.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
 import TableColumnSettings from "./TableColumnSettings.vue";
+import DataTransferMenu from "./DataTransferMenu.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
@@ -398,13 +399,10 @@ useCardRoute<DirectoryRow>({
                 </p>
                 <div class="page-heading">
                     <h1>{{ title }}</h1>
-                    <button
-                        class="primary"
-                        :disabled="!online || !ready || saving"
-                        @click="open(null)"
-                    >
-                        + Добавить {{ singular }}
-                    </button>
+                    <div class="page-heading-actions">
+                        <DataTransferMenu :rows="filtered" :columns="columnFields" :filename="props.entity" />
+                        <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">+ Добавить {{ singular }}</button>
+                    </div>
                 </div>
                 <p class="sync-line" role="status">
                     {{

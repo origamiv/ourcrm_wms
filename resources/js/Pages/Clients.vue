@@ -8,6 +8,7 @@ import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
 import TableColumnSettings from "../Components/TableColumnSettings.vue";
+import DataTransferMenu from "../Components/DataTransferMenu.vue";
 interface ClientRow extends EntityRow {
     name: string | null;
     shortname: string | null;
@@ -200,13 +201,10 @@ useCardRoute<ClientRow>({
             <ClientTabs />
             <div class="page-heading">
                 <h1>Клиенты</h1>
-                <button
-                    class="primary"
-                    :disabled="!online || !ready || saving"
-                    @click="open(null)"
-                >
-                    Добавить клиента
-                </button>
+                <div class="page-heading-actions">
+                    <DataTransferMenu :rows="visible" :columns="columnFields" filename="clients" />
+                    <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">Добавить клиента</button>
+                </div>
             </div>
             <div class="sync-line" role="status">
                 {{

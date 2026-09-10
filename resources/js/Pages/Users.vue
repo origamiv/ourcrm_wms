@@ -8,6 +8,7 @@ import { createUsers } from "../lib/users";
 import type { UserRow } from "../lib/cache";
 import { http, HttpError, endSession } from "../lib/http";
 import TableColumnSettings from "../Components/TableColumnSettings.vue";
+import DataTransferMenu from "../Components/DataTransferMenu.vue";
 const page = usePage<any>();
 const columnSettingsOpen = ref(false);
 const columnFields = [
@@ -289,13 +290,10 @@ useCardRoute<UserRow>({
             <AdminTabs />
             <div class="page-heading">
                 <h1>Пользователи</h1>
-                <button
-                    class="primary"
-                    :disabled="!online || !ready"
-                    @click="open(null)"
-                >
-                    ＋ <span>Добавить пользователя</span>
-                </button>
+                <div class="page-heading-actions">
+                    <DataTransferMenu :rows="visible" :columns="columnFields" filename="users" />
+                    <button class="primary" :disabled="!online || !ready" @click="open(null)">＋ <span>Добавить пользователя</span></button>
+                </div>
             </div>
             <div class="sync-line" role="status">
                 <span :class="{ 'offline-text': !online }">{{

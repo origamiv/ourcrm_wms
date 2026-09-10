@@ -8,6 +8,7 @@ import AdminTabs from "./AdminTabs.vue";
 import { createEntitySync } from "../lib/entitySync";
 import type { EntityRow } from "../lib/cache";
 import TableColumnSettings from "./TableColumnSettings.vue";
+import DataTransferMenu from "./DataTransferMenu.vue";
 interface CatalogRow extends EntityRow {
     name: string;
     slug: string | null;
@@ -236,15 +237,10 @@ useCardRoute<CatalogRow>({
             <AdminTabs />
             <div class="page-heading">
                 <h1>{{ title }}</h1>
-                <button
-                    class="primary"
-                    :disabled="!online || !ready || saving"
-                    @click="open(null)"
-                >
-                    {{
-                        entity === "roles" ? "Добавить роль" : "Добавить право"
-                    }}
-                </button>
+                <div class="page-heading-actions">
+                    <DataTransferMenu :rows="visible" :columns="columnFields" :filename="entity" />
+                    <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">{{ entity === "roles" ? "Добавить роль" : "Добавить право" }}</button>
+                </div>
             </div>
             <div class="sync-line" role="status">
                 <span :class="{ 'offline-text': !online }">{{

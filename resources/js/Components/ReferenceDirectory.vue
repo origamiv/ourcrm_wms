@@ -13,6 +13,7 @@ import IntegrationTabs from "./IntegrationTabs.vue";
 import FulfillmentTabs from "./FulfillmentTabs.vue";
 import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
+import DataTransferMenu from "./DataTransferMenu.vue";
 import ClientTabs from "./ClientTabs.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
@@ -749,13 +750,10 @@ useCardRoute<ReferenceRow>({
             </p>
             <div class="page-heading">
                 <h1>{{ definition.title }}</h1>
-                <button
-                    class="primary"
-                    :disabled="!online || !ready || saving"
-                    @click="open(null)"
-                >
-                    Добавить запись
-                </button>
+                <div class="page-heading-actions">
+                    <DataTransferMenu :rows="filtered" :columns="orderedColumns" :filename="String(props.entity)" />
+                    <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">Добавить запись</button>
+                </div>
             </div>
             <div class="sync-line" role="status">
                 {{
