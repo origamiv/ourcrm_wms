@@ -16,6 +16,9 @@ try {
     $db->beginTransaction();
     $db->exec(file_get_contents(__DIR__.'/schema.sql'));
     $db->exec(file_get_contents(__DIR__.'/../../database/sql/user_sync.sql'));
+    foreach (['entity_sync_upgrade.sql', 'entity_sync_functions.sql', 'entity_sync_users.sql'] as $sql) {
+        $db->exec(file_get_contents(__DIR__.'/../../database/sql/'.$sql));
+    }
     $db->exec("INSERT INTO public.users(id,name,tenant_id) VALUES (1,'Первый','a'),(2,'Второй','a')");
     $db->commit();
     $reader = connection();
@@ -41,7 +44,7 @@ try {
     if (proc_close($process) !== 0) {
         throw new RuntimeException($stderr);
     }
-    $ids = $reader->query('SELECT user_id FROM wms.user_changes WHERE revision > '.(int) $before.' ORDER BY revision')->fetchAll(PDO::FETCH_COLUMN);
+    $ids = $reader->query('SELECT entity_id FROM public.entity_changes WHERE revision > '.(int) $before.' ORDER BY revision')->fetchAll(PDO::FETCH_COLUMN);
     if (array_map('intval', $ids) !== [1, 2]) {
         throw new RuntimeException('Нарушен порядок commit');
     }
@@ -50,5 +53,5 @@ try {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    $db->exec('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
+    $db->exec('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
 }

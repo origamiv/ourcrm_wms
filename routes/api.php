@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/token', [WmsAuthController::class, 'token'])->middleware('throttle:20,1');
 Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
+    Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::post('/auth/logout', [WmsAuthController::class, 'revoke']);
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
         Route::get('/users', [WmsUserController::class, 'index']);

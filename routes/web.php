@@ -12,6 +12,7 @@ use Inertia\Inertia;
 Route::get('/login', Login::class)->name('login');
 Route::post('/logout', [WmsAuthController::class, 'logout'])->name('logout');
 Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group(function () {
+    Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
         Route::get('/users', fn () => Inertia::render('Users'))->name('users');

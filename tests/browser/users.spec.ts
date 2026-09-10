@@ -47,7 +47,7 @@ test("cache, mutations, other tabs, offline reading and logout", async ({
     await page.getByRole("button", { name: "Закрыть карточку" }).click();
     await page.getByRole("link", { name: "Главная", exact: true }).click();
     const deltaRequest = page.waitForRequest((r) =>
-        r.url().includes("/web/users/sync?cursor="),
+        r.url().includes("/web/sync/users?cursor="),
     );
     await page
         .getByRole("link", { name: "Администрирование", exact: true })

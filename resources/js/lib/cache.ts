@@ -1,4 +1,8 @@
-export interface UserRow {
+export interface EntityRow {
+    id: string;
+    version: string;
+}
+export interface UserRow extends EntityRow {
     id: string;
     name: string | null;
     last_name: string | null;
@@ -13,15 +17,16 @@ export interface UserRow {
     updated_at: string | null;
     version: string;
 }
-export interface Change {
+export interface Change<T extends EntityRow = UserRow> {
     id: string;
     version: string;
     operation: "upsert" | "remove";
-    data: UserRow | null;
+    data: T | null;
 }
-export interface SyncPage {
+export interface SyncPage<T extends EntityRow = UserRow> {
+    entity_type?: string;
     mode: "snapshot" | "delta";
-    changes: Change[];
+    changes: Change<T>[];
     cursor: string | null;
     continuation: string | null;
 }
@@ -30,7 +35,7 @@ export interface Meta {
     continuation: string | null;
     ready: boolean;
 }
-interface Entry extends Change {
+interface Entry<T extends EntityRow> extends Change<T> {
     key: string;
     scope: string;
 }
@@ -48,8 +53,10 @@ const complete = (t: IDBTransaction) =>
 let database: Promise<IDBDatabase> | undefined;
 function open() {
     return (database ??= new Promise<IDBDatabase>((resolve, reject) => {
-        const r = indexedDB.open("wms_cache", 1);
+        const r = indexedDB.open("wms_cache", 2);
         r.onupgradeneeded = () => {
+            for (const name of Array.from(r.result.objectStoreNames))
+                r.result.deleteObjectStore(name);
             r.result
                 .createObjectStore("entries", { keyPath: "key" })
                 .createIndex("scope", "scope");
@@ -72,19 +79,23 @@ function open() {
         };
     }));
 }
-export class UserCache {
-    private memory = new Map<string, Change>();
+export class EntityCache<T extends EntityRow> {
+    private memory = new Map<string, Change<T>>();
     meta: Meta = { cursor: null, continuation: null, ready: false };
     persistent = true;
+    public scope: string;
     constructor(
-        public scope: string,
+        scope: string,
+        entityType: string,
         private onFailure: () => void = () => {},
-    ) {}
+    ) {
+        this.scope = JSON.stringify([scope, entityType]);
+    }
     private fail() {
         this.persistent = false;
         this.onFailure();
     }
-    async load(): Promise<UserRow[]> {
+    async load(): Promise<T[]> {
         if (this.persistent)
             try {
                 const db = await open();
@@ -101,7 +112,7 @@ export class UserCache {
                 ]);
                 await done;
                 this.memory = new Map(
-                    (entries as Entry[]).map((e) => [e.id, e]),
+                    (entries as Entry<T>[]).map((e) => [e.id, e]),
                 );
                 this.meta = meta ?? {
                     cursor: null,
@@ -118,7 +129,7 @@ export class UserCache {
             .filter((e) => e.operation === "upsert" && e.data)
             .map((e) => e.data!);
     }
-    async apply(changes: Change[], meta?: Meta): Promise<UserRow[]> {
+    async apply(changes: Change<T>[], meta?: Meta): Promise<T[]> {
         if (this.persistent)
             try {
                 const db = await open();
@@ -128,7 +139,7 @@ export class UserCache {
                     const store = tx.objectStore("entries");
                     const key = `${this.scope}:${change.id}`;
                     const old = (await request(store.get(key))) as
-                        Entry | undefined;
+                        Entry<T> | undefined;
                     if (!old || BigInt(change.version) >= BigInt(old.version))
                         store.put({ ...change, key, scope: this.scope });
                 }
@@ -177,5 +188,11 @@ export async function clearCaches() {
         await done;
     } catch {
         /* При недоступной IndexedDB данные остаются только в памяти. */
+    }
+}
+
+export class UserCache extends EntityCache<UserRow> {
+    constructor(scope: string, onFailure: () => void = () => {}) {
+        super(scope, "users", onFailure);
     }
 }

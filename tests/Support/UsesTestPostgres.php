@@ -18,6 +18,7 @@ trait UsesTestPostgres
         DB::beginTransaction();
         DB::unprepared(file_get_contents(base_path('tests/Support/schema.sql')));
         DB::unprepared(file_get_contents(database_path('sql/user_sync.sql')));
+        (require database_path('migrations/2026_09_10_000003_create_shared_entity_changes.php'))->up();
         config(['wms.sync_page_size' => 2]);
     }
 

@@ -50,7 +50,7 @@ it('rolls back revisions together with changes and never journals secrets', func
     DB::table('public.users')->where('id', $u->id)->update(['name' => 'Откат']);
     DB::rollBack();
     expect($sync->revision())->toBe($revision);
-    $data = json_decode(DB::table('wms.user_changes')->first()->data, true);
+    $data = json_decode(DB::table('public.entity_changes')->first()->data, true);
     expect($data)->not->toHaveKeys(['password', 'remember_token']);
 });
 it('binds cursors to the authenticated user and tenant', function () {
@@ -78,10 +78,13 @@ it('captures primary key changes and truncation as removals', function () {
 it('rolls back only WMS infrastructure and preserves shared users', function () {
     $user = $this->makeUser();
     $migration = require database_path('migrations/2026_09_10_000001_create_wms_user_sync.php');
+    $shared = require database_path('migrations/2026_09_10_000003_create_shared_entity_changes.php');
+    $shared->down();
     $migration->down();
     expect(DB::table('public.users')->where('id', $user->id)->exists())->toBeTrue();
-    expect(DB::selectOne("select to_regclass('wms.user_changes') as relation")->relation)->toBeNull();
+    expect(DB::selectOne("select to_regclass('public.entity_changes') as relation")->relation)->toBeNull();
     $migration->up();
+    $shared->up();
     expect(app(UserSyncService::class)->current($user->id)['name'])->toBe('Тест');
 });
 

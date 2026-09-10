@@ -1,0 +1,16 @@
+LOCK TABLE public.users IN SHARE ROW EXCLUSIVE MODE;
+ALTER TABLE wms.user_changes SET SCHEMA public;
+ALTER TABLE public.user_changes RENAME TO entity_changes;
+ALTER TABLE public.entity_changes RENAME COLUMN user_id TO entity_id;
+ALTER TABLE public.entity_changes ALTER COLUMN entity_id TYPE text COLLATE "C" USING entity_id::text;
+ALTER TABLE public.entity_changes ADD COLUMN entity text NOT NULL DEFAULT 'App\Models\User';
+ALTER TABLE public.entity_changes ALTER COLUMN entity DROP DEFAULT;
+DROP INDEX public.user_changes_tenant_revision;
+DROP INDEX public.user_changes_user_revision;
+CREATE INDEX entity_changes_tenant_revision ON public.entity_changes (tenant_id, entity, revision);
+CREATE INDEX entity_changes_record_revision ON public.entity_changes (tenant_id, entity, entity_id, revision DESC);
+DROP TRIGGER wms_users_change ON public.users;
+DROP TRIGGER wms_users_truncate ON public.users;
+DROP FUNCTION wms.capture_user_change();
+DROP FUNCTION wms.capture_users_truncate();
+UPDATE wms.sync_state SET generation = md5(random()::text || clock_timestamp()::text);
