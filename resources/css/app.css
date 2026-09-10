@@ -634,6 +634,53 @@ fieldset > small {
     margin-left: auto;
     color: #1e892f;
 }
+.column-settings-native {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+.column-settings-native summary {
+    list-style: none;
+    cursor: pointer;
+    color: #667085;
+    font-size: 18px;
+    line-height: 1;
+}
+.column-settings-native summary::-webkit-details-marker {
+    display: none;
+}
+.column-settings-native-menu {
+    position: absolute;
+    z-index: 30;
+    top: 26px;
+    right: 0;
+    display: grid;
+    gap: 7px;
+    min-width: 180px;
+    padding: 10px;
+    border: 1px solid #d7e5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #344054;
+    box-shadow: 0 10px 24px rgb(16 24 40 / 14%);
+    text-align: left;
+}
+.column-settings-native-menu label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: #344054;
+    white-space: nowrap;
+}
+.column-settings-native-menu input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: #2274a5;
+}
 .module-symbol {
     font-size: 32px;
     color: #1e892f;

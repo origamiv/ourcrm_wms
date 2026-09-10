@@ -320,7 +320,7 @@ useCardRoute<UserRow>({
                             </th>
                             <th>Телефон</th>
                             <th>Статус</th>
-                            <th>Действия</th>
+                            <th>Действия <details class="column-settings-native"><summary aria-label="Настроить колонки" title="Настроить колонки">⚙</summary><div class="column-settings-native-menu"><strong>Колонки</strong><label v-for="field in ['ФИО', 'Email', 'Телефон', 'Статус']" :key="field"><input type="checkbox" checked />{{ field }}</label></div></details></th>
                         </tr>
                         <tr class="column-filters">
                             <th class="id-column"></th>
