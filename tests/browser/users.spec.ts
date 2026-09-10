@@ -1997,3 +1997,62 @@ test("shared records retain NULL ownership and disappear from the card and Index
         sql("DELETE FROM goods.type_goods WHERE id = " + id);
     }
 });
+
+test("goods parent searchable select saves choices and supports keyboard and clearing", async ({
+    page,
+}) => {
+    await login(page);
+    await page.goto("/goods/goods/0/create");
+    await page
+        .getByLabel("Название *", { exact: true })
+        .fill("Родитель для поиска");
+    await page.getByLabel("Код", { exact: true }).fill("PARENT-SEARCH");
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.goto("/goods/goods/0/create");
+    await page
+        .getByLabel("Название *", { exact: true })
+        .fill("Дочерний для поиска");
+    const parent = page.getByRole("combobox", {
+        name: "Родительская запись",
+        exact: true,
+    });
+    await parent.fill("parent-search");
+    await expect(
+        page.getByRole("option", { name: "Родитель для поиска", exact: true }),
+    ).toBeVisible();
+    await parent.press("ArrowDown");
+    await parent.press("Enter");
+    await expect(parent).toHaveValue("Родитель для поиска");
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(parent).toHaveValue("Родитель для поиска");
+    await parent.fill("несуществующий родитель");
+    await expect(
+        page.getByText("Ничего не найдено", { exact: true }),
+    ).toBeVisible();
+    await parent.press("Escape");
+    await expect(parent).toHaveValue("Родитель для поиска");
+    await parent.click();
+    await page
+        .getByRole("listbox", { name: "Родительская запись", exact: true })
+        .getByRole("option", { name: "Не выбрано", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(parent).toHaveValue("");
+});

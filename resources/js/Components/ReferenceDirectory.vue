@@ -6,6 +6,7 @@ import RussianDateInput from "./RussianDateInput.vue";
 import { formatDate } from "../lib/dates";
 import DocumentPrintFields from "./DocumentPrintFields.vue";
 import DocumentDownload from "./DocumentDownload.vue";
+import SearchableSelect from "./SearchableSelect.vue";
 import StringListInput from "./StringListInput.vue";
 import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
@@ -802,6 +803,31 @@ useCardRoute<ReferenceRow>({
                                 v-if="field.kind === 'string_list'"
                                 v-model="form[field.key]"
                                 :label="field.label"
+                            />
+                            <SearchableSelect
+                                v-else-if="isGood && field.key === 'parent_id'"
+                                v-model="form.parent_id"
+                                :label="field.label"
+                                :disabled="
+                                    viewing || saving || !online || !!conflict
+                                "
+                                :options="
+                                    choices('goods')
+                                        .filter(
+                                            (row) => row.id !== selected?.id,
+                                        )
+                                        .map((row) => ({
+                                            id: row.id,
+                                            label: displayName(row),
+                                            search: [
+                                                row.id,
+                                                row.code,
+                                                row.shortname,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' '),
+                                        }))
+                                "
                             />
                             <label v-else :key="field.key"
                                 >{{ field.label }}
