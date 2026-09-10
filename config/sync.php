@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 return [
     'entities' => [
+        'clients' => [
+            'entity' => App\Models\Client::class,
+            'table' => 'clients.clients',
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
         'companies' => [
             'entity' => App\Models\Company::class,
             'table' => 'main.companies',

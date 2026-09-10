@@ -15,6 +15,10 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::get('/clients', fn () => Inertia::render('Clients'))->name('clients');
+        Route::post('/web/clients', [App\Http\Controllers\ClientController::class, 'store']);
+        Route::put('/web/clients/{id}', [App\Http\Controllers\ClientController::class, 'update'])->whereNumber('id');
+        Route::delete('/web/clients/{id}', [App\Http\Controllers\ClientController::class, 'destroy'])->whereNumber('id');
         Route::post('/web/companies/{companyId}/contacts', [App\Http\Controllers\CompanyDirectoryController::class, 'storeContact'])->whereNumber('companyId');
         Route::put('/web/companies/{companyId}/contacts/{id}', [App\Http\Controllers\CompanyDirectoryController::class, 'updateContact'])->whereNumber(['companyId', 'id']);
         Route::delete('/web/companies/{companyId}/contacts/{id}', [App\Http\Controllers\CompanyDirectoryController::class, 'destroyContact'])->whereNumber(['companyId', 'id']);

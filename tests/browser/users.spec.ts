@@ -865,3 +865,106 @@ test("company contact action locks the company for viewing editing and creation"
         page.getByRole("button", { name: "Другой контакт", exact: true }),
     ).toBeVisible();
 });
+
+test("clients ribbon, CRUD and offline cache", async ({ page, context }) => {
+    await login(page);
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Клиенты", exact: true })
+        .click();
+    await expect(
+        page
+            .getByRole("navigation", { name: "Разделы клиентов" })
+            .getByRole("link", { name: "Клиенты", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Тестовый клиент", exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Добавить клиента", exact: true })
+        .click();
+    await page
+        .getByLabel("Название *", { exact: true })
+        .fill("Новый клиент браузера");
+    await page.getByLabel("Краткое название", { exact: true }).fill("Браузер");
+    await page
+        .getByRole("button", { name: "Создать клиента", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "Просмотр: Новый клиент браузера",
+            exact: true,
+        })
+        .click();
+    await expect(page.getByLabel("Название *", { exact: true })).toBeDisabled();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "Редактировать: Новый клиент браузера",
+            exact: true,
+        })
+        .click();
+    await page.getByLabel("Статус", { exact: true }).selectOption("2");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page.getByLabel("Фильтр статуса", { exact: true }).selectOption("2");
+    await expect(
+        page.getByRole("button", {
+            name: "Новый клиент браузера",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page.screenshot({ path: "/tmp/wms-clients.png", fullPage: true });
+    await context.setOffline(true);
+    await page
+        .getByRole("link", { name: "Администрирование", exact: true })
+        .click();
+    await page
+        .locator(".sidebar")
+        .getByRole("link", { name: "Клиенты", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", {
+            name: "Новый клиент браузера",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Добавить клиента", exact: true }),
+    ).toBeDisabled();
+    await context.setOffline(false);
+    await expect(
+        page.getByRole("button", { name: "Добавить клиента", exact: true }),
+    ).toBeEnabled();
+    await page
+        .getByRole("button", {
+            name: "Удалить: Новый клиент браузера",
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Удалить", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", {
+            name: "Новый клиент браузера",
+            exact: true,
+        }),
+    ).toHaveCount(0);
+});

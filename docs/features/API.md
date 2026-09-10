@@ -32,3 +32,5 @@
 Компании и контактные лица: CRUD-маршруты `/api/companies`, `/api/company_contacts` и синхронизация `/api/sync/{directory}` описаны в [COMPANIES.md](COMPANIES.md).
 
 Подсказки DaData: `POST /api/companies/suggestions/{type}`, `type=party|bank`, `{query: string}`; доступ администратора, Bearer Token. Возвращает варианты и поля для заполнения без сохранения компании. [Контракт и настройки](COMPANIES.md#подсказки-dadata).
+
+[Клиенты](CLIENTS.md): `POST /api/clients`, `PUT /api/clients/{id}`, `DELETE /api/clients/{id}`, чтение через `GET /api/sync/clients`.

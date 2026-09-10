@@ -7,7 +7,7 @@ const collapsed = ref(false),
     leaving = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
-function go(component: "Home" | "Users", url: string) {
+function go(component: "Home" | "Users" | "Clients", url: string) {
     if (navigator.onLine) router.visit(url);
     else router.push({ url, component, props: page.props });
 }
@@ -88,6 +88,18 @@ onUnmounted(() => {
                         alt=""
                     /><span class="nav-label">Администрирование</span></a
                 >
+                <a
+                    v-if="page.props.auth.is_admin"
+                    href="/clients"
+                    aria-label="Клиенты"
+                    :class="{ active: page.url.split('?')[0] === '/clients' }"
+                    @click.prevent="go('Clients', '/clients')"
+                    ><img
+                        class="nav-icon clients-icon"
+                        src="/design/crm/company_contacts.svg"
+                        alt=""
+                    /><span class="nav-label">Клиенты</span></a
+                >
             </nav>
             <div class="sidebar-bottom">
                 <span
@@ -110,7 +122,9 @@ onUnmounted(() => {
                         "/company_contacts",
                     ].some((url) => page.url.startsWith(url))
                         ? "Администрирование"
-                        : "Рабочий стол"
+                        : page.url.split("?")[0] === "/clients"
+                          ? "Клиенты"
+                          : "Рабочий стол"
                 }}</span>
                 <div class="account">
                     <span class="header-avatar"
@@ -147,3 +161,13 @@ onUnmounted(() => {
         </main>
     </div>
 </template>
+
+<style scoped>
+.sidebar nav a .clients-icon {
+    filter: brightness(0) saturate(100%) invert(36%) sepia(43%) saturate(1113%)
+        hue-rotate(161deg);
+}
+.sidebar nav a.active .clients-icon {
+    filter: brightness(0) invert(1);
+}
+</style>

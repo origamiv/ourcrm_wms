@@ -11,6 +11,9 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
     Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::post('/auth/logout', [WmsAuthController::class, 'revoke']);
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::post('/clients', [App\Http\Controllers\ClientController::class, 'store']);
+        Route::put('/clients/{id}', [App\Http\Controllers\ClientController::class, 'update'])->whereNumber('id');
+        Route::delete('/clients/{id}', [App\Http\Controllers\ClientController::class, 'destroy'])->whereNumber('id');
         Route::post('/companies/{companyId}/contacts', [App\Http\Controllers\CompanyDirectoryController::class, 'storeContact'])->whereNumber('companyId');
         Route::put('/companies/{companyId}/contacts/{id}', [App\Http\Controllers\CompanyDirectoryController::class, 'updateContact'])->whereNumber(['companyId', 'id']);
         Route::delete('/companies/{companyId}/contacts/{id}', [App\Http\Controllers\CompanyDirectoryController::class, 'destroyContact'])->whereNumber(['companyId', 'id']);

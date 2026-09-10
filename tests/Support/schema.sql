@@ -30,3 +30,6 @@ CREATE TABLE main.company_contacts (
  id bigserial PRIMARY KEY, name varchar(255) NOT NULL, shortname varchar(255) NOT NULL, company_id integer NOT NULL,
  val varchar(255), file varchar(255), status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp
 );
+
+CREATE SCHEMA clients;
+CREATE TABLE clients.clients (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
