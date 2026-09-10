@@ -475,3 +475,155 @@ test("roles have read-only viewing and confirmed deletion", async ({
         page.getByRole("button", { name: "Просмотр: Кладовщик", exact: true }),
     ).toHaveCount(0);
 });
+
+test("companies and contacts support CRUD, JSON fields, cached navigation and other tabs", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page.getByRole("link", { name: "Компании", exact: true }).click();
+    await expect(
+        page.getByRole("heading", { name: "Компании", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "ООО Тестовый склад", exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "+ Добавить компанию", exact: true })
+        .click();
+    await page
+        .getByLabel("Название компании *", { exact: true })
+        .fill("ООО Новая компания");
+    await page.getByLabel("Краткое название *", { exact: true }).fill("Новая");
+    await page.getByLabel("ИНН", { exact: true }).fill("9876543210");
+    await page.getByLabel("Telegram", { exact: true }).fill("@warehouse");
+    await page.screenshot({
+        path: "/tmp/wms-company-editor.png",
+        fullPage: true,
+    });
+    await page.getByRole("checkbox", { name: "Клиент", exact: true }).check();
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    const other = await context.newPage();
+    await other.goto("/companies");
+    await expect(
+        other.getByRole("button", { name: "ООО Новая компания", exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", {
+            name: "Редактировать: ООО Новая компания",
+            exact: true,
+        })
+        .click();
+    await expect(page.getByLabel("Telegram", { exact: true })).toHaveValue(
+        "@warehouse",
+    );
+    await page
+        .getByLabel("Название компании *", { exact: true })
+        .fill("ООО Обновлённая компания");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        other.getByRole("button", {
+            name: "ООО Обновлённая компания",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page.screenshot({ path: "/tmp/wms-companies.png", fullPage: true });
+    await page
+        .getByRole("link", { name: "Контактные лица", exact: true })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "+ Добавить контактное лицо",
+            exact: true,
+        })
+        .click();
+    await page.getByLabel("ФИО *", { exact: true }).fill("Пётр Контактный");
+    await page.getByLabel("Краткое имя *", { exact: true }).fill("Пётр");
+    await page
+        .getByLabel("Контактное значение", { exact: true })
+        .fill("petr@example.test");
+    await page
+        .getByLabel("Компания", { exact: true })
+        .selectOption({ label: "ООО Обновлённая компания" });
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page.screenshot({
+        path: "/tmp/wms-company-contacts.png",
+        fullPage: true,
+    });
+    await context.setOffline(true);
+    await page.getByRole("link", { name: "Компании", exact: true }).click();
+    await expect(
+        page.getByRole("button", {
+            name: "ООО Обновлённая компания",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await page
+        .getByRole("link", { name: "Контактные лица", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Пётр Контактный", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", {
+            name: "+ Добавить контактное лицо",
+            exact: true,
+        }),
+    ).toBeDisabled();
+    await context.setOffline(false);
+    await page
+        .getByRole("button", { name: "Удалить: Пётр Контактный", exact: true })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Удалить", exact: true })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "Пётр Контактный", exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("link", { name: "Компании", exact: true }).click();
+    await page
+        .getByRole("button", {
+            name: "Удалить: ООО Обновлённая компания",
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Удалить", exact: true })
+        .click();
+    await expect(
+        other.getByRole("button", {
+            name: "ООО Обновлённая компания",
+            exact: true,
+        }),
+    ).toHaveCount(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
+    await other.close();
+});

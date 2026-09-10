@@ -15,6 +15,11 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::get('/companies', fn () => Inertia::render('Companies'))->name('companies');
+        Route::get('/company_contacts', fn () => Inertia::render('CompanyContacts'))->name('company_contacts');
+        Route::post('/web/{directory}', [App\Http\Controllers\CompanyDirectoryController::class, 'store'])->whereIn('directory', ['companies', 'company_contacts']);
+        Route::put('/web/{directory}/{id}', [App\Http\Controllers\CompanyDirectoryController::class, 'update'])->whereIn('directory', ['companies', 'company_contacts'])->whereNumber('id');
+        Route::delete('/web/{directory}/{id}', [App\Http\Controllers\CompanyDirectoryController::class, 'destroy'])->whereIn('directory', ['companies', 'company_contacts'])->whereNumber('id');
         Route::put('/web/roles/{roleId}/permissions/{permissionId}', [App\Http\Controllers\RolePermissionController::class, 'update'])->whereNumber(['roleId', 'permissionId']);
         Route::delete('/web/roles/{id}', [App\Http\Controllers\AccessCatalogController::class, 'destroyRole'])->whereNumber('id');
         Route::post('/web/{catalog}', [App\Http\Controllers\AccessCatalogController::class, 'store'])->whereIn('catalog', ['roles', 'permissions']);

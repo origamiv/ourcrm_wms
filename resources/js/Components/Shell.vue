@@ -73,9 +73,13 @@ onUnmounted(() => {
                     href="/users"
                     aria-label="Администрирование"
                     :class="{
-                        active: ['/users', '/roles', '/permissions'].some(
-                            (url) => page.url.startsWith(url),
-                        ),
+                        active: [
+                            '/users',
+                            '/roles',
+                            '/permissions',
+                            '/companies',
+                            '/company_contacts',
+                        ].some((url) => page.url.startsWith(url)),
                     }"
                     @click.prevent="go('Users', '/users')"
                     ><img
@@ -98,9 +102,13 @@ onUnmounted(() => {
         <main class="main-panel">
             <header class="topbar">
                 <span class="section-title">{{
-                    ["/users", "/roles", "/permissions"].some((url) =>
-                        page.url.startsWith(url),
-                    )
+                    [
+                        "/users",
+                        "/roles",
+                        "/permissions",
+                        "/companies",
+                        "/company_contacts",
+                    ].some((url) => page.url.startsWith(url))
                         ? "Администрирование"
                         : "Рабочий стол"
                 }}</span>

@@ -1,6 +1,8 @@
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
 import Shell from "./Components/Shell.vue";
+import Companies from "./Pages/Companies.vue";
+import CompanyContacts from "./Pages/CompanyContacts.vue";
 import Home from "./Pages/Home.vue";
 import Users from "./Pages/Users.vue";
 import RolesRights from "./Pages/RolesRights.vue";
@@ -9,6 +11,8 @@ import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
 const pages: Record<string, any> = {
     Home,
+    Companies,
+    CompanyContacts,
     Users,
     Roles,
     Permissions,

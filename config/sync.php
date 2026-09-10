@@ -4,6 +4,18 @@ declare(strict_types=1);
 
 return [
     'entities' => [
+        'companies' => [
+            'entity' => App\Models\Company::class,
+            'table' => 'main.companies',
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'shortname', 'fullname', 'inn', 'kpp', 'ogrn', 'phone', 'email', 'site', 'director_fio', 'director_position', 'bank', 'bik', 'korr_schet', 'rasch_schet', 'src', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
+        'company_contacts' => [
+            'entity' => App\Models\CompanyContact::class,
+            'table' => 'main.company_contacts',
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'name', 'shortname', 'company_id', 'val', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
         'users' => [
             'entity' => App\Models\User::class,
             'table' => 'public.users',

@@ -19,3 +19,14 @@ CREATE TABLE main.permissions (id bigserial PRIMARY KEY, name varchar(255) NOT N
  feature_id integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
 CREATE TABLE main.permission_role (id bigserial PRIMARY KEY, role_id integer NOT NULL, permission_id integer NOT NULL,
  status integer DEFAULT 1, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
+
+CREATE TABLE main.companies (
+ id bigserial PRIMARY KEY, name varchar(255) NOT NULL, shortname varchar(255) NOT NULL,
+ fullname varchar(255), inn varchar(255), kpp varchar(255), ogrn varchar(255), phone varchar(255), email varchar(255), site varchar(255),
+ src json, director_fio varchar(255), director_position varchar(255), bank varchar(255), bik varchar(255), korr_schet varchar(255), rasch_schet varchar(255),
+ status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp
+);
+CREATE TABLE main.company_contacts (
+ id bigserial PRIMARY KEY, name varchar(255) NOT NULL, shortname varchar(255) NOT NULL, company_id integer NOT NULL,
+ val varchar(255), file varchar(255), status integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp
+);

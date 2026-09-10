@@ -34,3 +34,9 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000005_sync_access_catalogs.php'))->up();
     (require database_path('migrations/2026_09_10_000006_sync_permission_roles.php'))->up();
 });
+
+DB::transaction(function () {
+    $company = DB::table('main.companies')->insertGetId(['name' => 'ООО Тестовый склад', 'shortname' => 'Склад', 'inn' => '1234567890', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('main.company_contacts')->insert(['name' => 'Иван Тестовый', 'shortname' => 'Иван', 'company_id' => $company, 'val' => 'ivan@example.test', 'status' => 1, 'tenant_id' => 'test_org']);
+    (require database_path('migrations/2026_09_10_000007_sync_companies.php'))->up();
+});

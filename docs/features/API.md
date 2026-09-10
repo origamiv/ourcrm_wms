@@ -28,3 +28,5 @@
 [Роли и права доступа](ACCESS_CATALOGS.md) читаются через общие маршруты синхронизации. Создание: `POST /api/roles`, `POST /api/permissions`; обновление: `PUT /api/roles/{id}`, `PUT /api/permissions/{id}`. Поля и ограничения описаны по ссылке.
 
 [Матрица ролей и прав](ROLES_RIGHTS.md): назначение и снятие права через `PUT /api/roles/{roleId}/permissions/{permissionId}`, чтение назначений через `/api/sync/permission_roles`.
+
+Компании и контактные лица: CRUD-маршруты `/api/companies`, `/api/company_contacts` и синхронизация `/api/sync/{directory}` описаны в [COMPANIES.md](COMPANIES.md).

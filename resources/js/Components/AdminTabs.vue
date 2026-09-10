@@ -21,6 +21,18 @@ const tabs = [
         component: "Permissions",
         icon: "permissions",
     },
+    {
+        label: "Компании",
+        url: "/companies",
+        component: "Companies",
+        icon: "companies",
+    },
+    {
+        label: "Контактные лица",
+        url: "/company_contacts",
+        component: "CompanyContacts",
+        icon: "company_contacts",
+    },
 ];
 function open(tab: (typeof tabs)[number]) {
     if (navigator.onLine) router.visit(tab.url);
