@@ -128,6 +128,8 @@ onUnmounted(() => {
                         alt=""
                     /><span class="nav-label">Интеграции</span></a
                 >
+                <a
+                    v-if="page.props.auth.is_admin"
                     href="/fulfillment/marketplaces"
                     aria-label="Фулфилмент"
                     :class="{ active: page.url.startsWith('/fulfillment/') }"
