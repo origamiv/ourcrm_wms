@@ -9,6 +9,7 @@ import DocumentPrintFields from "./DocumentPrintFields.vue";
 import DocumentDownload from "./DocumentDownload.vue";
 import SearchableSelect from "./SearchableSelect.vue";
 import StringListInput from "./StringListInput.vue";
+import FulfillmentTabs from "./FulfillmentTabs.vue";
 import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
@@ -27,6 +28,9 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
+const isFulfillment = ["marketplaces", "delivery_services"].includes(
+    props.entity,
+);
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz ? definition.fields.filter((field) => field.key !== "code") : [],
@@ -39,11 +43,13 @@ const isIndividual = props.entity === "client_individuals";
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
 const isClientSection = isIndividual || isDocument || isDocType;
-const basePath = isGoodsSection
-    ? `/goods/${props.entity}`
-    : isClientSection
-      ? `/clients/${props.entity.replace("client_", "")}`
-      : `/main/${props.entity}`;
+const basePath = isFulfillment
+    ? `/fulfillment/${props.entity}`
+    : isGoodsSection
+      ? `/goods/${props.entity}`
+      : isClientSection
+        ? `/clients/${props.entity.replace("client_", "")}`
+        : `/main/${props.entity}`;
 const endpoint = isIndividual ? null : basePath.replace("/main/", "/");
 const clientFilter = ref("");
 const docTypeFilter = ref("");
@@ -502,17 +508,19 @@ useCardRoute<ReferenceRow>({
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
-                    isGoodsSection
-                        ? "Товары"
-                        : isClientSection
-                          ? "Клиенты"
-                          : "Администрирование › Справочники"
+                    isFulfillment
+                        ? "Фулфилмент › Справочники"
+                        : isGoodsSection
+                          ? "Товары"
+                          : isClientSection
+                            ? "Клиенты"
+                            : "Администрирование › Справочники"
                 }}
                 › {{ definition.title }}
             </div>
-            <GoodsTabs v-if="isGoodsSection" /><ClientTabs
-                v-else-if="isClientSection"
-            /><AdminTabs v-else />
+            <FulfillmentTabs v-if="isFulfillment" /><GoodsTabs
+                v-else-if="isGoodsSection"
+            /><ClientTabs v-else-if="isClientSection" /><AdminTabs v-else />
             <p v-if="clientScope" class="notice">
                 Клиент: <strong>{{ clientScope.name }}</strong>
             </p>
@@ -584,6 +592,8 @@ useCardRoute<ReferenceRow>({
                                         "type_goods",
                                         "unit_goods",
                                         "kind_kiz",
+                                        "marketplaces",
+                                        "delivery_services",
                                         "modules",
                                         "features",
                                         "client_individuals",
@@ -627,6 +637,8 @@ useCardRoute<ReferenceRow>({
                                             'type_goods',
                                             'unit_goods',
                                             'kind_kiz',
+                                            'marketplaces',
+                                            'delivery_services',
                                             'modules',
                                             'features',
                                             'client_individuals',

@@ -1,4 +1,6 @@
 import Kizes from "./Pages/Kizes.vue";
+import Marketplaces from "./Pages/Marketplaces.vue";
+import DeliveryServices from "./Pages/DeliveryServices.vue";
 import KindKiz from "./Pages/KindKiz.vue";
 import GoodTypes from "./Pages/GoodTypes.vue";
 import GoodUnits from "./Pages/GoodUnits.vue";
@@ -28,6 +30,8 @@ const pages: Record<string, any> = {
     Goods,
     GoodTypes,
     KindKiz,
+    DeliveryServices,
+    Marketplaces,
     Kizes,
     GoodUnits,
     DocTypes,
