@@ -75,6 +75,27 @@ const flags: Record<string, string> = isClientCompany
           is_client: "Клиент",
           is_partner: "Партнёр",
       };
+const columnSettingsOpen = ref(false);
+const hiddenColumns = ref<string[]>([]);
+const columnFields = computed(() => [
+    { key: "name", label: isCompany ? "Название компании" : "ФИО" },
+    ...(!isCompany ? [{ key: "company", label: "Компания" }] : []),
+    { key: "detail", label: isCompany ? "ИНН" : "Контактное значение" },
+    { key: "status", label: "Статус" },
+    ...(isCompany
+        ? Object.entries(flags).map(([key, label]) => ({ key, label }))
+        : []),
+]);
+const columnStorageKey = computed(() => `company-columns:${props.entity}`);
+function isColumnVisible(key: string) {
+    return !hiddenColumns.value.includes(key);
+}
+function toggleColumn(key: string) {
+    hiddenColumns.value = isColumnVisible(key)
+        ? [...hiddenColumns.value, key]
+        : hiddenColumns.value.filter((item) => item !== key);
+    localStorage.setItem(columnStorageKey.value, JSON.stringify(hiddenColumns.value));
+}
 const flagFilter = ref("");
 const query = ref(""),
     detailQuery = ref(""),
@@ -307,6 +328,10 @@ async function confirmDelete() {
     await save(true);
 }
 onMounted(async () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem(columnStorageKey.value) ?? "[]");
+        if (Array.isArray(saved)) hiddenColumns.value = saved.map(String);
+    } catch {}
     await Promise.all([
         store.start(),
         ...(!isCompany ? [companies.start()] : []),
@@ -396,11 +421,21 @@ useCardRoute<DirectoryRow>({
                 </p>
             </div>
             <div class="table-scroll">
+                <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
+                    <div class="column-settings-title">
+                        <span>Показывать колонки</span>
+                        <button type="button" class="column-settings-close" @click.stop="columnSettingsOpen = false">×</button>
+                    </div>
+                    <label v-for="field in columnFields" :key="field.key" class="column-settings-control">
+                        <input type="checkbox" :checked="isColumnVisible(field.key)" @change="toggleColumn(field.key)" />
+                        <span>{{ field.label }}</span>
+                    </label>
+                </div>
                 <table>
                     <thead>
                         <tr>
                             <th scope="col" class="id-column">#</th>
-                            <th>
+                            <th v-if="isColumnVisible('name')">
                                 <button
                                     class="sort-button"
                                     @click="descending = !descending"
@@ -411,28 +446,28 @@ useCardRoute<DirectoryRow>({
                                     {{ descending ? "▴" : "▾" }}
                                 </button>
                             </th>
-                            <th v-if="!isCompany">Компания</th>
-                            <th>
+                            <th v-if="!isCompany && isColumnVisible('company')">Компания</th>
+                            <th v-if="isColumnVisible('detail')">
                                 {{ isCompany ? "ИНН" : "Контактное значение" }}
                             </th>
-                            <th>Статус</th>
-                            <template v-if="isCompany"
-                                ><th v-for="(label, key) in flags" :key="key">
-                                    {{ label }}
-                                </th></template
-                            >
-                            <th>Действия</th>
+                            <th v-if="isColumnVisible('status')">Статус</th>
+                            <template v-if="isCompany">
+                                <template v-for="(label, key) in flags" :key="key">
+                                    <th v-if="isColumnVisible(key)">{{ label }}</th>
+                                </template>
+                            </template>
+                            <th>Действия <button type="button" class="column-settings-button" title="Настроить колонки" aria-label="Настроить колонки" @click.stop="columnSettingsOpen = !columnSettingsOpen">⚙</button></th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>
-                            <th>
+                            <th v-if="isColumnVisible('name')">
                                 <input
                                     v-model="query"
                                     :aria-label="`Поиск: ${title}`"
                                     placeholder="Поиск"
                                 />
                             </th>
-                            <th v-if="!isCompany">
+                            <th v-if="!isCompany && isColumnVisible('company')">
                                 <span v-if="scope">{{ scope.name }}</span>
                                 <select
                                     v-else
@@ -449,7 +484,7 @@ useCardRoute<DirectoryRow>({
                                     </option>
                                 </select>
                             </th>
-                            <th>
+                            <th v-if="isColumnVisible('detail')">
                                 <input
                                     v-model="detailQuery"
                                     :aria-label="
@@ -459,7 +494,7 @@ useCardRoute<DirectoryRow>({
                                     "
                                 />
                             </th>
-                            <th>
+                            <th v-if="isColumnVisible('status')">
                                 <select
                                     v-model="statusFilter"
                                     aria-label="Фильтр статуса"
@@ -473,6 +508,7 @@ useCardRoute<DirectoryRow>({
                             </th>
                             <th
                                 v-if="isCompany && !isClientCompany"
+                                v-show="isColumnVisible('is_own') && isColumnVisible('is_client') && isColumnVisible('is_partner')"
                                 colspan="3"
                             >
                                 <select
@@ -499,7 +535,7 @@ useCardRoute<DirectoryRow>({
                             @dblclick="open(row)"
                         >
                             <td class="id-column">{{ row.id }}</td>
-                            <td>
+                            <td v-if="isColumnVisible('name')">
                                 <button
                                     class="name-button"
                                     @click="open(row, true)"
@@ -507,13 +543,13 @@ useCardRoute<DirectoryRow>({
                                     {{ row.name }}
                                 </button>
                             </td>
-                            <td v-if="!isCompany">
+                            <td v-if="!isCompany && isColumnVisible('company')">
                                 {{ companyName(row.company_id) }}
                             </td>
-                            <td>
+                            <td v-if="isColumnVisible('detail')">
                                 {{ (isCompany ? row.inn : row.val) || "—" }}
                             </td>
-                            <td>
+                            <td v-if="isColumnVisible('status')">
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
@@ -526,7 +562,7 @@ useCardRoute<DirectoryRow>({
                                 >
                             </td>
                             <template v-if="isCompany"
-                                ><td v-for="(label, key) in flags" :key="key">
+                                ><template v-for="(label, key) in flags" :key="key"><td v-if="isColumnVisible(key)">
                                     <img
                                         v-if="
                                             row.src?.[key] === true ||
@@ -535,7 +571,7 @@ useCardRoute<DirectoryRow>({
                                         class="flag-tick"
                                         src="/design/crm/tick.svg"
                                         :alt="label"
-                                    /></td
+                                    /></td></template
                             ></template>
                             <td>
                                 <div class="row-actions">
@@ -831,6 +867,72 @@ useCardRoute<DirectoryRow>({
     </div>
 </template>
 <style scoped>
+.table-scroll {
+    position: relative;
+}
+.column-settings-panel {
+    position: absolute;
+    z-index: 20;
+    top: 42px;
+    right: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    width: min(600px, calc(100vw - 32px));
+    padding: 10px;
+    border: 1px solid #d7e5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #344054;
+    box-shadow: 0 10px 24px rgb(16 24 40 / 14%);
+}
+.column-settings-title {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+}
+.column-settings-close,
+.column-settings-button {
+    border: 0;
+    background: transparent;
+    color: #667085;
+    cursor: pointer;
+}
+.column-settings-close {
+    font-size: 20px;
+    line-height: 1;
+}
+.column-settings-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    margin: 0;
+    cursor: pointer;
+}
+.column-settings-control input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: #2274a5;
+}
+.column-settings-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: 6px;
+    font-size: 19px;
+    line-height: 1;
+}
+.column-settings-button:hover,
+.column-settings-close:hover {
+    color: #2274a5;
+}
 .company-scope {
     color: #1e892f;
     margin: -12px 0 20px;
