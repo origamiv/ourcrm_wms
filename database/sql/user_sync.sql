@@ -14,13 +14,6 @@ CREATE TABLE wms.user_changes (
 );
 CREATE INDEX user_changes_tenant_revision ON wms.user_changes (tenant_id, revision);
 CREATE INDEX user_changes_user_revision ON wms.user_changes (user_id, revision DESC);
-CREATE TABLE wms.personal_access_tokens (
-    id bigserial PRIMARY KEY, tokenable_type varchar(255) NOT NULL, tokenable_id bigint NOT NULL,
-    name text NOT NULL, token varchar(64) NOT NULL UNIQUE, abilities text,
-    last_used_at timestamp, expires_at timestamp, created_at timestamp, updated_at timestamp,
-    credential_fingerprint varchar(64)
-);
-CREATE INDEX wms_tokens_owner ON wms.personal_access_tokens (tokenable_type, tokenable_id);
 CREATE FUNCTION wms.user_payload(u public.users) RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
 SELECT jsonb_build_object(
     'id', u.id::text, 'name', u.name, 'last_name', u.last_name, 'middle_name', u.middle_name,

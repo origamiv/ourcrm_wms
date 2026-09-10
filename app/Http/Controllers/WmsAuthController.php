@@ -22,8 +22,7 @@ final class WmsAuthController extends BaseApiController
     public function token(LoginRequest $request, AuthenticationService $auth): JsonResponse
     {
         $user = $auth->authenticate((string) $request->string('email'), (string) $request->string('password'), $request->ip());
-        $token = $user->createToken('wms', ['*'], now()->addHours(12));
-        $token->accessToken->forceFill(['credential_fingerprint' => $user->credentialFingerprint()])->save();
+        $token = $user->createToken('wms:'.$user->credentialFingerprint(), ['*'], now()->addHours(12));
 
         return response()->json(['token' => $token->plainTextToken, 'token_type' => 'Bearer', 'expires_at' => $token->accessToken->expires_at]);
     }

@@ -6,3 +6,9 @@ CREATE TABLE public.users (
 );
 CREATE TABLE main.roles (id bigserial PRIMARY KEY, slug varchar(255), name varchar(255), status integer DEFAULT 1, deleted_at timestamp, tenant_id varchar(255));
 CREATE TABLE main.role_user (id bigserial PRIMARY KEY, role_id bigint, user_id bigint, tenant_id varchar(255), status integer DEFAULT 1, deleted_at timestamp);
+CREATE TABLE public.personal_access_tokens (
+ id bigserial PRIMARY KEY, tokenable_type varchar(255) NOT NULL, tokenable_id bigint NOT NULL,
+ name varchar(255) NOT NULL, token varchar(64) NOT NULL UNIQUE, abilities text,
+ last_used_at timestamp, expires_at timestamp, created_at timestamp, updated_at timestamp
+);
+CREATE INDEX public_tokens_owner ON public.personal_access_tokens (tokenable_type, tokenable_id);

@@ -74,7 +74,7 @@ final class UserService
             }
             $user->save();
             if (in_array($action, ['password', 'block', 'delete'], true)) {
-                $user->tokens()->delete();
+                $user->tokens()->where('name', 'like', 'wms:%')->delete();
             }
 
             return $this->sync->current($user->id);

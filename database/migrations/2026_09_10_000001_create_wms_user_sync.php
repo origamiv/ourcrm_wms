@@ -15,6 +15,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::unprepared('DROP TRIGGER IF EXISTS wms_users_change ON public.users; DROP TRIGGER IF EXISTS wms_users_truncate ON public.users; DROP FUNCTION IF EXISTS wms.capture_user_change(); DROP FUNCTION IF EXISTS wms.capture_users_truncate(); DROP FUNCTION IF EXISTS wms.user_payload(public.users); DROP TABLE IF EXISTS wms.user_changes; DROP TABLE IF EXISTS wms.sync_state; DROP TABLE IF EXISTS wms.personal_access_tokens;');
+        DB::unprepared('DROP TRIGGER IF EXISTS wms_users_change ON public.users; DROP TRIGGER IF EXISTS wms_users_truncate ON public.users; DROP FUNCTION IF EXISTS wms.capture_user_change(); DROP FUNCTION IF EXISTS wms.capture_users_truncate(); DROP FUNCTION IF EXISTS wms.user_payload(public.users); DROP TABLE IF EXISTS wms.user_changes; DROP TABLE IF EXISTS wms.sync_state;');
     }
 };

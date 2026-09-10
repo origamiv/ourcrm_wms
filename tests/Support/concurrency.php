@@ -50,5 +50,5 @@ try {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    $db->exec('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.users;');
+    $db->exec('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
 }

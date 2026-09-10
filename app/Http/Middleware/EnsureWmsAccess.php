@@ -20,7 +20,7 @@ final class EnsureWmsAccess
             return response()->json(['message' => 'Учётная запись в браузере изменилась. Выполните вход заново.'], 401);
         }
         $token = $user?->currentAccessToken();
-        $fingerprint = $request->hasSession() ? $request->session()->get('wms_credential') : $token?->credential_fingerprint;
+        $fingerprint = $request->hasSession() ? $request->session()->get('wms_credential') : ($token instanceof \App\Models\PersonalAccessToken ? $token->credentialFingerprint() : null);
         if (! $user || ! app(AccessService::class)->active($user) || ! is_string($fingerprint)
             || ! hash_equals($user->credentialFingerprint(), $fingerprint)) {
             if ($request->hasSession()) {

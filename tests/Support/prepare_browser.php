@@ -13,7 +13,7 @@ if (DB::selectOne('select current_database() as name')->name !== 'wms_browser_te
     throw new RuntimeException('Неверная тестовая БД');
 }
 DB::transaction(function () {
-    DB::unprepared('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.users;');
+    DB::unprepared('DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
     DB::unprepared(file_get_contents(__DIR__.'/schema.sql'));
     DB::unprepared(file_get_contents(database_path('sql/user_sync.sql')));
     foreach ([['Анна', 'Смирнова', 'admin@example.test'], ['Михаил', 'Иванов', 'operator@example.test'], ['Елена', 'Петрова', 'elena@example.test'], ['Сотрудник', 'Без почты', null]] as $i => [$name, $last, $email]) {

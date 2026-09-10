@@ -92,3 +92,28 @@ it('does not restore active accounts or permit changing browser identity', funct
     $this->postJson("/web/users/$admin->id/restore", ['version' => $version])->assertUnprocessable();
     $this->withHeaders(['X-WMS-User' => '9999', 'X-WMS-Tenant' => 'tenant_a'])->getJson('/web/users/sync')->assertUnauthorized();
 });
+
+it('stores WMS tokens in public and preserves tokens of other applications', function () {
+    $admin = $this->makeUser([], true);
+    $user = $this->makeUser();
+    $foreignToken = $user->createToken('other_app');
+    $wmsToken = $user->createToken('wms:'.$user->credentialFingerprint());
+    expect($wmsToken->accessToken->getTable())->toBe('public.personal_access_tokens');
+    $this->loginUser($admin);
+    $version = app(UserSyncService::class)->current($user->id)['version'];
+    $this->postJson("/web/users/$user->id/block", ['version' => $version])->assertOk();
+    expect(DB::table('public.personal_access_tokens')->where('id', $foreignToken->accessToken->id)->exists())->toBeTrue();
+    expect(DB::table('public.personal_access_tokens')->where('id', $wmsToken->accessToken->id)->exists())->toBeFalse();
+});
+
+it('removes only the empty legacy token table and preserves shared tokens on rollback', function () {
+    $user = $this->makeUser();
+    $token = $user->createToken('other_app')->accessToken;
+    DB::statement('CREATE TABLE wms.personal_access_tokens (id bigint PRIMARY KEY)');
+    $migration = require database_path('migrations/2026_09_10_000002_use_public_personal_access_tokens.php');
+    $migration->up();
+    $migration->down();
+    expect(DB::selectOne("select to_regclass('wms.personal_access_tokens') as relation")->relation)->toBeNull();
+    expect(DB::table('public.personal_access_tokens')->where('id', $token->id)->exists())->toBeTrue();
+    $migration->up();
+});
