@@ -1013,7 +1013,7 @@ useCardRoute<ReferenceRow>({
                                     ? goodsFiltered || expandedGoods.has(row.id)
                                     : undefined
                             "
-                            @dblclick="open(row)"
+                            @dblclick="open(row, true)"
                         >
                             <td class="id-column">{{ row.id }}</td>
                             <td v-if="isColumnVisible('__name')">
