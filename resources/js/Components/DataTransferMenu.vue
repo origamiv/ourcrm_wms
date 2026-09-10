@@ -63,14 +63,14 @@ function receiveFile(event: Event) {
 <template>
     <div class="data-transfer-menu">
         <details>
-            <summary title="Экспорт" aria-label="Экспорт">⇩</summary>
+            <summary title="Экспорт" aria-label="Экспорт"><img src="/design/formats/export.svg" alt="" /></summary>
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
                 <button v-for="format in exportFormats" :key="format" type="button" @click="exportData(format); closeMenu($event)"><img class="format-icon" :src="`/design/formats/${format.toLowerCase()}.svg`" alt="" />{{ format }}</button>
             </div>
         </details>
         <details>
-            <summary title="Импорт" aria-label="Импорт">⇧</summary>
+            <summary title="Импорт" aria-label="Импорт"><img src="/design/formats/import.svg" alt="" /></summary>
             <div class="data-transfer-dropdown">
                 <button type="button" class="data-transfer-close" aria-label="Закрыть" @click="closeMenu">×</button>
                 <button v-for="format in importFormats" :key="format" type="button" @click="chooseImport(format); closeMenu($event)"><img class="format-icon" :src="`/design/formats/${format.toLowerCase()}.svg`" alt="" />{{ format }}</button>
@@ -84,7 +84,8 @@ function receiveFile(event: Event) {
 <style scoped>
 .data-transfer-menu { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; }
 .data-transfer-menu details { position: relative; }
-.data-transfer-menu summary { display: grid; place-items: center; width: 30px; height: 30px; list-style: none; border: 1px solid #d7dce3; border-radius: 5px; background: #fff; color: #2274a5; font-size: 20px; line-height: 1; cursor: pointer; }
+.data-transfer-menu summary { display: grid; place-items: center; width: 36px; height: 36px; list-style: none; border: 1px solid #d7dce3; border-radius: 6px; background: #fff; color: #2274a5; font-size: 20px; line-height: 1; cursor: pointer; }
+.data-transfer-menu summary img { width: 26px; height: 26px; object-fit: contain; }
 .data-transfer-menu summary::-webkit-details-marker { display: none; }
 .data-transfer-dropdown { position: absolute; z-index: 25; top: 35px; right: 0; display: grid; min-width: 150px; padding: 28px 6px 6px; border: 1px solid #d7e5db; border-radius: 7px; background: #fff; box-shadow: 0 8px 20px rgb(16 24 40 / 14%); }
 .data-transfer-close { position: absolute; top: 4px; right: 5px; width: 22px; padding: 2px !important; font-size: 18px; line-height: 1; text-align: center !important; }
