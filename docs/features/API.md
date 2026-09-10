@@ -30,3 +30,5 @@
 [Матрица ролей и прав](ROLES_RIGHTS.md): назначение и снятие права через `PUT /api/roles/{roleId}/permissions/{permissionId}`, чтение назначений через `/api/sync/permission_roles`.
 
 Компании и контактные лица: CRUD-маршруты `/api/companies`, `/api/company_contacts` и синхронизация `/api/sync/{directory}` описаны в [COMPANIES.md](COMPANIES.md).
+
+Подсказки DaData: `POST /api/companies/suggestions/{type}`, `type=party|bank`, `{query: string}`; доступ администратора, Bearer Token. Возвращает варианты и поля для заполнения без сохранения компании. [Контракт и настройки](COMPANIES.md#подсказки-dadata).

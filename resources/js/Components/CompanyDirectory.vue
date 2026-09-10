@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
+import DadataInput from "./DadataInput.vue";
 import AdminTabs from "./AdminTabs.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -183,6 +184,15 @@ function open(row: DirectoryRow | null, readOnly = false) {
     notice.value = "";
     conflict.value = null;
     editing.value = true;
+}
+function applySuggestion(fields: Record<string, any>) {
+    if (viewing.value || saving.value || !online.value || conflict.value)
+        return;
+    const { src, ...values } = fields;
+    Object.assign(form.value, values);
+    if (src) Object.assign(form.value.src, src);
+    notice.value =
+        "Реквизиты заполнены. Проверьте данные и сохраните карточку.";
 }
 async function save(remove = false) {
     if (!online.value || saving.value || (!remove && viewing.value)) return;
@@ -526,7 +536,31 @@ onUnmounted(() => {
                             >{{ label
                             }}<span v-if="['name', 'shortname'].includes(key)">
                                 *</span
-                            ><input
+                            ><DadataInput
+                                v-if="
+                                    isCompany &&
+                                    [
+                                        'name',
+                                        'inn',
+                                        'ogrn',
+                                        'bank',
+                                        'bik',
+                                    ].includes(key)
+                                "
+                                :key="`${selected?.id ?? 'new'}:${key}`"
+                                v-model="form[key]"
+                                :type="
+                                    ['bank', 'bik'].includes(key)
+                                        ? 'bank'
+                                        : 'party'
+                                "
+                                :label="label + (key === 'name' ? ' *' : '')"
+                                :required="key === 'name'"
+                                :disabled="
+                                    viewing || saving || !online || !!conflict
+                                "
+                                @select="applySuggestion" /><input
+                                v-else
                                 v-model="form[key]"
                                 :type="key === 'email' ? 'email' : 'text'"
                                 :required="['name', 'shortname'].includes(key)"

@@ -17,6 +17,8 @@ export default defineConfig({
         stderr: "ignore",
         env: {
             APP_ENV: "testing",
+            DADATA_API_KEY: "",
+            DADATA_SECRET_KEY: "",
             APP_DEBUG: "true",
             APP_URL: "http://127.0.0.1:8137",
             DB_CONNECTION: "pgsql",

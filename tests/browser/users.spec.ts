@@ -627,3 +627,135 @@ test("companies and contacts support CRUD, JSON fields, cached navigation and ot
     ).toBe(true);
     await other.close();
 });
+
+test("DaData fills company and bank details on create and edit while preserving manual fields", async ({
+    page,
+}) => {
+    const party = {
+        value: "ООО Подсказка",
+        detail: "ИНН 1234567890 · Москва",
+        fields: {
+            name: "ООО Подсказка",
+            shortname: "Подсказка",
+            fullname: "Общество Подсказка",
+            inn: "1234567890",
+            kpp: "123456789",
+            ogrn: "1234567890123",
+            director_fio: "Иванов Иван",
+            director_position: "Директор",
+            src: { opf: "ООО", legal_address: "Москва, Тестовая, 1" },
+        },
+    };
+    const bank = {
+        value: "Тестовый банк",
+        detail: "БИК 044525225",
+        fields: {
+            bank: "Тестовый банк",
+            bik: "044525225",
+            korr_schet: "30101810400000000225",
+        },
+    };
+    await page.route("**/web/companies/suggestions/*", async (route) => {
+        await route.fulfill({
+            json: {
+                suggestions: [
+                    route.request().url().endsWith("/bank") ? bank : party,
+                ],
+            },
+        });
+    });
+    await login(page);
+    await page.getByRole("link", { name: "Компании", exact: true }).click();
+    await page
+        .getByRole("button", { name: "+ Добавить компанию", exact: true })
+        .click();
+    await page.getByLabel("Telegram", { exact: true }).fill("@manual");
+    await page.getByRole("checkbox", { name: "Наша", exact: true }).check();
+    const name = page.getByRole("combobox", {
+        name: "Название компании *",
+        exact: true,
+    });
+    await name.fill("Подсказка");
+    await expect(
+        page.getByRole("option", { name: /ООО Подсказка/ }),
+    ).toBeVisible();
+    await page.screenshot({
+        path: "/tmp/wms-dadata-suggestions.png",
+        fullPage: true,
+    });
+    await name.press("ArrowDown");
+    await name.press("Enter");
+    await expect(page.getByLabel("ИНН", { exact: true })).toHaveValue(
+        "1234567890",
+    );
+    await expect(page.getByLabel("КПП", { exact: true })).toHaveValue(
+        "123456789",
+    );
+    await expect(
+        page.getByLabel("Юридический адрес", { exact: true }),
+    ).toHaveValue("Москва, Тестовая, 1");
+    await expect(page.getByLabel("Telegram", { exact: true })).toHaveValue(
+        "@manual",
+    );
+    await expect(
+        page.getByRole("checkbox", { name: "Наша", exact: true }),
+    ).toBeChecked();
+    await page
+        .getByLabel("Расчётный счёт", { exact: true })
+        .fill("40702810000000000001");
+    await page.getByLabel("БИК", { exact: true }).fill("0445");
+    await page.getByRole("option", { name: /Тестовый банк/ }).click();
+    await expect(page.getByLabel("Банк", { exact: true })).toHaveValue(
+        "Тестовый банк",
+    );
+    await expect(
+        page.getByLabel("Корреспондентский счёт", { exact: true }),
+    ).toHaveValue("30101810400000000225");
+    await expect(
+        page.getByLabel("Расчётный счёт", { exact: true }),
+    ).toHaveValue("40702810000000000001");
+    await page
+        .getByRole("button", { name: "Создать запись", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Закрыть карточку", exact: true })
+        .click();
+    await page
+        .getByRole("button", {
+            name: "Редактировать: ООО Подсказка",
+            exact: true,
+        })
+        .click();
+    await page.getByLabel("ИНН", { exact: true }).fill("123456");
+    await page.getByRole("option", { name: /ООО Подсказка/ }).click();
+    await expect(page.getByLabel("ФИО директора", { exact: true })).toHaveValue(
+        "Иванов Иван",
+    );
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+    await page.unroute("**/web/companies/suggestions/*");
+    await page.route("**/web/companies/suggestions/*", (route) =>
+        route.fulfill({
+            status: 502,
+            json: { message: "Подсказки временно недоступны" },
+        }),
+    );
+    await page.getByLabel("БИК", { exact: true }).fill("04452");
+    await expect(
+        page.getByText("Подсказки временно недоступны", { exact: true }),
+    ).toBeVisible();
+    await page.getByLabel("Телефон", { exact: true }).fill("+7 999 1234567");
+    await page
+        .getByRole("button", { name: "Сохранить изменения", exact: true })
+        .click();
+    await expect(
+        page.getByText("Изменения сохранены", { exact: true }),
+    ).toBeVisible();
+});
