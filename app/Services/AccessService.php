@@ -23,7 +23,7 @@ final class AccessService
     {
         return DB::table('main.role_user as ru')->join('main.roles as r', 'r.id', '=', 'ru.role_id')
             ->whereRaw('wms.entity_visible(?, ru.id::text, ru.tenant_id, ?)', [\App\Models\RoleUser::class, $tenant])
-            ->whereRaw('wms.entity_visible(?, r.id::text, r.tenant_id, ?)', [\App\Models\Role::class, $tenant])->where('r.slug', 'admin')->where('ru.status', 1)->where('r.status', 1)
+            ->where('r.slug', 'admin')->where('ru.status', 1)->where('r.status', 1)
             ->whereNull('ru.deleted_at')->whereNull('r.deleted_at');
     }
 }

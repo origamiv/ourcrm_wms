@@ -129,12 +129,13 @@ it('allows visible shared lookup records and rejects restricted ones', function 
     $this->postJson('/web/goods/goods', $payload)->assertUnprocessable()->assertJsonValidationErrors('type_good');
 });
 
-it('applies role and role assignment visibility when checking admin access', function () {
+it('checks assigned admin authority independently of role catalog visibility', function () {
     $access = app(AccessService::class);
     $role = DB::table('main.role_user')->where('user_id', $this->admin->id)->value('role_id');
     expect($access->isAdmin($this->admin))->toBeTrue();
     shareType($role, 'tenant_b', Role::class);
-    expect($access->isAdmin($this->admin))->toBeFalse();
+    expect(Role::visibleTo('tenant_a')->whereKey($role)->exists())->toBeFalse();
+    expect($access->isAdmin($this->admin))->toBeTrue();
     DB::table('main.tenant_entity')->delete();
     $assignment = DB::table('main.role_user')->where('user_id', $this->admin->id)->value('id');
     DB::table('main.role_user')->where('id', $assignment)->update(['tenant_id' => null]);
@@ -178,4 +179,19 @@ it('refreshes both entities when an assignment changes its polymorphic target', 
     $units = $sync->page(App\Models\GoodUnit::class, 'tenant_a', 'a', $units['cursor'], null);
     expect($types['changes'][0]['operation'])->toBe('upsert');
     expect($units['changes'][0]['operation'])->toBe('remove');
+});
+
+it('keeps menus and section access for an explicitly assigned admin role owned by another tenant', function () {
+    $role = DB::table('main.role_user')->where('user_id', $this->admin->id)->value('role_id');
+    DB::table('main.roles')->where('id', $role)->update(['tenant_id' => 'tenant_b']);
+    expect(Role::visibleTo('tenant_a')->whereKey($role)->exists())->toBeFalse();
+    expect(app(AccessService::class)->isAdmin($this->admin))->toBeTrue();
+    $this->get('/')->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('auth.is_admin', true));
+    $this->get('/main/users')->assertOk();
+    $this->get('/clients/clients')->assertOk();
+    $this->get('/goods/goods')->assertOk();
+    $this->getJson('/web/sync/type_goods')->assertOk();
+    DB::table('main.roles')->where('id', $role)->update(['status' => 2]);
+    expect(app(AccessService::class)->isAdmin($this->admin))->toBeFalse();
+    $this->get('/main/users')->assertForbidden();
 });
