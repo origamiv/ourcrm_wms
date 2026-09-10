@@ -1708,6 +1708,18 @@ test("goods navigation CRUD articles and offline cache", async ({
     await page.getByLabel("Название *", { exact: true }).fill("Товар браузера");
     await page.getByLabel("Краткое название", { exact: true }).fill("Товар");
     await page.getByLabel("Код", { exact: true }).fill("G-001");
+    const typeSelect = page.getByLabel("Тип товара", { exact: true });
+    const unitSelect = page.getByLabel("Единица измерения", { exact: true });
+    await expect(
+        typeSelect.locator("option").filter({ hasText: /^Товар$/ }),
+    ).toHaveCount(1);
+    await expect(
+        unitSelect.locator("option").filter({ hasText: /^Штука$/ }),
+    ).toHaveCount(1);
+    await typeSelect.selectOption({ label: "Товар" });
+    await unitSelect.selectOption({ label: "Штука" });
+    const chosenType = await typeSelect.inputValue();
+    const chosenUnit = await unitSelect.inputValue();
     for (const [label, first, second] of [
         ["Артикулы", "000123", "ART-002"],
         ["Штрихкоды", "0000123456789", "0012345678901"],
@@ -1747,6 +1759,8 @@ test("goods navigation CRUD articles and offline cache", async ({
         page.getByText("Изменения сохранены", { exact: true }),
     ).toBeVisible();
     await page.reload();
+    await expect(typeSelect).toHaveValue(chosenType);
+    await expect(unitSelect).toHaveValue(chosenUnit);
     await expect(page.getByLabel("Артикулы: 1", { exact: true })).toHaveValue(
         "000123",
     );

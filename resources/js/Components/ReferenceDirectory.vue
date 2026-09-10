@@ -240,6 +240,11 @@ function open(row: ReferenceRow | null, readOnly = false) {
             String(row.client_id) !== clientScope.value.id)
     )
         return;
+    if (isGood) {
+        // Refresh catalog deltas when reopening a card in an already loaded section.
+        void lookupStores.type_goods.sync();
+        void lookupStores.unit_goods.sync();
+    }
     selected.value = row;
     form.value = {
         name: row?.name ?? "",
