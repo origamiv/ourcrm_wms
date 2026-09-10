@@ -2,6 +2,8 @@
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
+import RussianDateInput from "./RussianDateInput.vue";
+import { formatDate } from "../lib/dates";
 import DocumentPrintFields from "./DocumentPrintFields.vue";
 import DocumentDownload from "./DocumentDownload.vue";
 import AdminTabs from "./AdminTabs.vue";
@@ -221,6 +223,11 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const payload = { ...form.value };
+        if (isDocument)
+            payload.amount =
+                payload.amount === "" || payload.amount == null
+                    ? null
+                    : String(payload.amount).replace(",", ".");
         if (!remove)
             for (const field of definition.fields)
                 if (field.kind === "json") {
@@ -385,7 +392,8 @@ useCardRoute<ReferenceRow>({
                             <template v-if="isDocument"
                                 ><th>Клиент</th>
                                 <th>Тип документа</th>
-                                <th>Дата документа</th></template
+                                <th>Дата документа</th>
+                                <th>Сумма</th></template
                             >
                             <th>Статус</th>
                             <th>Действия</th>
@@ -449,12 +457,12 @@ useCardRoute<ReferenceRow>({
                                     </select>
                                 </th>
                                 <th>
-                                    <input
+                                    <RussianDateInput
                                         v-model="dateFilter"
-                                        type="date"
                                         aria-label="Фильтр даты документа"
                                     />
                                 </th>
+                                <th></th>
                             </template>
                             <th>
                                 <select
@@ -512,7 +520,17 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Тип №${row.doc_type_id}`
                                     }}
                                 </td>
-                                <td>{{ row.doc_date || "—" }}</td>
+                                <td>{{ formatDate(row.doc_date) }}</td>
+                                <td>
+                                    {{
+                                        row.amount == null
+                                            ? "—"
+                                            : String(row.amount).replace(
+                                                  ".",
+                                                  ",",
+                                              )
+                                    }}
+                                </td>
                             </template>
                             <td>
                                 <span
@@ -578,7 +596,7 @@ useCardRoute<ReferenceRow>({
                         </tr>
                         <tr v-if="!visible.length">
                             <td
-                                :colspan="isDocument ? 8 : 5"
+                                :colspan="isDocument ? 9 : 5"
                                 class="empty-state"
                             >
                                 {{
@@ -728,17 +746,24 @@ useCardRoute<ReferenceRow>({
                                 <option :value="1">Да</option>
                                 <option :value="0">Нет</option>
                             </select>
-                            <input
+                            <RussianDateInput
                                 v-else-if="field.kind === 'datetime'"
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
-                                type="datetime-local"
+                                :with-time="true"
                             />
-                            <input
+                            <RussianDateInput
                                 v-else-if="field.kind === 'date'"
                                 v-model="form[field.key]"
                                 :aria-label="field.label"
-                                type="date"
+                            />
+                            <input
+                                v-else-if="field.kind === 'money'"
+                                v-model="form[field.key]"
+                                :aria-label="field.label"
+                                inputmode="decimal"
+                                placeholder="0,00"
+                                pattern="[0-9]{1,16}([.,][0-9]{1,2})?"
                             />
                             <input
                                 v-else-if="field.kind === 'number'"

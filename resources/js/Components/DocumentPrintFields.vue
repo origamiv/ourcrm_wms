@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RussianDateInput from "./RussianDateInput.vue";
 import { computed } from "vue";
 const props = defineProps<{ modelValue: string; fields: any[] }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
@@ -133,10 +134,16 @@ const columns = [
                         )
                     "
                 />
+                <RussianDateInput
+                    v-else-if="field.type === 'date'"
+                    :aria-label="field.label"
+                    :model-value="value(field.key)"
+                    @update:model-value="update(field.key, $event)"
+                />
                 <input
                     v-else
                     :aria-label="field.label"
-                    :type="field.type === 'date' ? 'date' : 'text'"
+                    type="text"
                     :value="value(field.key)"
                     @input="
                         update(

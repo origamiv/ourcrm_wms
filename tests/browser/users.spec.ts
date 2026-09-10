@@ -1285,7 +1285,7 @@ test("client legal entities and individuals support cards, links and offline nav
         .click();
     await page.getByLabel("ФИО *", { exact: true }).fill("Физлицо браузера");
     await page.getByLabel("Имя", { exact: true }).fill("Иван");
-    await page.getByLabel("Дата рождения", { exact: true }).fill("1990-01-02");
+    await page.getByLabel("Дата рождения", { exact: true }).fill("02.01.1990");
     await page.getByLabel("Серия паспорта", { exact: true }).fill("0000");
     await page
         .getByRole("combobox", { name: "Клиент", exact: true })
@@ -1299,7 +1299,7 @@ test("client legal entities and individuals support cards, links and offline nav
     await expect(page).toHaveURL(/\/clients\/individuals\/\d+\/edit$/);
     await page.reload();
     await expect(page.getByLabel("Дата рождения", { exact: true })).toHaveValue(
-        "1990-01-02",
+        "02.01.90",
     );
     await page.getByLabel("Телефон", { exact: true }).fill("+79991234567");
     await page
@@ -1506,6 +1506,7 @@ test("documents retain comments JSON dates and statuses; document types dropdown
     await page
         .getByLabel("Название *", { exact: true })
         .fill("Документ браузерной проверки");
+    await page.getByLabel("Сумма", { exact: true }).fill("1234,56");
     await page
         .getByRole("combobox", { name: "Клиент", exact: true })
         .selectOption("1");
@@ -1521,10 +1522,10 @@ test("documents retain comments JSON dates and statuses; document types dropdown
     await page
         .getByLabel("Дополнительные данные (JSON)", { exact: true })
         .fill('{"number":"42","nested":{"ok":true}}');
-    await page.getByLabel("Дата документа", { exact: true }).fill("2026-09-10");
+    await page.getByLabel("Дата документа", { exact: true }).fill("10.09.26");
     await page
         .getByLabel("Дата подписания", { exact: true })
-        .fill("2026-09-10T12:30");
+        .fill("10.09.26 12:30");
     await page
         .getByRole("button", { name: "Создать запись", exact: true })
         .click();
@@ -1540,7 +1541,7 @@ test("documents retain comments JSON dates and statuses; document types dropdown
     ).toHaveValue("Для сотрудников");
     await expect(
         page.getByLabel("Дата подписания", { exact: true }),
-    ).toHaveValue("2026-09-10T12:30");
+    ).toHaveValue("10.09.26 12:30");
     expect(
         JSON.parse(
             await page.getByLabel("Дополнительные данные (JSON)").inputValue(),
@@ -1651,4 +1652,33 @@ test("document print fields follow settings and download the saved PDF", async (
     await expect(page.getByLabel("Оплатить до", { exact: true })).toHaveCount(
         0,
     );
+});
+
+test("Russian calendar ignores browser locale and shows Monday first and 24-hour time", async ({
+    page,
+}) => {
+    await login(page);
+    await page.goto("/clients/documents/0/create");
+    const date = page.getByLabel("Дата подписания", { exact: true });
+    await date.fill("10.09.26 23:45");
+    await date.press("Tab");
+    await expect(date).toHaveValue("10.09.26 23:45");
+    await date.click();
+    const calendar = page.locator(".flatpickr-calendar.open");
+    await expect(calendar.locator(".flatpickr-weekday")).toHaveText([
+        "Пн",
+        "Вт",
+        "Ср",
+        "Чт",
+        "Пт",
+        "Сб",
+        "Вс",
+    ]);
+    await expect(calendar.locator(".flatpickr-am-pm")).toHaveCount(0);
+    await expect(calendar.locator(".flatpickr-hour")).toHaveValue("23");
+    await expect(calendar.locator(".flatpickr-minute")).toHaveValue("45");
+    await page.screenshot({
+        path: "/tmp/wms-russian-calendar.png",
+        fullPage: true,
+    });
 });

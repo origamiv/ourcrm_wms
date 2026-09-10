@@ -78,3 +78,15 @@ it('supports bearer access and direct SQL synchronization with exact bigint IDs'
     $migration->up();
     $this->getJson('/api/sync/client_documents')->assertOk()->assertJsonPath('changes.0.data.client_id', $client);
 });
+
+it('preserves a manually entered decimal amount in writes and synchronization', function () {
+    $this->loginUser($this->makeUser([], true));
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Клиент суммы', 'tenant_id' => 'tenant_a']);
+    $payload = ['name' => 'Сумма', 'client_id' => $client, 'doc_type_id' => 1, 'status' => 0, 'amount' => '1234567890123456.78'];
+    $row = $this->postJson('/web/clients/documents', $payload)->assertCreated()->assertJsonPath('data.amount', '1234567890123456.78')->json('data');
+    expect(Document::find($row['id'])->amount)->toBe('1234567890123456.78');
+    $row = $this->putJson('/web/clients/documents/'.$row['id'], [...$payload, 'amount' => '123.45', 'version' => $row['version']])->assertOk()->assertJsonPath('data.amount', '123.45')->json('data');
+    $this->putJson('/web/clients/documents/'.$row['id'], [...$payload, 'amount' => '-1', 'version' => $row['version']])->assertUnprocessable();
+    $this->putJson('/web/clients/documents/'.$row['id'], [...$payload, 'amount' => '1.234', 'version' => $row['version']])->assertUnprocessable();
+    $this->putJson('/web/clients/documents/'.$row['id'], [...$payload, 'amount' => null, 'version' => $row['version']])->assertOk()->assertJsonPath('data.amount', null);
+});

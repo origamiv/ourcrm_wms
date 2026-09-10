@@ -18,7 +18,7 @@ p { line-height: 1.5; }
     $titles = [1 => 'Счёт на оплату', 2 => 'Акт', 3 => 'Универсальный передаточный документ', 4 => 'Договор', 5 => 'Дополнительное соглашение', 6 => 'Счёт-фактура'];
     $money = fn (int $cents) => number_format($cents / 100, 2, ',', ' ');
 @endphp
-<h1>{{ $titles[$type] }} № {{ ($pdf['number'] ?? '') ?: $document->id }}@if($document->doc_date) от {{ $document->doc_date->format('d.m.Y') }}@endif</h1>
+<h1>{{ $titles[$type] }} № {{ ($pdf['number'] ?? '') ?: $document->id }}@if($document->doc_date) от {{ $document->doc_date->format('d.m.y') }}@endif</h1>
 <p>{{ $document->name }}</p>
 @if(!empty($pdf['basis']))<p><strong>Основание:</strong> {{ $pdf['basis'] }}</p>@endif
 <table class="parties"><tr>
@@ -43,11 +43,11 @@ p { line-height: 1.5; }
 @foreach($print['fields'] as $field)
 @if(!in_array($field['key'], ['number', 'basis', 'items']) && !empty($pdf[$field['key']]))
 <h2>{{ $field['label'] }}</h2>
-@foreach(explode("\n", (string) $pdf[$field['key']]) as $paragraph)<p class="terms">{{ $paragraph }}</p>@endforeach
+@foreach(explode("\n", ($field['type'] === 'date' ? \Carbon\Carbon::createFromFormat('Y-m-d', $pdf[$field['key']])->format('d.m.y') : (string) $pdf[$field['key']])) as $paragraph)<p class="terms">{{ $paragraph }}</p>@endforeach
 @endif
 @endforeach
 @if($document->comment)<h2>Комментарий</h2>@foreach(explode("\n", $document->comment) as $paragraph)<p>{{ $paragraph }}</p>@endforeach
 @endif
-@if($document->accepted_at)<p>Дата подписания: {{ $document->accepted_at->format('d.m.Y H:i') }}</p>@endif
+@if($document->accepted_at)<p>Дата подписания: {{ $document->accepted_at->format('d.m.y H:i') }}</p>@endif
 <table class="signatures"><tr><td>Исполнитель<br><br>________________ / {{ $executor->director_fio ?: '________________' }} /</td><td>Заказчик<br><br>________________ / {{ $customer->director_fio ?: '________________' }} /</td></tr></table>
 </body></html>

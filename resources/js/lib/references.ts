@@ -4,6 +4,7 @@ export interface ReferenceField {
     kind?:
         | "text"
         | "textarea"
+        | "money"
         | "number"
         | "flag"
         | "lookup"
@@ -37,6 +38,7 @@ export const references = {
         title: "Документы",
         fields: [
             { key: "shortname", label: "Краткое название" },
+            { key: "amount", label: "Сумма", kind: "money" },
             {
                 key: "client_id",
                 label: "Клиент",

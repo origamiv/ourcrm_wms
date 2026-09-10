@@ -27,6 +27,7 @@ abstract class DocumentRequest extends \App\Http\BaseRequest
             foreach (['executor_id', 'customer_id'] as $field) {
                 $rules[$field] = ['nullable', 'integer', 'min:1'];
             }
+            $rules['amount'] = ['nullable', 'regex:/^\d{1,16}(\.\d{1,2})?$/'];
             $rules['comment'] = ['nullable', 'string', 'max:10000'];
             $rules['internal_comment'] = ['nullable', 'string', 'max:10000'];
             $rules['src'] = ['nullable', 'array'];

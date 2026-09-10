@@ -76,6 +76,7 @@ DB::transaction(function () {
 
 DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000013_add_document_parties.php'))->up();
+        (require database_path('migrations/2026_09_10_000015_add_document_amount.php'))->up();
     (require database_path('migrations/2026_09_10_000014_add_document_type_print_settings.php'))->up();
     DB::table('main.companies')->where('id', 1)->update(['src' => json_encode(['is_own' => true])]);
 });

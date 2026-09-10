@@ -10,7 +10,7 @@ final class Document extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['src' => 'array', 'status' => 'integer', 'doc_date' => 'date:Y-m-d', 'accepted_at' => 'datetime:Y-m-d H:i:s', 'payed_at' => 'datetime:Y-m-d H:i:s', 'canceled_at' => 'datetime:Y-m-d H:i:s'];
+    protected $casts = ['amount' => 'decimal:2', 'src' => 'array', 'status' => 'integer', 'doc_date' => 'date:Y-m-d', 'accepted_at' => 'datetime:Y-m-d H:i:s', 'payed_at' => 'datetime:Y-m-d H:i:s', 'canceled_at' => 'datetime:Y-m-d H:i:s'];
 
     public function executor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

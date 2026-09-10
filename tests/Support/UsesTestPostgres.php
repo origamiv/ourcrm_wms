@@ -22,6 +22,7 @@ trait UsesTestPostgres
         (require database_path('migrations/2026_09_10_000004_move_sync_state_to_public.php'))->up();
         (require database_path('migrations/2026_09_10_000011_create_client_documents.php'))->up();
         (require database_path('migrations/2026_09_10_000013_add_document_parties.php'))->up();
+        (require database_path('migrations/2026_09_10_000015_add_document_amount.php'))->up();
         \Illuminate\Support\Facades\Schema::table('clients.doc_types', fn ($table) => $table->json('settings')->nullable());
         config(['wms.sync_page_size' => 2]);
     }
