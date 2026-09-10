@@ -85,3 +85,28 @@ it('поддерживает Bearer API и откат синхронизации
     $migration->up();
     $this->getJson('/api/sync/integration_services')->assertOk()->assertJsonPath('changes.0.data.name', 'API');
 });
+
+it('пакетно заполняет журнал существующих данных с отдельными ревизиями и видимостью', function () {
+    $a = $this->makeUser([], true);
+    $b = $this->makeUser(['tenant_id' => 'tenant_b'], true);
+    $sync = app(EntitySyncService::class);
+    $sync->checkpoint('tenant_a');
+    $sync->checkpoint('tenant_b');
+    $migration = require database_path('migrations/2026_09_10_000024_sync_integrations.php');
+    $migration->down();
+    $own = DB::table('integration.services')->insertGetId(['name' => 'Своя', 'tenant_id' => 'tenant_a']);
+    $shared = DB::table('integration.services')->insertGetId(['name' => 'Общая']);
+    $restricted = DB::table('integration.services')->insertGetId(['name' => 'Назначенная']);
+    DB::table('main.tenant_entity')->insert(['entity_type' => IntegrationService::class, 'entity_id' => (string) $restricted, 'tenant_id' => 'tenant_b']);
+    $migration->up();
+    $this->loginUser($a);
+    $this->getJson('/web/sync/integration_services')->assertOk()->assertJsonCount(2, 'changes');
+    $this->getJson('/web/integration/services/'.$restricted)->assertNotFound();
+    $this->getJson('/web/integration/services/'.$shared)->assertOk();
+    $this->loginUser($b);
+    $this->getJson('/web/sync/integration_services')->assertOk()->assertJsonCount(2, 'changes');
+    $this->getJson('/web/integration/services/'.$own)->assertNotFound();
+    $version = $this->getJson('/web/integration/services/'.$restricted)->assertOk()->json('data.version');
+    $changed = $this->putJson('/web/integration/services/'.$restricted, ['name' => 'Обновлено', 'status' => 1, 'version' => $version])->assertOk()->json('data.version');
+    expect((int) $changed)->toBeGreaterThan((int) $version);
+});
