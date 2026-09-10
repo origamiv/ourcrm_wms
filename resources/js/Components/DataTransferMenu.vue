@@ -91,6 +91,6 @@ function receiveFile(event: Event) {
 .data-transfer-close { position: absolute; top: 4px; right: 5px; width: 22px; padding: 2px !important; font-size: 18px; line-height: 1; text-align: center !important; }
 .data-transfer-dropdown button { border: 0; background: transparent; padding: 7px 10px; text-align: left; color: #344054; cursor: pointer; }
 .data-transfer-dropdown button:hover { background: #eef7f0; color: #2274a5; }
-.format-icon { display: inline-block; width: 20px; height: 20px; margin-right: 7px; object-fit: contain; vertical-align: middle; }
+.format-icon { display: inline-block; width: 30px; height: 30px; margin-right: 9px; object-fit: contain; vertical-align: middle; }
 .data-transfer-file { display: none; }
 </style>
