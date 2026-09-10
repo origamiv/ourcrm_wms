@@ -7,7 +7,10 @@ const collapsed = ref(false),
     leaving = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
-function go(component: "Home" | "Users" | "Clients" | "Goods", url: string) {
+function go(
+    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks",
+    url: string,
+) {
     if (navigator.onLine) router.visit(url);
     else
         router.push({
@@ -111,6 +114,20 @@ onUnmounted(() => {
                         alt=""
                     /><span class="nav-label">Товары</span></a
                 >
+                <a
+                    v-if="page.props.auth.is_admin"
+                    href="/integration/webhooks"
+                    aria-label="Интеграции"
+                    :class="{ active: page.url.startsWith('/integration/') }"
+                    @click.prevent="
+                        go('IntegrationWebhooks', '/integration/webhooks')
+                    "
+                    ><img
+                        class="nav-icon"
+                        src="/design/crm/administration.svg"
+                        alt=""
+                    /><span class="nav-label">Интеграции</span></a
+                >
             </nav>
             <div class="sidebar-bottom">
                 <span
@@ -131,7 +148,9 @@ onUnmounted(() => {
                           ? "Клиенты"
                           : page.url.startsWith("/goods/")
                             ? "Товары"
-                            : "Рабочий стол"
+                            : page.url.startsWith("/integration/")
+                              ? "Интеграции"
+                              : "Рабочий стол"
                 }}</span>
                 <div class="account">
                     <span class="header-avatar"

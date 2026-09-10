@@ -9,12 +9,19 @@ export interface ReferenceField {
         | "flag12"
         | "flag"
         | "lookup"
+        | "lookup_list"
         | "date"
         | "datetime"
         | "json"
         | "string_list";
     required?: boolean;
+    detail?: boolean;
     lookup?:
+        | "integration_services"
+        | "integration_webhooks"
+        | "integration_rules"
+        | "integration_type_hook"
+        | "integration_type_processing"
         | "modules"
         | "companies"
         | "users"
@@ -41,6 +48,108 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    integration_webhooks: {
+        title: "Вебхуки",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            {
+                key: "service_id",
+                label: "Сервис",
+                kind: "lookup",
+                lookup: "integration_services",
+            },
+            {
+                key: "type_hook_id",
+                label: "Тип хука",
+                kind: "lookup",
+                lookup: "integration_type_hook",
+            },
+            { key: "url", label: "Адрес вебхука", detail: true },
+            {
+                key: "rules_id",
+                label: "Правила",
+                kind: "lookup_list",
+                lookup: "integration_rules",
+            },
+            { key: "cnt", label: "Количество запусков", kind: "number" },
+            {
+                key: "dat_last_run",
+                label: "Последний запуск",
+                kind: "datetime",
+            },
+            { key: "params", label: "Параметры", kind: "json", detail: true },
+        ] as ReferenceField[],
+    },
+    integration_data: {
+        title: "Данные",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            {
+                key: "webhook_id",
+                label: "Вебхук",
+                kind: "lookup",
+                lookup: "integration_webhooks",
+            },
+            {
+                key: "service_id",
+                label: "Сервис",
+                kind: "lookup",
+                lookup: "integration_services",
+            },
+            {
+                key: "raw",
+                label: "Исходные данные",
+                kind: "textarea",
+                detail: true,
+            },
+            { key: "src", label: "Источник", kind: "json", detail: true },
+            { key: "data", label: "Данные", kind: "json", detail: true },
+            {
+                key: "progress_processing",
+                label: "Ход обработки",
+                kind: "json",
+                detail: true,
+            },
+            {
+                key: "status_processing",
+                label: "Статус обработки",
+                kind: "number",
+            },
+        ] as ReferenceField[],
+    },
+    integration_rules: {
+        title: "Правила",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            {
+                key: "type_processing_id",
+                label: "Тип обработки",
+                kind: "lookup",
+                lookup: "integration_type_processing",
+            },
+            { key: "val", label: "Значение", detail: true },
+            { key: "params", label: "Параметры", kind: "json", detail: true },
+        ] as ReferenceField[],
+    },
+    integration_services: {
+        title: "Сервисы",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
+    },
+    integration_type_hook: {
+        title: "Типы хуков",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
+    },
+    integration_type_processing: {
+        title: "Типы обработки",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
+    },
+
     kizes: {
         title: "Маркировка",
         fields: [

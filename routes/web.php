@@ -15,6 +15,10 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::get('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'show'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
+        Route::post('/web/integration/{integration_catalog}', [App\Http\Controllers\IntegrationController::class, 'store'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing']);
+        Route::put('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'update'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
+        Route::delete('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'destroy'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::post('/web/goods/{catalog}', [App\Http\Controllers\GoodCatalogController::class, 'store'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz']);
         Route::put('/web/goods/{catalog}/{id}', [App\Http\Controllers\GoodCatalogController::class, 'update'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz'])->whereNumber('id');
         Route::delete('/web/goods/{catalog}/{id}', [App\Http\Controllers\GoodCatalogController::class, 'destroy'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz'])->whereNumber('id');
@@ -49,7 +53,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
             })->name($section);
         }
         Route::get('/{left}/{top}/{id?}/{action?}', App\Http\Controllers\SectionPageController::class)
-            ->whereIn('left', ['main', 'clients', 'goods'])->whereNumber('id')
+            ->whereIn('left', ['main', 'clients', 'goods', 'integration'])->whereNumber('id')
             ->whereIn('action', ['view', 'edit', 'create', 'delete', 'password']);
 
         Route::post('/web/clients', [App\Http\Controllers\ClientController::class, 'store']);
