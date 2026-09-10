@@ -83,8 +83,6 @@ export const references = {
                 kind: "lookup",
                 lookup: "good_cards",
             },
-            { key: "level", label: "Уровень", kind: "number", required: true },
-            { key: "is_category", label: "Категория", kind: "flag12" },
             {
                 key: "is_from_external",
                 label: "Из внешней системы",

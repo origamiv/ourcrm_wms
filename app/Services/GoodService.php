@@ -20,7 +20,7 @@ final class GoodService
         return DB::transaction(function () use ($actor, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
             $sync = app(EntitySyncService::class);
-            $sync->prepareWrite($tenant, Good::class, $id);
+            $sync->prepareWrite($tenant, Good::class, $id, true);
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
@@ -47,19 +47,20 @@ final class GoodService
                         throw ValidationException::withMessages([$field => 'Выберите доступную запись своей организации.']);
                     }
                 }
-                $parent = $data['parent_id'] ?? null;
+                $parent = array_key_exists('parent_id', $data) ? $data['parent_id'] : $row->parent_id;
                 $seen = $id ? [$id => true] : [];
                 while ($parent !== null) {
                     if (isset($seen[(string) $parent])) {
                         throw ValidationException::withMessages(['parent_id' => 'Родительская связь не может образовывать цикл.']);
                     }
                     $seen[(string) $parent] = true;
-                    $parent = Good::visibleTo($tenant)->whereKey($parent)->value('parent_id');
+                    $parent = Good::whereKey($parent)->value('parent_id');
                 }
-                $fields = array_diff(config('sync.entities.goods.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']);
+                $fields = array_diff(config('sync.entities.goods.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'level', 'is_category']);
                 $row->forceFill(array_intersect_key($data, array_flip($fields)));
                 if (! $id) {
                     $row->tenant_id = $tenant;
+                    $row->level = 0;
                 }
                 $row->save();
             }

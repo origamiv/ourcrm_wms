@@ -25,6 +25,7 @@ trait UsesTestPostgres
         (require database_path('migrations/2026_09_10_000015_add_document_amount.php'))->up();
         \Illuminate\Support\Facades\Schema::table('clients.doc_types', fn ($table) => $table->json('settings')->nullable());
         (require database_path('migrations/2026_09_10_000018_tenant_entity_visibility.php'))->up();
+        (require database_path('migrations/2026_09_10_000019_calculate_goods_hierarchy.php'))->up();
         config(['wms.sync_page_size' => 2]);
     }
 

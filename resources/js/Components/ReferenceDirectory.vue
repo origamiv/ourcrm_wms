@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { goodsTree, flattenGoods } from "../lib/goodsTree";
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
@@ -173,12 +174,70 @@ const filtered = computed(() =>
                 (descending.value ? -1 : 1),
         ),
 );
+const expandedGoods = ref(new Set<string>());
+const goodsFiltered = computed(
+    () => !!query.value || !!shortQuery.value || statusFilter.value !== "all",
+);
+const goodsForest = computed(() =>
+    goodsTree(
+        rows.value.filter(
+            (row) => statusFilter.value === "deleted" || !row.deleted_at,
+        ),
+        new Set(filtered.value.map((row) => row.id)),
+        descending.value,
+    ),
+);
 const pages = computed(() =>
-    Math.max(1, Math.ceil(filtered.value.length / 25)),
+    Math.max(
+        1,
+        Math.ceil(
+            (isGood ? goodsForest.value.roots.length : filtered.value.length) /
+                25,
+        ),
+    ),
 );
 const visible = computed(() =>
-    filtered.value.slice((currentPage.value - 1) * 25, currentPage.value * 25),
+    isGood
+        ? flattenGoods(
+              goodsForest.value.roots.slice(
+                  (currentPage.value - 1) * 25,
+                  currentPage.value * 25,
+              ),
+              expandedGoods.value,
+              goodsFiltered.value,
+          )
+        : filtered.value.slice(
+              (currentPage.value - 1) * 25,
+              currentPage.value * 25,
+          ),
 );
+function toggleGood(id: string) {
+    const next = new Set(expandedGoods.value);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    expandedGoods.value = next;
+}
+function revealGood(row: ReferenceRow) {
+    const byId = new Map(rows.value.map((item) => [item.id, item]));
+    const next = new Set(expandedGoods.value);
+    const seen = new Set<string>([row.id]);
+    let current = row;
+    while (
+        current.parent_id &&
+        byId.has(String(current.parent_id)) &&
+        !seen.has(String(current.parent_id))
+    ) {
+        const id = String(current.parent_id);
+        seen.add(id);
+        next.add(id);
+        current = byId.get(id)!;
+    }
+    expandedGoods.value = next;
+    const index = goodsForest.value.roots.findIndex(
+        (node) => node.row.id === current.id,
+    );
+    if (index >= 0) currentPage.value = Math.floor(index / 25) + 1;
+}
 watch(
     [query, shortQuery, statusFilter, clientFilter, docTypeFilter, dateFilter],
     () => (currentPage.value = 1),
@@ -242,6 +301,7 @@ function open(row: ReferenceRow | null, readOnly = false) {
     )
         return;
     if (isGood) {
+        if (row) revealGood(row);
         // Refresh catalog deltas when reopening a card in an already loaded section.
         void lookupStores.type_goods.sync();
         void lookupStores.unit_goods.sync();
@@ -282,12 +342,7 @@ function open(row: ReferenceRow | null, readOnly = false) {
             null,
             2,
         );
-    if (isGood && !row)
-        Object.assign(form.value, {
-            level: 0,
-            is_category: 2,
-            is_from_external: 2,
-        });
+    if (isGood && !row) form.value.is_from_external = 2;
     if (isGood)
         for (const field of [
             "parent_id",
@@ -358,6 +413,10 @@ async function save(remove = false) {
             },
         );
         await store.apply(response.data);
+        if (isGood) {
+            await store.sync();
+            if (!remove) revealGood(response.data);
+        }
         selected.value = response.data;
         conflict.value = null;
         notice.value = "Изменения сохранены";
@@ -466,8 +525,28 @@ useCardRoute<ReferenceRow>({
             <p v-if="error || warning" class="notice" role="alert">
                 {{ error || warning }}
             </p>
+            <div v-if="isGood" class="goods-tree-controls">
+                <button
+                    type="button"
+                    :disabled="goodsFiltered"
+                    @click="expandedGoods = new Set(goodsForest.nodes.keys())"
+                >
+                    Развернуть всё
+                </button>
+                <button
+                    type="button"
+                    :disabled="goodsFiltered"
+                    @click="expandedGoods = new Set()"
+                >
+                    Свернуть всё
+                </button>
+                <span>Категории — папки, товары — коробки</span>
+            </div>
             <div class="table-scroll">
-                <table>
+                <table
+                    :role="isGood ? 'treegrid' : undefined"
+                    :aria-label="isGood ? 'Дерево товаров' : undefined"
+                >
                     <thead>
                         <tr>
                             <th scope="col" class="id-column">#</th>
@@ -600,11 +679,105 @@ useCardRoute<ReferenceRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            :class="{
+                                'goods-category-row':
+                                    isGood &&
+                                    (row.is_category === 1 ||
+                                        !!goodsForest.nodes.get(row.id)
+                                            ?.children.length),
+                            }"
+                            :aria-level="
+                                isGood
+                                    ? (goodsForest.nodes.get(row.id)?.depth ??
+                                          0) + 1
+                                    : undefined
+                            "
+                            :aria-expanded="
+                                isGood &&
+                                goodsForest.nodes.get(row.id)?.children.length
+                                    ? goodsFiltered || expandedGoods.has(row.id)
+                                    : undefined
+                            "
                             @dblclick="open(row)"
                         >
                             <td class="id-column">{{ row.id }}</td>
                             <td>
+                                <div
+                                    v-if="isGood"
+                                    class="goods-tree-name"
+                                    :style="{
+                                        paddingLeft:
+                                            (goodsForest.nodes.get(row.id)
+                                                ?.depth ?? 0) *
+                                                24 +
+                                            'px',
+                                    }"
+                                >
+                                    <button
+                                        v-if="
+                                            goodsForest.nodes.get(row.id)
+                                                ?.children.length
+                                        "
+                                        class="goods-tree-toggle"
+                                        :disabled="goodsFiltered"
+                                        :aria-label="
+                                            (expandedGoods.has(row.id) ||
+                                            goodsFiltered
+                                                ? 'Свернуть: '
+                                                : 'Развернуть: ') +
+                                            displayName(row)
+                                        "
+                                        :aria-expanded="
+                                            goodsFiltered ||
+                                            expandedGoods.has(row.id)
+                                        "
+                                        @click.stop="toggleGood(row.id)"
+                                        @dblclick.stop
+                                    >
+                                        {{
+                                            expandedGoods.has(row.id) ||
+                                            goodsFiltered
+                                                ? "▾"
+                                                : "▸"
+                                        }}
+                                    </button>
+                                    <span
+                                        v-else
+                                        class="goods-tree-spacer"
+                                    ></span>
+                                    <svg
+                                        v-if="
+                                            row.is_category === 1 ||
+                                            goodsForest.nodes.get(row.id)
+                                                ?.children.length
+                                        "
+                                        class="goods-category-icon"
+                                        viewBox="0 0 24 24"
+                                        role="img"
+                                        aria-label="Категория"
+                                    >
+                                        <path
+                                            d="M3 5h7l2 3h9v12H3z"
+                                            fill="currentColor"
+                                            stroke="currentColor"
+                                            stroke-linejoin="round"
+                                        />
+                                    </svg>
+                                    <img
+                                        v-else
+                                        src="/design/crm/goods.svg"
+                                        alt="Товар"
+                                        class="goods-item-icon"
+                                    />
+                                    <button
+                                        class="name-button"
+                                        @click="open(row, true)"
+                                    >
+                                        {{ displayName(row) }}
+                                    </button>
+                                </div>
                                 <button
+                                    v-else
                                     class="name-button"
                                     @click="open(row, true)"
                                 >
@@ -722,7 +895,13 @@ useCardRoute<ReferenceRow>({
                 </table>
             </div>
             <footer class="list-footer">
-                <span>Найдено: {{ filtered.length }}</span>
+                <span
+                    >Найдено: {{ filtered.length
+                    }}<template v-if="isGood">
+                        · Корневых веток:
+                        {{ goodsForest.roots.length }}</template
+                    ></span
+                >
                 <div>
                     <button
                         class="refresh-button"
@@ -935,6 +1114,19 @@ useCardRoute<ReferenceRow>({
                                 />
                             </label>
                         </template>
+                        <p v-if="isGood" class="goods-derived">
+                            Уровень:
+                            {{
+                                selected?.level ??
+                                "рассчитывается при сохранении"
+                            }}
+                            ·
+                            {{
+                                selected?.is_category === 1
+                                    ? "Категория"
+                                    : "Товар"
+                            }}
+                        </p>
                         <DocumentPrintFields
                             v-if="isDocument"
                             v-model="form.src"
@@ -999,6 +1191,64 @@ useCardRoute<ReferenceRow>({
     </div>
 </template>
 <style scoped>
+.goods-tree-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 0 0 12px;
+}
+.goods-tree-controls button {
+    color: #2274a5;
+    background: transparent;
+    border: 0;
+    padding: 4px;
+    cursor: pointer;
+}
+.goods-tree-controls button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.goods-tree-controls span,
+.goods-derived {
+    font-size: 12px;
+    color: #667085;
+}
+.goods-tree-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 180px;
+}
+.goods-tree-toggle,
+.goods-tree-spacer {
+    flex: 0 0 20px;
+    width: 20px;
+}
+.goods-tree-toggle {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: #2274a5;
+    font-size: 18px;
+    cursor: pointer;
+}
+.goods-category-row {
+    background: #f3f8f4;
+}
+.goods-category-row .name-button {
+    font-weight: 700;
+}
+.goods-category-icon,
+.goods-item-icon {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+}
+.goods-category-icon {
+    color: #d8a32c;
+}
+
 .client-form {
     display: grid;
     gap: 18px;

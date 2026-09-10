@@ -91,3 +91,7 @@ DB::transaction(function () {
 DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000018_tenant_entity_visibility.php'))->up();
 });
+
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_10_000019_calculate_goods_hierarchy.php'))->up();
+});

@@ -2056,3 +2056,130 @@ test("goods parent searchable select saves choices and supports keyboard and cle
     await page.reload();
     await expect(parent).toHaveValue("");
 });
+
+test("goods tree expands categories filters with ancestors and refreshes parents after a move", async ({
+    page,
+}) => {
+    const sql = (query: string) =>
+        execFileSync(
+            "psql",
+            [
+                "-h",
+                "/var/run/postgresql",
+                "-U",
+                "root",
+                "-d",
+                "wms_browser_test",
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-At",
+                "-c",
+                query,
+            ],
+            { encoding: "utf8" },
+        ).trim();
+    const create = (name: string, parent?: string) =>
+        sql(
+            "INSERT INTO goods.goods (name, tenant_id, parent_id) VALUES ('" +
+                name +
+                "', 'test_org', " +
+                (parent ?? "NULL") +
+                ") RETURNING id",
+        ).split("\n")[0];
+    const a = create("АА Дерево А");
+    const b = create("АА Дерево Б");
+    const branch = create("АА Дерево Ветка", a);
+    const leaf = create("АА Дерево Лист", branch);
+    try {
+        await login(page);
+        await page.goto("/goods/goods");
+        const tree = page.getByRole("treegrid", {
+            name: "Дерево товаров",
+            exact: true,
+        });
+        const row = (name: string) =>
+            tree
+                .getByRole("row")
+                .filter({
+                    has: page.getByRole("button", { name, exact: true }),
+                });
+        await expect(
+            row("АА Дерево А").getByRole("img", {
+                name: "Категория",
+                exact: true,
+            }),
+        ).toBeVisible();
+        await expect(row("АА Дерево Ветка")).toHaveCount(0);
+        await page
+            .getByRole("button", {
+                name: "Развернуть: АА Дерево А",
+                exact: true,
+            })
+            .click();
+        await expect(row("АА Дерево Ветка")).toHaveAttribute("aria-level", "2");
+        await page
+            .getByRole("button", {
+                name: "Развернуть: АА Дерево Ветка",
+                exact: true,
+            })
+            .click();
+        await expect(row("АА Дерево Лист")).toHaveAttribute("aria-level", "3");
+        await expect(
+            row("АА Дерево Лист").getByRole("img", {
+                name: "Товар",
+                exact: true,
+            }),
+        ).toBeVisible();
+        await page
+            .getByRole("button", {
+                name: "Редактировать: АА Дерево Ветка",
+                exact: true,
+            })
+            .click();
+        await page
+            .getByRole("combobox", { name: "Родительская запись", exact: true })
+            .fill("АА Дерево Б");
+        await page
+            .getByRole("option", { name: "АА Дерево Б", exact: true })
+            .click();
+        await page
+            .getByRole("button", { name: "Сохранить изменения", exact: true })
+            .click();
+        await expect(
+            page.getByText("Изменения сохранены", { exact: true }),
+        ).toBeVisible();
+        await page
+            .getByRole("button", { name: "Закрыть карточку", exact: true })
+            .click();
+        await expect(
+            row("АА Дерево А").getByRole("img", { name: "Товар", exact: true }),
+        ).toBeVisible();
+        await expect(
+            row("АА Дерево Б").getByRole("img", {
+                name: "Категория",
+                exact: true,
+            }),
+        ).toBeVisible();
+        await page
+            .getByRole("button", { name: "Свернуть всё", exact: true })
+            .click();
+        await expect(row("АА Дерево Лист")).toHaveCount(0);
+        await page
+            .getByLabel("Поиск: Товары", { exact: true })
+            .fill("АА Дерево Лист");
+        await expect(row("АА Дерево Б")).toBeVisible();
+        await expect(row("АА Дерево Ветка")).toBeVisible();
+        await expect(row("АА Дерево Лист")).toHaveAttribute("aria-level", "3");
+        await expect(row("АА Дерево А")).toHaveCount(0);
+        await page.screenshot({
+            path: "/tmp/wms-goods-tree.png",
+            fullPage: true,
+        });
+    } finally {
+        sql(
+            "DELETE FROM goods.goods WHERE id IN (" +
+                [leaf, branch, a, b].join(",") +
+                ")",
+        );
+    }
+});

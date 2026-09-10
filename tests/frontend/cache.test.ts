@@ -46,7 +46,7 @@ test("upgrades old IndexedDB by dropping obsolete rows and cursors", async () =>
         const r = indexedDB.open("wms_cache");
         r.onsuccess = () => {
             const db = r.result;
-            assert.equal(db.version, 2);
+            assert.equal(db.version, 3);
             const q = db.transaction("entries").objectStore("entries").count();
             q.onsuccess = () => {
                 assert.equal(q.result, 0);

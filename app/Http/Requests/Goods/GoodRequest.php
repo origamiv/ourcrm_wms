@@ -8,7 +8,7 @@ abstract class GoodRequest extends \App\Http\BaseRequest
 {
     public function rules(): array
     {
-        $rules = ['name' => ['required', 'string', 'max:255'], 'status' => ['present', 'nullable', 'integer', 'in:0,1,2'], 'tenant_id' => ['prohibited'], 'level' => ['required', 'integer', 'min:0', 'max:2147483647'], 'barcodes' => ['nullable', 'array']];
+        $rules = ['name' => ['required', 'string', 'max:255'], 'status' => ['present', 'nullable', 'integer', 'in:0,1,2'], 'tenant_id' => ['prohibited'], 'level' => ['sometimes', 'integer', 'min:0', 'max:2147483647'], 'barcodes' => ['nullable', 'array']];
         foreach (['shortname', 'code', 'parent_code'] as $key) {
             $rules[$key] = ['nullable', 'string', 'max:255'];
         }
