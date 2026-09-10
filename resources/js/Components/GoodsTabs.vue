@@ -3,6 +3,12 @@ import RibbonTabs from "./RibbonTabs.vue";
 const tabs = [
     { label: "Товары", url: "/goods/goods", component: "Goods", icon: "goods" },
     {
+        label: "Маркировка",
+        url: "/goods/kizes",
+        component: "Kizes",
+        icon: "goods",
+    },
+    {
         label: "Справочники",
         url: "/goods/references",
         component: "",

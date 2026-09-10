@@ -14,6 +14,9 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
         Route::post('/goods/{catalog}', [App\Http\Controllers\GoodCatalogController::class, 'store'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz']);
         Route::put('/goods/{catalog}/{id}', [App\Http\Controllers\GoodCatalogController::class, 'update'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz'])->whereNumber('id');
         Route::delete('/goods/{catalog}/{id}', [App\Http\Controllers\GoodCatalogController::class, 'destroy'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz'])->whereNumber('id');
+        Route::post('/goods/kizes', [App\Http\Controllers\KizController::class, 'store']);
+        Route::put('/goods/kizes/{id}', [App\Http\Controllers\KizController::class, 'update'])->whereNumber('id');
+        Route::delete('/goods/kizes/{id}', [App\Http\Controllers\KizController::class, 'destroy'])->whereNumber('id');
         Route::post('/goods/goods', [App\Http\Controllers\GoodController::class, 'store']);
         Route::put('/goods/goods/{id}', [App\Http\Controllers\GoodController::class, 'update'])->whereNumber('id');
         Route::delete('/goods/goods/{id}', [App\Http\Controllers\GoodController::class, 'destroy'])->whereNumber('id');

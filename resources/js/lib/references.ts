@@ -24,7 +24,8 @@ export interface ReferenceField {
         | "goods"
         | "good_cards"
         | "type_goods"
-        | "unit_goods";
+        | "unit_goods"
+        | "kind_kiz";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -40,9 +41,37 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    kizes: {
+        title: "Маркировка",
+        fields: [
+            { key: "code", label: "Код маркировки" },
+            {
+                key: "client_id",
+                label: "Клиент",
+                kind: "lookup",
+                lookup: "clients",
+            },
+            {
+                key: "kind_kiz_id",
+                label: "Вид кода маркировки",
+                kind: "lookup",
+                lookup: "kind_kiz",
+            },
+            { key: "good_id", label: "Товар", kind: "lookup", lookup: "goods" },
+            {
+                key: "entranced_at",
+                label: "Дата поступления",
+                kind: "datetime",
+            },
+            { key: "leaving_at", label: "Дата выбытия", kind: "datetime" },
+            { key: "printed_at", label: "Дата печати", kind: "datetime" },
+        ] as ReferenceField[],
+    },
     kind_kiz: {
         title: "Виды кодов маркировки",
-        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+        ] as ReferenceField[],
     },
     type_goods: {
         title: "Типы товаров",

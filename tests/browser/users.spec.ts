@@ -2229,3 +2229,33 @@ test("empty good category switch persists while categories with children cannot 
     );
     await expect(toggle).toHaveCount(0);
 });
+
+test("markings link to clients and kinds and retain edits in browser storage", async ({ page, context }) => {
+    await login(page);
+    await page.locator(".sidebar").getByRole("link", { name: "Товары", exact: true }).click();
+    await page.getByRole("link", { name: "Маркировка", exact: true }).click();
+    await expect(page).toHaveURL("/goods/kizes");
+    await page.getByRole("button", { name: "Добавить запись", exact: true }).click();
+    await page.getByLabel("Код маркировки", { exact: true }).fill("000123-TEST");
+    await page.getByLabel("Клиент", { exact: true }).selectOption({ label: "Тестовый клиент" });
+    await page.getByLabel("Вид кода маркировки", { exact: true }).selectOption({ label: "IMEI" });
+    await page.getByRole("button", { name: "Создать запись", exact: true }).click();
+    await expect(page.getByText("Изменения сохранены", { exact: true })).toBeVisible();
+    await page.getByLabel("Код маркировки", { exact: true }).fill("000124-TEST");
+    await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+    await expect(page.getByText("Изменения сохранены", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Код маркировки", { exact: true })).toHaveValue("000124-TEST");
+    await expect(page.getByLabel("Клиент", { exact: true }).locator("option:checked")).toHaveText("Тестовый клиент");
+    await page.getByRole("button", { name: "Закрыть карточку" }).click();
+    await expect(page.getByRole("columnheader").first()).toHaveText("#");
+    await context.setOffline(true);
+    await page.getByRole("button", { name: "000124-TEST", exact: true }).click();
+    await expect(page.getByLabel("Код маркировки", { exact: true })).toHaveValue("000124-TEST");
+    await expect(page.getByLabel("Код маркировки", { exact: true })).toBeDisabled();
+    await context.setOffline(false);
+    await page.getByRole("button", { name: "Закрыть карточку" }).click();
+    await page.getByRole("button", { name: "Удалить: 000124-TEST", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Удалить", exact: true }).click();
+    await expect(page.getByRole("button", { name: "000124-TEST", exact: true })).toHaveCount(0);
+});

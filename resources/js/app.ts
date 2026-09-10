@@ -1,3 +1,4 @@
+import Kizes from "./Pages/Kizes.vue";
 import KindKiz from "./Pages/KindKiz.vue";
 import GoodTypes from "./Pages/GoodTypes.vue";
 import GoodUnits from "./Pages/GoodUnits.vue";
@@ -27,6 +28,7 @@ const pages: Record<string, any> = {
     Goods,
     GoodTypes,
     KindKiz,
+    Kizes,
     GoodUnits,
     DocTypes,
     Documents,

@@ -27,9 +27,14 @@ interface ReferenceRow extends EntityRow {
 }
 const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
+const isKiz = props.entity === "kizes";
+const kizColumns = computed(() =>
+    isKiz ? definition.fields.filter((field) => field.key !== "code") : [],
+);
 const isGood = props.entity === "goods";
 const isGoodsSection =
-    isGood || ["type_goods", "unit_goods", "kind_kiz"].includes(props.entity);
+    isGood ||
+    ["type_goods", "unit_goods", "kind_kiz", "kizes"].includes(props.entity);
 const isIndividual = props.entity === "client_individuals";
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
@@ -148,6 +153,7 @@ const filtered = computed(() =>
             return (
                 [
                     row.name,
+                    ...(isKiz ? [row.code] : []),
                     row.shortname,
                     row.category,
                     row.path,
@@ -170,8 +176,10 @@ const filtered = computed(() =>
         })
         .sort(
             (a, b) =>
-                (a.name ?? "").localeCompare(b.name ?? "", "ru") *
-                (descending.value ? -1 : 1),
+                (isKiz ? (a.code ?? "") : (a.name ?? "")).localeCompare(
+                    isKiz ? (b.code ?? "") : (b.name ?? ""),
+                    "ru",
+                ) * (descending.value ? -1 : 1),
         ),
 );
 const expandedGoods = ref(new Set<string>());
@@ -290,7 +298,12 @@ function changeLookup(field: string) {
     if (isDocument && field === "client_id") form.value.customer_id = null;
 }
 function displayName(row: ReferenceRow) {
-    return row.name || row.shortname || `Запись №${row.id}`;
+    return (
+        (isKiz && "kind_kiz_id" in row ? row.code : null) ||
+        row.name ||
+        row.shortname ||
+        `Запись №${row.id}`
+    );
 }
 function open(row: ReferenceRow | null, readOnly = false) {
     if (
@@ -554,11 +567,17 @@ useCardRoute<ReferenceRow>({
                             <th scope="col" class="id-column">#</th>
                             <th>
                                 <button @click="descending = !descending">
-                                    {{ isIndividual ? "ФИО" : "Название" }}
+                                    {{
+                                        isKiz
+                                            ? "Код маркировки"
+                                            : isIndividual
+                                              ? "ФИО"
+                                              : "Название"
+                                    }}
                                     {{ descending ? "▴" : "▾" }}
                                 </button>
                             </th>
-                            <th>
+                            <th v-if="!isKiz">
                                 {{
                                     [
                                         "goods",
@@ -584,7 +603,10 @@ useCardRoute<ReferenceRow>({
                                 <th>Дата документа</th>
                                 <th>Сумма</th></template
                             >
-                            <th>Статус</th>
+                            <th v-for="field in kizColumns" :key="field.key">
+                                {{ field.label }}
+                            </th>
+                            <th>{{ isKiz ? "Состояние" : "Статус" }}</th>
                             <th>Действия</th>
                         </tr>
                         <tr class="filter-row">
@@ -596,7 +618,7 @@ useCardRoute<ReferenceRow>({
                                     placeholder="Поиск"
                                 />
                             </th>
-                            <th>
+                            <th v-if="!isKiz">
                                 <input
                                     v-model="shortQuery"
                                     :aria-label="
@@ -658,6 +680,10 @@ useCardRoute<ReferenceRow>({
                                 </th>
                                 <th></th>
                             </template>
+                            <th
+                                v-for="field in kizColumns"
+                                :key="field.key"
+                            ></th>
                             <th>
                                 <select
                                     v-model="statusFilter"
@@ -667,7 +693,9 @@ useCardRoute<ReferenceRow>({
                                     <option
                                         v-for="[value, label] in Object.entries(
                                             statusLabels,
-                                        ).filter(([key]) => key !== 'null')"
+                                        ).filter(
+                                            ([key]) => !isKiz && key !== 'null',
+                                        )"
                                         :key="value"
                                         :value="value"
                                     >
@@ -788,7 +816,21 @@ useCardRoute<ReferenceRow>({
                                     {{ displayName(row) }}
                                 </button>
                             </td>
-                            <td>{{ row.shortname || "—" }}</td>
+                            <td v-if="!isKiz">{{ row.shortname || "—" }}</td>
+                            <td v-for="field in kizColumns" :key="field.key">
+                                {{
+                                    field.lookup
+                                        ? (choices(field.lookup).find(
+                                              (item) =>
+                                                  String(item.id) ===
+                                                  String(row[field.key]),
+                                          )?.name ??
+                                          (row[field.key]
+                                              ? "№" + row[field.key]
+                                              : "—"))
+                                        : formatDate(row[field.key], true)
+                                }}
+                            </td>
                             <td v-if="isGood">{{ row.code || "—" }}</td>
                             <template v-if="isDocument">
                                 <td>
@@ -828,9 +870,11 @@ useCardRoute<ReferenceRow>({
                                     >{{
                                         row.deleted_at
                                             ? "Удалён"
-                                            : (statusLabels[
-                                                  String(row.status)
-                                              ] ?? String(row.status))
+                                            : isKiz
+                                              ? "Действующая"
+                                              : (statusLabels[
+                                                    String(row.status)
+                                                ] ?? String(row.status))
                                     }}</span
                                 >
                             </td>
@@ -971,7 +1015,7 @@ useCardRoute<ReferenceRow>({
                         class="client-form"
                         :disabled="viewing || saving || !online || !!conflict"
                     >
-                        <label
+                        <label v-if="!isKiz"
                             >{{ isIndividual ? "ФИО *" : "Название *"
                             }}<input
                                 v-model="form.name"
@@ -1165,7 +1209,7 @@ useCardRoute<ReferenceRow>({
                                 )?.settings?.print?.fields ?? []
                             "
                         />
-                        <label
+                        <label v-if="!isKiz"
                             >Статус<select
                                 v-model="form.status"
                                 aria-label="Статус"
@@ -1195,7 +1239,9 @@ useCardRoute<ReferenceRow>({
                                 <option
                                     v-for="[value, label] in Object.entries(
                                         statusLabels,
-                                    ).filter(([key]) => key !== 'null')"
+                                    ).filter(
+                                        ([key]) => !isKiz && key !== 'null',
+                                    )"
                                     :key="value"
                                     :value="Number(value)"
                                 >

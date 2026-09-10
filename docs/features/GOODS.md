@@ -123,3 +123,9 @@ is_category=1 при наличии неудалённых детей или в�
 Справочник `goods.kind_kiz` (модель `App\Models\KindKiz`) содержит стандартные поля `id`, `name`, `shortname`, `status`, `tenant_id` и временные отметки с мягким удалением. Начальные активные записи: Серийный номер, Честный знак, IMEI, УИН — с NULL tenant_id, без ограничивающих назначений, доступны всем организациям. Общие записи редактирует admin без изменения tenant_id; новые записи принадлежат организации автора. Применяются назначения `main.tenant_entity`.
 
 Страница `/goods/kind_kiz`, карточки `/:id/:action`. Общие GoodCatalogController и отдельные CreateGoodCatalogRequest/UpdateGoodCatalogRequest обслуживают `POST /api/goods/kind_kiz`, `PUT|DELETE /api/goods/kind_kiz/{id}` (Bearer, admin; изменение/удаление с version). Web использует `/web/goods/kind_kiz` и сессию. Дельты `/web/sync/kind_kiz` и `/api/sync/kind_kiz` идут через общий журнал в IndexedDB.
+
+## Маркировка
+
+Раздел «Товары → Маркировка», `/goods/kizes`, модель `App\Models\Kiz`, таблица `goods.kizes`. Поля: id, code (строка до 255 символов, сохраняет ведущие нули), kind_kiz_id → goods.kind_kiz, good_id → goods.goods, client_id → clients.clients, entranced_at, leaving_at, printed_at, tenant_id и временные отметки с SoftDeletes. Предметные поля nullable; даты хранятся как timestamp, показываются в российском формате с 24-часовым временем. Связи проверяются через visibleTo; внешние ключи запрещают физическое удаление связанных записей.
+
+POST /api/goods/kizes, PUT и DELETE /api/goods/kizes/{id}: Bearer Token, admin, изменение/удаление с version и конфликтом 409. Сессионный транспорт /web/goods/kizes использует тот же KizService. Синхронизация /web/sync/kizes и /api/sync/kizes через public.entity_changes. tenant_id задаётся при создании по автору, при изменении сохраняется, общие записи подчиняются main.tenant_entity.
