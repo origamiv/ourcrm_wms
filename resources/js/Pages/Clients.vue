@@ -219,6 +219,7 @@ useCardRoute<ClientRow>({
                 <table>
                     <thead>
                         <tr>
+                            <th scope="col" class="id-column">#</th>
                             <th>
                                 <button @click="descending = !descending">
                                     Название {{ descending ? "▴" : "▾" }}
@@ -229,6 +230,7 @@ useCardRoute<ClientRow>({
                             <th>Действия</th>
                         </tr>
                         <tr class="filter-row">
+                            <th class="id-column"></th>
                             <th>
                                 <input
                                     v-model="query"
@@ -263,6 +265,7 @@ useCardRoute<ClientRow>({
                             :key="row.id"
                             @dblclick="open(row)"
                         >
+                            <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="name-button"
@@ -351,7 +354,7 @@ useCardRoute<ClientRow>({
                             </td>
                         </tr>
                         <tr v-if="!visible.length">
-                            <td colspan="4" class="empty-state">
+                            <td colspan="5" class="empty-state">
                                 {{
                                     ready
                                         ? "Клиенты не найдены"

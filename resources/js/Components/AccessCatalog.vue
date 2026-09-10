@@ -255,6 +255,7 @@ useCardRoute<CatalogRow>({
                 <table>
                     <thead>
                         <tr>
+                            <th scope="col" class="id-column">#</th>
                             <th>
                                 <button @click="sort = 'name'">
                                     Название ▾
@@ -271,6 +272,7 @@ useCardRoute<CatalogRow>({
                             <th>Действия</th>
                         </tr>
                         <tr class="column-filters">
+                            <th class="id-column"></th>
                             <th colspan="3">
                                 <input
                                     v-model="query"
@@ -309,6 +311,7 @@ useCardRoute<CatalogRow>({
                     </thead>
                     <tbody>
                         <tr v-for="row in visible" :key="row.id">
+                            <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="text-button"
@@ -380,7 +383,7 @@ useCardRoute<CatalogRow>({
                             </td>
                         </tr>
                         <tr v-if="!visible.length">
-                            <td colspan="6" class="empty-state">
+                            <td colspan="7" class="empty-state">
                                 {{
                                     !ready
                                         ? "Загрузка записей…"

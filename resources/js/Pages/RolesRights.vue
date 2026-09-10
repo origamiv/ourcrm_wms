@@ -196,6 +196,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                 <table class="rights-matrix">
                     <thead>
                         <tr>
+                            <th scope="col" class="id-column">#</th>
                             <th scope="col">Право / Роль</th>
                             <th
                                 v-for="role in activeRoles"
@@ -208,7 +209,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                     </thead>
                     <tbody v-for="group in groups" :key="group.name">
                         <tr class="matrix-group">
-                            <th :colspan="activeRoles.length + 1">
+                            <th :colspan="activeRoles.length + 2">
                                 <button
                                     :aria-expanded="
                                         query ? true : expanded.has(group.name)
@@ -233,6 +234,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                                 v-for="permission in group.rows"
                                 :key="permission.id"
                             >
+                                <td class="id-column">{{ permission.id }}</td>
                                 <th scope="row">{{ permission.name }}</th>
                                 <td v-for="role in activeRoles" :key="role.id">
                                     <input
@@ -293,7 +295,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
     top: 0;
     z-index: 1;
 }
-.rights-matrix th:first-child {
+.rights-matrix th:nth-child(2) {
     min-width: 230px;
     width: 30%;
     text-align: left;
@@ -303,7 +305,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
     text-align: center;
     padding: 18px;
 }
-.rights-matrix thead th:not(:first-child) {
+.rights-matrix thead th:nth-child(n + 3) {
     text-align: center;
     min-width: 150px;
 }

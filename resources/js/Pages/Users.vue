@@ -307,6 +307,7 @@ useCardRoute<UserRow>({
                 <table>
                     <thead>
                         <tr>
+                            <th scope="col" class="id-column">#</th>
                             <th>
                                 <button @click="sort = 'name'">
                                     ФИО <span class="sort-arrow">▾</span>
@@ -322,6 +323,7 @@ useCardRoute<UserRow>({
                             <th>Действия</th>
                         </tr>
                         <tr class="column-filters">
+                            <th class="id-column"></th>
                             <th>
                                 <input
                                     aria-label="Поиск пользователей"
@@ -374,6 +376,7 @@ useCardRoute<UserRow>({
                             }"
                             @click="open(row)"
                         >
+                            <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="user-cell"

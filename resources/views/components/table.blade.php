@@ -1,3 +1,6 @@
+@php
+    $columns = array_merge([['key' => 'id', 'label' => '#']], array_values(array_filter($columns, fn ($column) => $column['key'] !== 'id')));
+@endphp
 <div class="card">
     @if($title)
         <div class="title-row" style="padding: 12px; border-bottom: 1px solid var(--line);">

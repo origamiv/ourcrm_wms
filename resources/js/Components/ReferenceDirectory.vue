@@ -342,6 +342,7 @@ useCardRoute<ReferenceRow>({
                 <table>
                     <thead>
                         <tr>
+                            <th scope="col" class="id-column">#</th>
                             <th>
                                 <button @click="descending = !descending">
                                     {{ isIndividual ? "ФИО" : "Название" }}
@@ -363,7 +364,6 @@ useCardRoute<ReferenceRow>({
                                         : "Категория"
                                 }}
                             </th>
-                            <th v-if="isDocType">ID</th>
                             <template v-if="isDocument"
                                 ><th>Клиент</th>
                                 <th>Тип документа</th>
@@ -373,6 +373,7 @@ useCardRoute<ReferenceRow>({
                             <th>Действия</th>
                         </tr>
                         <tr class="filter-row">
+                            <th class="id-column"></th>
                             <th>
                                 <input
                                     v-model="query"
@@ -396,7 +397,6 @@ useCardRoute<ReferenceRow>({
                                     "
                                 />
                             </th>
-                            <th v-if="isDocType"></th>
                             <template v-if="isDocument">
                                 <th>
                                     <select
@@ -465,6 +465,7 @@ useCardRoute<ReferenceRow>({
                             :key="row.id"
                             @dblclick="open(row)"
                         >
+                            <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="name-button"
@@ -474,7 +475,6 @@ useCardRoute<ReferenceRow>({
                                 </button>
                             </td>
                             <td>{{ row.shortname || "—" }}</td>
-                            <td v-if="isDocType">{{ row.id }}</td>
                             <template v-if="isDocument">
                                 <td>
                                     {{
@@ -554,7 +554,7 @@ useCardRoute<ReferenceRow>({
                         </tr>
                         <tr v-if="!visible.length">
                             <td
-                                :colspan="isDocument ? 7 : isDocType ? 5 : 4"
+                                :colspan="isDocument ? 8 : 5"
                                 class="empty-state"
                             >
                                 {{

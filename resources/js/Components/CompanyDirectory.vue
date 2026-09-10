@@ -399,6 +399,7 @@ useCardRoute<DirectoryRow>({
                 <table>
                     <thead>
                         <tr>
+                            <th scope="col" class="id-column">#</th>
                             <th>
                                 <button
                                     class="sort-button"
@@ -423,6 +424,7 @@ useCardRoute<DirectoryRow>({
                             <th>Действия</th>
                         </tr>
                         <tr class="filter-row">
+                            <th class="id-column"></th>
                             <th>
                                 <input
                                     v-model="query"
@@ -496,6 +498,7 @@ useCardRoute<DirectoryRow>({
                             :key="row.id"
                             @dblclick="open(row)"
                         >
+                            <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="name-button"
@@ -593,8 +596,8 @@ useCardRoute<DirectoryRow>({
                             <td
                                 :colspan="
                                     isCompany
-                                        ? 4 + Object.keys(flags).length
-                                        : 5
+                                        ? 5 + Object.keys(flags).length
+                                        : 6
                                 "
                                 class="empty-state"
                             >
