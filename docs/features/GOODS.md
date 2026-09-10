@@ -117,3 +117,9 @@ is_category=1 при наличии неудалённых детей или в�
 поэтому скрытые для организации дети также защищают родителя от выключения категории.
 Клиент не изменяет эти служебные поля. Триггеры поддерживают оба признака в одной
 транзакции с деревом и публикуют изменения, даже если итоговый is_category не изменился.
+
+## Виды кодов маркировки
+
+Справочник `goods.kind_kiz` (модель `App\Models\KindKiz`) содержит стандартные поля `id`, `name`, `shortname`, `status`, `tenant_id` и временные отметки с мягким удалением. Начальные активные записи: Серийный номер, Честный знак, IMEI, УИН — с NULL tenant_id, без ограничивающих назначений, доступны всем организациям. Общие записи редактирует admin без изменения tenant_id; новые записи принадлежат организации автора. Применяются назначения `main.tenant_entity`.
+
+Страница `/goods/kind_kiz`, карточки `/:id/:action`. Общие GoodCatalogController и отдельные CreateGoodCatalogRequest/UpdateGoodCatalogRequest обслуживают `POST /api/goods/kind_kiz`, `PUT|DELETE /api/goods/kind_kiz/{id}` (Bearer, admin; изменение/удаление с version). Web использует `/web/goods/kind_kiz` и сессию. Дельты `/web/sync/kind_kiz` и `/api/sync/kind_kiz` идут через общий журнал в IndexedDB.

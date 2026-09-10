@@ -9,6 +9,12 @@ const tabs = [
         icon: "administration",
         children: [
             {
+                label: "Виды кодов маркировки",
+                url: "/goods/kind_kiz",
+                component: "KindKiz",
+                icon: "goods",
+            },
+            {
                 label: "Типы товаров",
                 url: "/goods/type_goods",
                 component: "GoodTypes",

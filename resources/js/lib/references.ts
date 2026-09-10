@@ -40,6 +40,10 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    kind_kiz: {
+        title: "Виды кодов маркировки",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
     type_goods: {
         title: "Типы товаров",
         fields: [

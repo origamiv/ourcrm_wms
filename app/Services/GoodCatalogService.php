@@ -8,6 +8,7 @@ use App\Models\Good;
 use App\Models\GoodCard;
 use App\Models\GoodType;
 use App\Models\GoodUnit;
+use App\Models\KindKiz;
 use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
@@ -16,11 +17,15 @@ final class GoodCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['type_goods', 'unit_goods'], true), 404);
+        abort_unless(in_array($catalog, ['type_goods', 'unit_goods', 'kind_kiz'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
-            $model = $catalog === 'type_goods' ? GoodType::class : GoodUnit::class;
+            $model = match ($catalog) {
+                'type_goods' => GoodType::class,
+                'unit_goods' => GoodUnit::class,
+                'kind_kiz' => KindKiz::class,
+            };
             $sync = app(EntitySyncService::class);
             $sync->prepareWrite($tenant, $model, $id);
             $sync->checkpoint($tenant);
@@ -36,7 +41,7 @@ final class GoodCatalogService
                 abort_if($row->trashed(), 422, 'Запись уже удалена.');
             }
             if ($delete) {
-                abort_if(Good::where($catalog === 'type_goods' ? 'type_good' : 'type_unit', $id)->exists() || ($catalog === 'unit_goods' && GoodCard::where('unit_id', $id)->exists()), 422, 'Запись используется в товарах или карточках.');
+                abort_if(($catalog !== 'kind_kiz' && Good::where($catalog === 'type_goods' ? 'type_good' : 'type_unit', $id)->exists()) || ($catalog === 'unit_goods' && GoodCard::where('unit_id', $id)->exists()), 422, 'Запись используется в товарах или карточках.');
                 $row->delete();
             } else {
                 $row->forceFill(array_intersect_key($data, array_flip(['name', 'shortname', 'status'])));

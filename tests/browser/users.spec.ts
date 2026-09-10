@@ -1832,7 +1832,7 @@ test("goods navigation CRUD articles and offline cache", async ({
     ).toHaveCount(0);
 });
 
-test("goods reference dropdown creates edits and caches both catalogs", async ({
+test("goods reference dropdown creates edits and caches goods catalogs", async ({
     page,
     context,
 }) => {
@@ -1844,6 +1844,7 @@ test("goods reference dropdown creates edits and caches both catalogs", async ({
     for (const [label, path] of [
         ["Типы товаров", "type_goods"],
         ["Единицы измерения", "unit_goods"],
+        ["Виды кодов маркировки", "kind_kiz"],
     ]) {
         await page
             .getByRole("button", { name: "Справочники", exact: false })

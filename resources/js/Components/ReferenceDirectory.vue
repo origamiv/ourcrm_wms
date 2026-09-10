@@ -29,7 +29,7 @@ const props = defineProps<{ entity: keyof typeof references }>();
 const definition = references[props.entity];
 const isGood = props.entity === "goods";
 const isGoodsSection =
-    isGood || ["type_goods", "unit_goods"].includes(props.entity);
+    isGood || ["type_goods", "unit_goods", "kind_kiz"].includes(props.entity);
 const isIndividual = props.entity === "client_individuals";
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
@@ -564,6 +564,7 @@ useCardRoute<ReferenceRow>({
                                         "goods",
                                         "type_goods",
                                         "unit_goods",
+                                        "kind_kiz",
                                         "modules",
                                         "features",
                                         "client_individuals",
@@ -603,6 +604,7 @@ useCardRoute<ReferenceRow>({
                                             'goods',
                                             'type_goods',
                                             'unit_goods',
+                                            'kind_kiz',
                                             'modules',
                                             'features',
                                             'client_individuals',

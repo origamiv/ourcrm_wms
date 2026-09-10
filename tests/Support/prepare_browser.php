@@ -98,4 +98,5 @@ DB::transaction(function () {
 
 DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000020_manual_good_categories.php'))->up();
+    (require database_path('migrations/2026_09_10_000021_create_kind_kiz.php'))->up();
 });
