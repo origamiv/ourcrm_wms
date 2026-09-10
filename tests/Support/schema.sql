@@ -17,3 +17,5 @@ ALTER TABLE main.roles ADD COLUMN description text, ADD COLUMN system boolean NO
 CREATE TABLE main.permissions (id bigserial PRIMARY KEY, name varchar(255) NOT NULL, slug varchar(255) NOT NULL,
  resource varchar(255) NOT NULL, system boolean NOT NULL DEFAULT false, status integer, module_id integer,
  feature_id integer, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);
+CREATE TABLE main.permission_role (id bigserial PRIMARY KEY, role_id integer NOT NULL, permission_id integer NOT NULL,
+ status integer DEFAULT 1, tenant_id varchar(255), created_at timestamp, updated_at timestamp, deleted_at timestamp);

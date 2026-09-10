@@ -26,3 +26,5 @@
 Общий контракт добавляет `entity_type` к ответу синхронизации. Старые маршруты пользователей сохраняют прежний ответ. Подключение типов и изоляция курсоров: [SYNC.md](SYNC.md).
 
 [Роли и права доступа](ACCESS_CATALOGS.md) читаются через общие маршруты синхронизации. Создание: `POST /api/roles`, `POST /api/permissions`; обновление: `PUT /api/roles/{id}`, `PUT /api/permissions/{id}`. Поля и ограничения описаны по ссылке.
+
+[Матрица ролей и прав](ROLES_RIGHTS.md): назначение и снятие права через `PUT /api/roles/{roleId}/permissions/{permissionId}`, чтение назначений через `/api/sync/permission_roles`.

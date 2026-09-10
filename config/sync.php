@@ -22,5 +22,11 @@ return [
             'authorize' => [App\Services\AccessService::class, 'isAdmin'],
             'fields' => ['id', 'name', 'slug', 'resource', 'system', 'status', 'module_id', 'feature_id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
         ],
+        'permission_roles' => [
+            'entity' => App\Models\PermissionRole::class,
+            'table' => 'main.permission_role',
+            'authorize' => [App\Services\AccessService::class, 'isAdmin'],
+            'fields' => ['id', 'role_id', 'permission_id', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+        ],
     ],
 ];

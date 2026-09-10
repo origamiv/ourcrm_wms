@@ -222,3 +222,47 @@ test("creates and edits roles and permissions and updates another tab", async ({
             .click();
     }
 });
+
+test("role rights matrix saves assignments and synchronizes tabs and offline view", async ({
+    page,
+    context,
+}) => {
+    await login(page);
+    await page.getByRole("link", { name: "Роли и права", exact: true }).click();
+    await expect(
+        page.getByRole("heading", { name: "Роли и права", exact: true }),
+    ).toBeVisible();
+    const name = "Кладовщик: Просмотр остатков";
+    const checkbox = page.getByRole("checkbox", { name, exact: true });
+    await expect(checkbox).toBeEnabled();
+    await expect(checkbox).not.toBeChecked();
+    await checkbox.click();
+    await expect(checkbox).toBeChecked();
+    const other = await context.newPage();
+    await other.goto("/roles_rights");
+    await expect(
+        other.getByRole("checkbox", { name, exact: true }),
+    ).toBeChecked();
+    await checkbox.click();
+    await expect(
+        other.getByRole("checkbox", { name, exact: true }),
+    ).not.toBeChecked();
+    await page.screenshot({
+        path: "/tmp/wms-roles-rights.png",
+        fullPage: true,
+    });
+    await context.setOffline(true);
+    await expect(checkbox).toBeDisabled();
+    await page.getByRole("link", { name: "Роли", exact: true }).click();
+    await page.getByRole("link", { name: "Роли и права", exact: true }).click();
+    await expect(
+        page.getByRole("checkbox", { name, exact: true }),
+    ).not.toBeChecked();
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
+    await other.close();
+});

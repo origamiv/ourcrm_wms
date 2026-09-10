@@ -3,6 +3,12 @@ import { router, usePage } from "@inertiajs/vue3";
 const page = usePage<any>();
 const tabs = [
     {
+        label: "Роли и права",
+        url: "/roles_rights",
+        component: "RolesRights",
+        icon: "roles_rights",
+    },
+    {
         label: "Пользователи",
         url: "/users",
         component: "Users",

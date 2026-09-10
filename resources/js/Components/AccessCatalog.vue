@@ -153,7 +153,11 @@ watch(
     pageCount,
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
 );
-onMounted(() => void store.start());
+onMounted(async () => {
+    await store.start();
+    if (new URLSearchParams(page.url.split("?")[1]).get("create") === "1")
+        open(null);
+});
 onUnmounted(() => store.stop());
 </script>
 <template>

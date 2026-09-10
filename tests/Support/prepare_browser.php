@@ -32,4 +32,5 @@ DB::transaction(function () {
     DB::table('main.roles')->insert(['name' => 'Кладовщик', 'slug' => 'warehouse_operator', 'description' => 'Операции склада', 'status' => 1, 'tenant_id' => 'test_org']);
     DB::table('main.permissions')->insert(['name' => 'Просмотр остатков', 'slug' => 'inventory_view', 'resource' => 'inventory', 'system' => true, 'status' => 1, 'tenant_id' => 'test_org']);
     (require database_path('migrations/2026_09_10_000005_sync_access_catalogs.php'))->up();
+    (require database_path('migrations/2026_09_10_000006_sync_permission_roles.php'))->up();
 });
