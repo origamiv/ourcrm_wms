@@ -28,7 +28,7 @@ final class EntitySyncService
         $row = DB::table('public.entity_changes')->where('entity', $entity)->where('tenant_id', $tenant)->where('entity_id', $id)->orderByDesc('revision')->first();
         abort_unless($row && $row->data, 404);
 
-        return [...json_decode($row->data, true), 'version' => (string) $row->revision];
+        return [...$this->decorate($entity, $tenant, json_decode($row->data, true)), 'version' => (string) $row->revision];
     }
 
     /** @return array<string, mixed> */
@@ -68,7 +68,7 @@ final class EntitySyncService
             }
         }
         $changes = array_map(fn ($row) => ['id' => (string) $row->entity_id, 'version' => (string) $row->revision,
-            'operation' => $row->operation, 'data' => $row->data ? [...json_decode($row->data, true), 'version' => (string) $row->revision] : null], $rows);
+            'operation' => $row->operation, 'data' => $row->data ? [...$this->decorate($entity, $tenant, json_decode($row->data, true)), 'version' => (string) $row->revision] : null], $rows);
         if ($rows) {
             $last = end($rows);
             $state['after'] = (string) ($state['mode'] === 'snapshot' ? $last->entity_id : $last->revision);
@@ -76,6 +76,20 @@ final class EntitySyncService
 
         return ['mode' => $state['mode'], 'changes' => $changes, 'continuation' => $more ? $this->encode($state) : null,
             'cursor' => $more ? null : $this->encode(['entity' => $entity, 'tenant' => $tenant, 'user' => $user, 'format' => config('wms.cache_version'), 'generation' => $state['generation'], 'revision' => $state['target']])];
+    }
+
+    /** Add read-only values derived from the linked product to placement payloads. */
+    private function decorate(string $entity, ?string $tenant, array $data): array
+    {
+        if ($entity !== \App\Models\CellGood::class || empty($data['good_id'])) {
+            return $data;
+        }
+
+        $good = \App\Models\Good::withTrashed()->visibleTo($tenant)->find($data['good_id']);
+        $data['barcodes'] = $good?->barcodes ?? [];
+        $data['articules'] = $good?->articul ?? [];
+
+        return $data;
     }
 
     public function checkpoint(?string $tenant): object

@@ -11,6 +11,7 @@ use App\Models\TypeStorage;
 use App\Models\Zone;
 use App\Models\Cell;
 use App\Models\CellGood;
+use App\Models\Good;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -85,11 +86,15 @@ final class FulfillmentCatalogService
                 if ($catalog === 'cell_goods') {
                     $warehouse = (int) ($data['warehouse_id'] ?? $row->warehouse_id);
                     $cell = Cell::visibleTo($tenant)->whereKey($data['cell_id'] ?? $row->cell_id)->first();
+                    $goodId = $data['good_id'] ?? $row->good_id;
                     if (! Warehouse::visibleTo($tenant)->whereKey($warehouse)->exists()) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['warehouse_id' => 'Выберите доступный склад.']);
                     }
                     if (! $cell || (int) $cell->warehouse_id !== $warehouse) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['cell_id' => 'Выберите ячейку выбранного склада.']);
+                    }
+                    if ($goodId === null || ! Good::visibleTo($tenant)->whereKey($goodId)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['good_id' => 'Выберите доступный товар.']);
                     }
                     if (array_key_exists('user_id', $data) && $data['user_id'] !== null && ! User::visibleTo($tenant)->whereKey($data['user_id'])->exists()) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['user_id' => 'Выберите доступного пользователя.']);

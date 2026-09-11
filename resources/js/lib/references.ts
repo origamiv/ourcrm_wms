@@ -194,9 +194,8 @@ export const references = {
         title: "Размещения",
         fields: [
             { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
-            { key: "user_id", label: "Ответственный", kind: "lookup", lookup: "users" },
-            { key: "created_by_user_id", label: "Создал", kind: "lookup", lookup: "users", detail: true },
             { key: "cell_id", label: "Ячейка", kind: "lookup", lookup: "cells", required: true },
+            { key: "good_id", label: "Товар", kind: "lookup", lookup: "goods", required: true },
             { key: "user_id", label: "Разместил пользователь", kind: "lookup", lookup: "users" },
             { key: "cnt", label: "Количество", kind: "number", required: true },
             { key: "put_at", label: "Размещено", kind: "datetime" },

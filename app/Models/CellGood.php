@@ -15,6 +15,7 @@ final class CellGood extends BaseModel
     protected $casts = [
         'warehouse_id' => 'integer',
         'cell_id' => 'integer',
+        'good_id' => 'integer',
         'user_id' => 'integer',
         'cnt' => 'integer',
         'put_at' => 'datetime',
@@ -30,6 +31,11 @@ final class CellGood extends BaseModel
     public function cell(): BelongsTo
     {
         return $this->belongsTo(Cell::class);
+    }
+
+    public function good(): BelongsTo
+    {
+        return $this->belongsTo(Good::class, 'good_id');
     }
 
     public function user(): BelongsTo
