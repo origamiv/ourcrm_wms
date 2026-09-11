@@ -17,9 +17,12 @@ test("назначает роли двойным кликом по ячейке 
     await expect(
         page.getByLabel("Роли пользователя", { exact: true }),
     ).toBeVisible();
+    await page.getByRole("button", { name: /Выбрать роли/ }).click();
     await page
-        .getByLabel("Роли пользователя", { exact: true })
-        .selectOption({ label: "Кладовщик" });
+        .locator(".roles-dropdown-option")
+        .filter({ hasText: "Кладовщик" })
+        .locator("input")
+        .check();
     await page
         .locator(".roles-tagbox-actions")
         .getByRole("button", { name: "Сохранить", exact: true })
