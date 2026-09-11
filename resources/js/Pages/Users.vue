@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCardRoute } from "../lib/cardRoute";
-import { computed, ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import AdminTabs from "../Components/AdminTabs.vue";
@@ -31,7 +31,6 @@ const roleRows = rolesStore.rows;
 const roleEditingUserId = ref<string | null>(null);
 const roleDraft = ref<string[]>([]);
 const roleSaving = ref(false);
-const roleTagboxInput = ref<HTMLInputElement | null>(null);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -153,49 +152,14 @@ function open(row: UserRow | null, forPassword = false, readOnly = false) {
         ),
     };
 }
-function destroyRoleTagbox() {
-    const input = roleTagboxInput.value;
-    if (!input) return;
-    const $ = (window as any).jQuery;
-    if ($ && $(input).data("tagbox")) $(input).tagbox("destroy");
-}
-function setRoleTagboxInput(element: Element | object | null) {
-    roleTagboxInput.value = element instanceof HTMLInputElement ? element : null;
-}
-async function initRoleTagbox() {
-    await nextTick();
-    const input = roleTagboxInput.value;
-    if (!input) return;
-    const $ = (window as any).jQuery;
-    if (!$?.fn?.tagbox) return;
-    if ($(input).data("tagbox")) $(input).tagbox("destroy");
-    $(input).tagbox({
-        data: roleRows.value
-            .filter((role: any) => role.status === 1 && !role.deleted_at)
-            .map((role: any) => ({
-                id: String(role.id),
-                text: role.name || role.slug || `Роль №${role.id}`,
-            })),
-        valueField: "id",
-        textField: "text",
-        limitToList: true,
-        hasDownArrow: true,
-        editable: false,
-        onChange: (values: string[] | string) => {
-            roleDraft.value = (Array.isArray(values) ? values : [values])
-                .filter(Boolean)
-                .map(String);
-        },
-    });
-    $(input).tagbox("setValues", roleDraft.value);
-}
-watch(roleEditingUserId, (id) => {
-    destroyRoleTagbox();
-    if (id) void initRoleTagbox().catch((error) => console.error("EasyUI TagBox init failed", error?.stack || error));
-});
-watch(roleRows, () => {
-    if (roleEditingUserId.value) void initRoleTagbox().catch((error) => console.error("EasyUI TagBox refresh failed", error?.stack || error));
-}, { deep: true });
+const roleOptions = computed(() =>
+    roleRows.value
+        .filter((role: any) => role.status === 1 && !role.deleted_at)
+        .map((role: any) => ({
+            id: String(role.id),
+            name: role.name || role.slug || `Роль №${role.id}`,
+        })),
+);
 function beginRoleEdit(row: UserRow, event?: Event) {
     event?.stopPropagation();
     if (!online.value || !ready.value || row.deleted_at || roleSaving.value)
@@ -345,7 +309,6 @@ onMounted(() => {
     document.addEventListener('click', closeRoleEditorOutside);
 });
 onUnmounted(() => {
-    destroyRoleTagbox();
     store.stop();
     rolesStore.stop();
     document.removeEventListener('click', closeRoleEditorOutside);
@@ -536,10 +499,15 @@ useCardRoute<UserRow>({
                                     class="roles-tagbox"
                                     @click.stop
                                 >
-                                    <input
-                                        :ref="setRoleTagboxInput"
-                                        class="easyui-tagbox roles-tagbox-input"
-                                        data-options=""
+                                    <TagBox
+                                        v-model="roleDraft"
+                                        class="roles-tagbox-input"
+                                        :data="roleOptions"
+                                        value-field="id"
+                                        text-field="name"
+                                        :limit-to-list="true"
+                                        :has-down-arrow="true"
+                                        :editable="false"
                                     />
                                     <div class="roles-tagbox-actions">
                                         <button
