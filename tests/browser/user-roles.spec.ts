@@ -14,15 +14,12 @@ test("назначает роли двойным кликом по ячейке 
     const row = page.locator("tbody tr").filter({ hasText: "Иванов Михаил" });
     const rolesCell = row.locator("td").nth(4);
     await rolesCell.dblclick();
-    await expect(
-        page.getByRole("button", { name: "Выбрать роли", exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: /Выбрать роли/ }).click();
+    await expect(page.locator(".roles-tagbox .tagbox")).toBeVisible();
+    await page.locator(".roles-tagbox .tagbox-arrow").click();
     await page
-        .locator(".roles-dropdown-option")
+        .locator(".combobox-item")
         .filter({ hasText: "Кладовщик" })
-        .locator("input")
-        .check();
+        .click();
     await page
         .locator(".roles-tagbox-actions")
         .getByRole("button", { name: "Сохранить", exact: true })
