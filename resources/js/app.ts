@@ -32,10 +32,9 @@ import Features from "./Pages/Features.vue";
 import Modules from "./Pages/Modules.vue";
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
-import EasyUI from "v3-easyui";
-import "v3-easyui/dist/themes/default/easyui.css";
-import "v3-easyui/dist/themes/icon.css";
-import "v3-easyui/dist/themes/vue.css";
+import "vuetify/styles";
+import { createVuetify } from "vuetify";
+import { VSelect } from "vuetify/components";
 import Shell from "./Components/Shell.vue";
 import Companies from "./Pages/Companies.vue";
 import CompanyContacts from "./Pages/CompanyContacts.vue";
@@ -46,6 +45,8 @@ import RolesRights from "./Pages/RolesRights.vue";
 import Roles from "./Pages/Roles.vue";
 import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
+
+const vuetify = createVuetify({ components: { VSelect } });
 const pages: Record<string, any> = {
     Home,
     IntegrationWebhooks,
@@ -99,7 +100,7 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
             .use(plugin)
-            .use(EasyUI)
+            .use(vuetify)
             .mount(el);
     },
     progress: { color: "#1E892F" },

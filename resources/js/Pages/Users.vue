@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCardRoute } from "../lib/cardRoute";
-import { computed, ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import AdminTabs from "../Components/AdminTabs.vue";
@@ -31,7 +31,6 @@ const roleRows = rolesStore.rows;
 const roleEditingUserId = ref<string | null>(null);
 const roleDraft = ref<string[]>([]);
 const roleSaving = ref(false);
-const roleTagboxRef = ref<any>(null);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -161,13 +160,6 @@ const roleOptions = computed(() =>
             name: role.name || role.slug || `Роль №${role.id}`,
         })),
 );
-function keepRolePanelOpen() {
-    if (!roleEditingUserId.value || roleSaving.value) return;
-    void nextTick(() => {
-        roleTagboxRef.value?.focus?.();
-        roleTagboxRef.value?.openPanel?.();
-    });
-}
 function beginRoleEdit(row: UserRow, event?: Event) {
     event?.stopPropagation();
     if (!online.value || !ready.value || row.deleted_at || roleSaving.value)
@@ -184,7 +176,7 @@ function cancelRoleEdit() {
 function closeRoleEditorOutside(event: MouseEvent) {
     if (!roleEditingUserId.value) return;
     const target = event.target as HTMLElement | null;
-    if (!target?.closest('.user-roles-cell')) cancelRoleEdit();
+    if (!target?.closest('.user-roles-cell') && !target?.closest('.v-overlay-container')) cancelRoleEdit();
 }
 async function saveRoles(row: UserRow) {
     if (!online.value || roleSaving.value) return;
@@ -507,17 +499,19 @@ useCardRoute<UserRow>({
                                     class="roles-tagbox"
                                     @click.stop
                                 >
-                                    <TagBox
-                                        ref="roleTagboxRef"
+                                    <VSelect
                                         v-model="roleDraft"
                                         class="roles-tagbox-input"
-                                        :data="roleOptions"
-                                        value-field="id"
-                                        text-field="name"
-                                        :limit-to-list="true"
-                                        :has-down-arrow="true"
-                                        :editable="false"
-                                        @value-change="keepRolePanelOpen"
+                                        :items="roleOptions"
+                                        item-title="name"
+                                        item-value="id"
+                                        multiple
+                                        chips
+                                        closable-chips
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        placeholder="Выберите роли"
                                     />
                                     <div class="roles-tagbox-actions">
                                         <button
@@ -900,20 +894,14 @@ useCardRoute<UserRow>({
 .roles-tagbox-input {
     width: 100%;
 }
-.roles-tagbox .tagbox {
-    width: 100% !important;
-    min-height: 34px;
-    border-color: #a8d4a9;
-    border-radius: 4px;
+.roles-tagbox-input :deep(.v-field) {
+    border-radius: 5px;
+    background: #fff;
 }
-.roles-tagbox .tagbox-label {
-    border-color: #a8d4a9;
-    border-radius: 999px;
+.roles-tagbox-input :deep(.v-chip) {
     background: #e1f3e7;
     color: #176b27;
-}
-.roles-tagbox .tagbox-arrow {
-    background-color: #f5fbf6;
+    font-size: 12px;
 }
 .roles-tagbox-actions {
     display: flex;
