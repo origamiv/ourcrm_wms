@@ -2159,7 +2159,7 @@ td,
 .table-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
 .table-progress b { color: #1e892f; font-size: 11px; font-weight: 700; }
 .lookup-avatar-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 145px; }
-.lookup-avatar { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; overflow: hidden; border-radius: 7px; background: linear-gradient(135deg, #1e892f, #65c98a); color: #fff; font-size: 12px; font-weight: 700; }
+.lookup-avatar { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; overflow: hidden; border-radius: 7px; background: transparent; color: #1e892f; font-size: 12px; font-weight: 700; }
 .lookup-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .acceptance-content { display: grid; gap: 18px; }
 .acceptance-progress { display: grid; gap: 8px; }
