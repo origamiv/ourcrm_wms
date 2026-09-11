@@ -159,6 +159,9 @@ function destroyRoleTagbox() {
     const $ = (window as any).jQuery;
     if ($ && $(input).data("tagbox")) $(input).tagbox("destroy");
 }
+function setRoleTagboxInput(element: Element | null) {
+    roleTagboxInput.value = element as HTMLInputElement | null;
+}
 async function initRoleTagbox() {
     await nextTick();
     const input = roleTagboxInput.value;
@@ -188,10 +191,10 @@ async function initRoleTagbox() {
 }
 watch(roleEditingUserId, (id) => {
     destroyRoleTagbox();
-    if (id) void initRoleTagbox();
+    if (id) void initRoleTagbox().catch((error) => console.error("EasyUI TagBox init failed", error?.stack || error));
 });
 watch(roleRows, () => {
-    if (roleEditingUserId.value) void initRoleTagbox();
+    if (roleEditingUserId.value) void initRoleTagbox().catch((error) => console.error("EasyUI TagBox refresh failed", error?.stack || error));
 }, { deep: true });
 function beginRoleEdit(row: UserRow, event?: Event) {
     event?.stopPropagation();
@@ -534,9 +537,9 @@ useCardRoute<UserRow>({
                                     @click.stop
                                 >
                                     <input
-                                        ref="roleTagboxInput"
+                                        :ref="setRoleTagboxInput"
                                         class="easyui-tagbox roles-tagbox-input"
-                                        aria-label="Роли пользователя"
+                                        data-options=""
                                     />
                                     <div class="roles-tagbox-actions">
                                         <button
