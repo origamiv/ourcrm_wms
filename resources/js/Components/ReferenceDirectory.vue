@@ -1032,6 +1032,7 @@ useCardRoute<ReferenceRow>({
                                 <th v-if="isColumnVisible('doc_date')">Дата документа</th>
                                 <th v-if="isColumnVisible('amount')">Сумма</th></template
                             >
+                            <th v-if="isTask && isColumnVisible('client_id')">Клиент</th>
                             <th v-for="field in extraColumns" :key="field.key">
                                 {{ field.label }}
                             </th>
@@ -1129,6 +1130,7 @@ useCardRoute<ReferenceRow>({
                                 </th>
                                 <th v-if="isColumnVisible('amount')"></th>
                             </template>
+                            <th v-if="isTask && isColumnVisible('client_id')"></th>
                             <th v-for="field in extraColumns" :key="field.key"></th>
                             <th
                                 v-for="field in kizColumns"
@@ -1329,6 +1331,9 @@ useCardRoute<ReferenceRow>({
                                     }}
                                 </td>
                             </template>
+                            <td v-if="isTask && isColumnVisible('client_id')">
+                                {{ columnValue(row, { key: 'client_id', label: 'Клиент', kind: 'lookup', lookup: 'clients' }) }}
+                            </td>
                             <td v-for="field in extraColumns" :key="field.key">
                                 <div v-if="isTask && (field.key === 'task_type_id' || field.key === 'priority_id')" class="lookup-avatar-cell">
                                     <span class="lookup-avatar" :title="lookupOption(field.lookup!, row[field.key])?.name || field.label">
