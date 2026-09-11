@@ -195,6 +195,7 @@ export const references = {
         fields: [
             { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
             { key: "cell_id", label: "Ячейка", kind: "lookup", lookup: "cells", required: true },
+            { key: "user_id", label: "Разместил пользователь", kind: "lookup", lookup: "users" },
             { key: "cnt", label: "Количество", kind: "number", required: true },
             { key: "put_at", label: "Размещено", kind: "datetime" },
             { key: "leave_at", label: "Выбыло", kind: "datetime" },

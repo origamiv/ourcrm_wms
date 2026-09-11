@@ -91,6 +91,9 @@ final class FulfillmentCatalogService
                     if (! $cell || (int) $cell->warehouse_id !== $warehouse) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['cell_id' => 'Выберите ячейку выбранного склада.']);
                     }
+                    if (array_key_exists('user_id', $data) && $data['user_id'] !== null && ! User::visibleTo($tenant)->whereKey($data['user_id'])->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['user_id' => 'Выберите доступного пользователя.']);
+                    }
                 }
                 $row->forceFill(array_intersect_key($data, array_flip(array_diff(config('sync.entities.'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']))));
                 if (! $id && ! in_array($catalog, ['task_types','task_statuses','priorities'], true)) {
