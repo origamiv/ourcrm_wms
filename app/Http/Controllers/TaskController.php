@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 final class TaskController extends BaseApiController
 {
-    private const FIELDS=['name','shortname','client_id','task_type_id','status_id','planned_at','started_at','completed_at','comment','internal_comment','priority_id','src','order_id','warehouse_id','user_id','created_by_user_id','fact_count','status'];
+    private const FIELDS=['name','shortname','client_id','task_type_id','status_id','planned_at','started_at','completed_at','charged_at','charged_sum','confirmed_at','comment','internal_comment','priority_id','src','order_id','warehouse_id','user_id','created_by_user_id','fact_count','status'];
     public function store(Request $request, EntitySyncService $sync, AcceptanceService $acceptances) { return response()->json(['data'=>$this->save($request,$sync,null,$acceptances)],201); }
     public function update(Request $request, string $id, EntitySyncService $sync, AcceptanceService $acceptances) { return response()->json(['data'=>$this->save($request,$sync,$id,$acceptances)]); }
     public function destroy(Request $request, string $id, EntitySyncService $sync) { $request->merge(['version'=>$request->input('version')]); $task=Task::withTrashed()->visibleTo($request->user()->tenant_id)->findOrFail($id); $this->checkVersion($sync,$request,$id); $task->delete(); return response()->json(['data'=>$sync->current(Task::class,$request->user()->tenant_id,$id)]); }
