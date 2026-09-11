@@ -170,6 +170,13 @@ function columnValue(row: ReferenceRow, field: (typeof definition.fields)[number
     if (Array.isArray(value)) return value.join(", ");
     return String(value);
 }
+function lookupOption(entity: string, value: unknown): ReferenceRow | undefined {
+    return choices(entity).find((item) => String(item.id) === String(value));
+}
+function lookupInitial(entity: string, value: unknown): string {
+    const name = lookupOption(entity, value)?.name;
+    return name ? String(name).trim().slice(0, 1).toUpperCase() : "?";
+}
 const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
@@ -1323,7 +1330,14 @@ useCardRoute<ReferenceRow>({
                                 </td>
                             </template>
                             <td v-for="field in extraColumns" :key="field.key">
-                                <div v-if="isAcceptance && field.key === 'progress'" class="table-progress" :aria-label="`Прогресс: ${Number(row.progress ?? 0)}%`">
+                                <div v-if="isTask && (field.key === 'task_type_id' || field.key === 'priority_id')" class="lookup-avatar-cell">
+                                    <span class="lookup-avatar" :title="lookupOption(field.lookup!, row[field.key])?.name || field.label">
+                                        <img v-if="lookupOption(field.lookup!, row[field.key])?.icon" :src="String(lookupOption(field.lookup!, row[field.key])?.icon)" alt="" />
+                                        <span v-else>{{ lookupInitial(field.lookup!, row[field.key]) }}</span>
+                                    </span>
+                                    <span>{{ columnValue(row, field) }}</span>
+                                </div>
+                                <div v-else-if="isAcceptance && field.key === 'progress'" class="table-progress" :aria-label="`Прогресс: ${Number(row.progress ?? 0)}%`">
                                     <span class="table-progress-track"><i :style="{ width: `${Math.max(0, Math.min(100, Number(row.progress ?? 0)))}%` }"></i></span>
                                     <b>{{ Math.max(0, Math.min(100, Number(row.progress ?? 0))) }}%</b>
                                 </div>
@@ -2139,6 +2153,9 @@ td,
 .table-progress-track { display: block; width: 88px; height: 7px; border-radius: 5px; background: #e1f3e7; overflow: hidden; }
 .table-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
 .table-progress b { color: #1e892f; font-size: 11px; font-weight: 700; }
+.lookup-avatar-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 145px; }
+.lookup-avatar { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; overflow: hidden; border-radius: 7px; background: linear-gradient(135deg, #1e892f, #65c98a); color: #fff; font-size: 12px; font-weight: 700; }
+.lookup-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .acceptance-content { display: grid; gap: 18px; }
 .acceptance-progress { display: grid; gap: 8px; }
 .acceptance-progress-label { display: flex; justify-content: space-between; color: #667085; font-size: 12px; }
