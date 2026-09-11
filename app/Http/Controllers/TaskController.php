@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 use App\Http\BaseApiController;
 use App\Models\Task;
 use App\Models\Good;
+use App\Models\File;
 use App\Models\User;
 use App\Services\EntitySyncService;
 use App\Services\AcceptanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -37,6 +41,23 @@ final class TaskController extends BaseApiController
     public function pickList(Request $request, string $id): \Illuminate\Http\Response
     {
         return $this->pdf($request, $id, true);
+    }
+    public function uploadFile(Request $request, string $id, EntitySyncService $sync): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate(['file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,xls,xlsx,csv,txt,jpg,jpeg,png']]);
+        $tenant = $request->user()->tenant_id;
+        $task = Task::query()->visibleTo($tenant)->findOrFail($id);
+        $uploaded = $data['file'];
+        abort_unless($uploaded instanceof UploadedFile && $uploaded->isValid(), 422, 'Файл не загружен.');
+        $path = $uploaded->storeAs('tasks/'.$id, Str::uuid().'.'.$uploaded->getClientOriginalExtension(), 'public');
+        return DB::transaction(function () use ($task, $uploaded, $path, $tenant, $sync): \Illuminate\Http\JsonResponse {
+            $file = new File;
+            $file->forceFill(['name' => $uploaded->getClientOriginalName(), 'path' => $path, 'category' => 'task', 'size' => $uploaded->getSize(), 'ext' => strtolower($uploaded->getClientOriginalExtension()), 'user_id' => request()->user()->id, 'status' => 1, 'tenant_id' => $tenant, 'is_s3' => 0])->save();
+            $source = is_array($task->src) ? $task->src : [];
+            $source['files'] = array_values(array_unique([...array_map('strval', is_array($source['files'] ?? null) ? $source['files'] : []), (string) $file->id]));
+            $task->forceFill(['src' => $source])->save();
+            return response()->json(['data' => $sync->current(Task::class, $tenant, $task->id), 'file' => $sync->current(File::class, $tenant, $file->id)], 201);
+        });
     }
     private function save(Request $request, EntitySyncService $sync, ?string $id=null, ?AcceptanceService $acceptances=null): array { $data=$request->only(self::FIELDS); if(!$id && empty($data['name'])) abort(422,'Название обязательно.'); if($id) $this->checkVersion($sync,$request,$id); $tenant=$request->user()->tenant_id; if(array_key_exists('user_id',$data) && $data['user_id'] !== null && !User::visibleTo($tenant)->whereKey($data['user_id'])->exists()) abort(422,'Ответственный пользователь недоступен.'); unset($data['created_by_user_id']); $sync->prepareWrite($tenant,Task::class,$id); $task=$id?Task::withTrashed()->visibleTo($tenant)->findOrFail($id):new Task; if($id && $task->trashed()) abort(422,'Задача удалена.'); if(!$id)$data['created_by_user_id']=$request->user()->id; $task->forceFill($data); if(!$id)$task->tenant_id=$tenant; $task->save(); $acceptances?->createForTaskIfNeeded($task,$tenant); return $sync->current(Task::class,$tenant,$task->id); }
     private function checkVersion(EntitySyncService $sync, Request $request, string $id): void { $version=(string)$request->input('version'); if($version==='' || !hash_equals((string)$sync->current(Task::class,$request->user()->tenant_id,$id)['version'],$version)) abort(409,'Запись уже изменена.'); }

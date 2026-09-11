@@ -28,6 +28,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::get('/web/fulfillment/tasks/{id}/history', [App\Http\Controllers\TaskController::class, 'history'])->whereNumber('id');
         Route::get('/web/fulfillment/tasks/{id}/task_document', [App\Http\Controllers\TaskController::class, 'taskDocument'])->whereNumber('id');
         Route::get('/web/fulfillment/tasks/{id}/pick_list', [App\Http\Controllers\TaskController::class, 'pickList'])->whereNumber('id');
+        Route::post('/web/fulfillment/tasks/{id}/files', [App\Http\Controllers\TaskController::class, 'uploadFile'])->whereNumber('id');
         Route::post('/web/acceptances/{id}/pick', [App\Http\Controllers\AcceptanceController::class, 'pick'])->whereNumber('id');
         Route::put('/web/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'update'])->whereNumber('id');
         Route::delete('/web/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'destroy'])->whereNumber('id');

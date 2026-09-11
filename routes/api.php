@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
         Route::get('/fulfillment/tasks/{id}/history', [App\Http\Controllers\TaskController::class, 'history'])->whereNumber('id');
         Route::get('/fulfillment/tasks/{id}/task_document', [App\Http\Controllers\TaskController::class, 'taskDocument'])->whereNumber('id');
         Route::get('/fulfillment/tasks/{id}/pick_list', [App\Http\Controllers\TaskController::class, 'pickList'])->whereNumber('id');
+        Route::post('/fulfillment/tasks/{id}/files', [App\Http\Controllers\TaskController::class, 'uploadFile'])->whereNumber('id');
         Route::put('/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'update'])->whereNumber('id');
         Route::delete('/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'destroy'])->whereNumber('id');
         Route::post('/goods/{catalog}', [App\Http\Controllers\GoodCatalogController::class, 'store'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz']);
