@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCardRoute } from "../lib/cardRoute";
-import { computed, ref, onMounted, onUnmounted, watch } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import AdminTabs from "../Components/AdminTabs.vue";
@@ -31,7 +31,7 @@ const roleRows = rolesStore.rows;
 const roleEditingUserId = ref<string | null>(null);
 const roleDraft = ref<string[]>([]);
 const roleSaving = ref(false);
-const roleDropdownOpen = ref(false);
+const roleTagboxInput = ref<HTMLInputElement | null>(null);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -153,32 +153,58 @@ function open(row: UserRow | null, forPassword = false, readOnly = false) {
         ),
     };
 }
-function roleName(roleId: string) {
-    return (
-        roleRows.value.find((role) => String(role.id) === String(roleId))
-            ?.name ?? `Роль №${roleId}`
-    );
+function destroyRoleTagbox() {
+    const input = roleTagboxInput.value;
+    if (!input) return;
+    const $ = (window as any).jQuery;
+    if ($ && $(input).data("tagbox")) $(input).tagbox("destroy");
 }
+async function initRoleTagbox() {
+    await nextTick();
+    const input = roleTagboxInput.value;
+    if (!input) return;
+    const $ = (window as any).jQuery;
+    if (!$?.fn?.tagbox) return;
+    if ($(input).data("tagbox")) $(input).tagbox("destroy");
+    $(input).tagbox({
+        data: roleRows.value
+            .filter((role: any) => role.status === 1 && !role.deleted_at)
+            .map((role: any) => ({
+                id: String(role.id),
+                text: role.name || role.slug || `Роль №${role.id}`,
+            })),
+        valueField: "id",
+        textField: "text",
+        limitToList: true,
+        hasDownArrow: true,
+        editable: false,
+        onChange: (values: string[] | string) => {
+            roleDraft.value = (Array.isArray(values) ? values : [values])
+                .filter(Boolean)
+                .map(String);
+        },
+    });
+    $(input).tagbox("setValues", roleDraft.value);
+}
+watch(roleEditingUserId, (id) => {
+    destroyRoleTagbox();
+    if (id) void initRoleTagbox();
+});
+watch(roleRows, () => {
+    if (roleEditingUserId.value) void initRoleTagbox();
+}, { deep: true });
 function beginRoleEdit(row: UserRow, event?: Event) {
     event?.stopPropagation();
     if (!online.value || !ready.value || row.deleted_at || roleSaving.value)
         return;
     roleEditingUserId.value = row.id;
     roleDraft.value = (row.roles ?? []).map((role) => String(role.id));
-    roleDropdownOpen.value = false;
 }
 function cancelRoleEdit() {
     if (!roleSaving.value) {
         roleEditingUserId.value = null;
         roleDraft.value = [];
-        roleDropdownOpen.value = false;
     }
-}
-function toggleRole(roleId: string | number) {
-    const id = String(roleId);
-    roleDraft.value = roleDraft.value.includes(id)
-        ? roleDraft.value.filter((value) => value !== id)
-        : [...roleDraft.value, id];
 }
 function closeRoleEditorOutside(event: MouseEvent) {
     if (!roleEditingUserId.value) return;
@@ -197,7 +223,6 @@ async function saveRoles(row: UserRow) {
         await store.apply(result.data);
         roleEditingUserId.value = null;
         roleDraft.value = [];
-        roleDropdownOpen.value = false;
         notice.value = "Роли пользователя сохранены";
     } catch (e) {
         notice.value =
@@ -317,6 +342,7 @@ onMounted(() => {
     document.addEventListener('click', closeRoleEditorOutside);
 });
 onUnmounted(() => {
+    destroyRoleTagbox();
     store.stop();
     rolesStore.stop();
     document.removeEventListener('click', closeRoleEditorOutside);
@@ -507,44 +533,11 @@ useCardRoute<UserRow>({
                                     class="roles-tagbox"
                                     @click.stop
                                 >
-                                    <div class="role-tags">
-                                        <span
-                                            v-for="roleId in roleDraft"
-                                            :key="roleId"
-                                            class="role-tag"
-                                        >
-                                            {{ roleName(roleId) }}
-                                            <button
-                                                type="button"
-                                                :aria-label="`Убрать роль ${roleName(roleId)}`"
-                                                @click="
-                                                    roleDraft =
-                                                        roleDraft.filter(
-                                                            (id) =>
-                                                                id !== roleId,
-                                                        )
-                                                "
-                                            >
-                                                ×
-                                            </button>
-                                        </span>
-                                        <span
-                                            v-if="!roleDraft.length"
-                                            class="roles-placeholder"
-                                            >Выберите роли</span
-                                        >
-                                    </div>
-                                    <div class="roles-dropdown">
-                                        <button type="button" class="roles-dropdown-toggle" aria-label="Выбрать роли" @click.stop="roleDropdownOpen = !roleDropdownOpen">
-                                            Выбрать роли <span>⌄</span>
-                                        </button>
-                                        <div v-if="roleDropdownOpen" class="roles-dropdown-menu" @click.stop>
-                                            <label v-for="role in roleRows.filter((item) => item.status === 1 && !item.deleted_at)" :key="role.id" class="roles-dropdown-option">
-                                                <input type="checkbox" :checked="roleDraft.includes(String(role.id))" @change="toggleRole(role.id)" />
-                                                <span>{{ role.name || role.slug || `Роль №${role.id}` }}</span>
-                                            </label>
-                                        </div>
-                                    </div>
+                                    <input
+                                        ref="roleTagboxInput"
+                                        class="easyui-tagbox roles-tagbox-input"
+                                        aria-label="Роли пользователя"
+                                    />
                                     <div class="roles-tagbox-actions">
                                         <button
                                             type="button"
@@ -923,12 +916,24 @@ useCardRoute<UserRow>({
     background: #fff;
     box-shadow: 0 5px 16px #0c456726;
 }
-.roles-tagbox select {
+.roles-tagbox-input {
     width: 100%;
-    min-height: 78px;
-    margin-top: 6px;
 }
-.roles-dropdown{position:relative;margin-top:6px}.roles-dropdown-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:6px 8px;border:1px solid #a8d4a9;border-radius:4px;background:#fff;color:#1e892f;cursor:pointer}.roles-dropdown-menu{position:absolute;z-index:20;top:calc(100% + 4px);left:0;right:0;max-height:180px;overflow:auto;padding:5px;border:1px solid #a8d4a9;border-radius:5px;background:#fff;box-shadow:0 8px 18px #0c456726}.roles-dropdown-option{display:flex;align-items:center;gap:7px;padding:6px 5px;margin:0;border-radius:3px;cursor:pointer;font-size:12px}.roles-dropdown-option:hover{background:#e1f3e7}.roles-dropdown-option input{margin:0}
+.roles-tagbox .tagbox {
+    width: 100% !important;
+    min-height: 34px;
+    border-color: #a8d4a9;
+    border-radius: 4px;
+}
+.roles-tagbox .tagbox-label {
+    border-color: #a8d4a9;
+    border-radius: 999px;
+    background: #e1f3e7;
+    color: #176b27;
+}
+.roles-tagbox .tagbox-arrow {
+    background-color: #f5fbf6;
+}
 .roles-tagbox-actions {
     display: flex;
     gap: 6px;

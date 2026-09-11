@@ -107,7 +107,21 @@ final class UserService
         abort_unless($roles->count() === count($roleIds), 422, 'Выберите доступные активные роли.');
 
         $links = DB::table('main.role_user')->where('user_id', $user->id)->where('tenant_id', $actor->tenant_id)->lockForUpdate()->get();
-        $activeAdmin = fn (array $ids): bool => DB::table('main.role_user as ru')
+        // Keep the current user an administrator.  Compare against the admin
+        // role available for the current tenant, rather than against the role
+        // id stored in role_user: older assignments may contain a role id from
+        // another tenant while still referring to the same admin role.
+        $adminRoleIds = DB::table('main.roles')
+            ->where('slug', 'admin')
+            ->where('status', 1)
+            ->whereNull('deleted_at')
+            ->where(function ($query) use ($actor) {
+                $query->where('tenant_id', $actor->tenant_id)->orWhereNull('tenant_id');
+            })
+            ->pluck('id')
+            ->map(fn ($value) => (int) $value)
+            ->all();
+        $isCurrentAdmin = DB::table('main.role_user as ru')
             ->join('main.roles as r', 'r.id', '=', 'ru.role_id')
             ->where('ru.user_id', $user->id)
             ->where('ru.tenant_id', $actor->tenant_id)
@@ -116,9 +130,8 @@ final class UserService
             ->where('r.slug', 'admin')
             ->where('r.status', 1)
             ->whereNull('r.deleted_at')
-            ->whereIn('ru.role_id', $ids)
             ->exists();
-        if ($user->id === $actor->id && ! $activeAdmin($roleIds)) {
+        if ($user->id === $actor->id && $isCurrentAdmin && ! array_intersect($roleIds, $adminRoleIds)) {
             abort(422, 'Нельзя снять роль admin у своей учётной записи.');
         }
 

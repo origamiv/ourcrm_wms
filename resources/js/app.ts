@@ -32,6 +32,8 @@ import Features from "./Pages/Features.vue";
 import Modules from "./Pages/Modules.vue";
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
+import jquery from "jquery";
+import "jquery-easyui/css/easyui.css";
 import Shell from "./Components/Shell.vue";
 import Companies from "./Pages/Companies.vue";
 import CompanyContacts from "./Pages/CompanyContacts.vue";
@@ -42,6 +44,10 @@ import RolesRights from "./Pages/RolesRights.vue";
 import Roles from "./Pages/Roles.vue";
 import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
+
+// EasyUI widgets are jQuery plugins and expect the jQuery object globally.
+(window as any).jQuery = jquery;
+(window as any).$ = jquery;
 const pages: Record<string, any> = {
     Home,
     IntegrationWebhooks,
@@ -92,7 +98,9 @@ createInertiaApp({
         page.layout ??= Shell;
         return page;
     },
-    setup({ el, App, props, plugin }) {
+    async setup({ el, App, props, plugin }) {
+        // Load the actual EasyUI bundle before any page component is mounted.
+        await import("jquery-easyui/js/jquery.easyui.min.js");
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .mount(el);
