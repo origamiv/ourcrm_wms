@@ -26,12 +26,6 @@ const tabs = [
         icon: "roles",
     },
     {
-        label: "Сервисы",
-        url: "/clients/services",
-        component: "ClientServices",
-        icon: "administration",
-    },
-    {
         label: "Доступы",
         url: "/clients/accounts",
         component: "ClientAccounts",
@@ -48,6 +42,12 @@ const tabs = [
                 url: "/clients/doc_types",
                 component: "DocTypes",
                 icon: "roles",
+            },
+            {
+                label: "Сервисы",
+                url: "/clients/services",
+                component: "ClientServices",
+                icon: "administration",
             },
         ],
     },
