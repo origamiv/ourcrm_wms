@@ -55,10 +55,13 @@ final class AcceptanceService
             $acceptance = Acceptance::query()->visibleTo($tenant)->whereKey($id)->lockForUpdate()->firstOrFail();
             abort_if((int) $acceptance->status === 1, 422, 'Приемка уже завершена.');
             $task = $acceptance->task_id ? Task::query()->visibleTo($tenant)->findOrFail($acceptance->task_id) : null;
-            $good = Good::query()->visibleTo($tenant)->where(function ($q) use ($barcode): void {
+            $allowedGoods = $task && is_array($task->src) && is_array($task->src['goods'] ?? null)
+                ? collect($task->src['goods'])->filter(fn ($value) => is_numeric($value))->map(fn ($value) => (int) $value)->filter(fn ($value) => $value > 0)->values()->all()
+                : [];
+            $good = Good::query()->visibleTo($tenant)->when($allowedGoods, fn ($q) => $q->whereIn('id', $allowedGoods))->where(function ($q) use ($barcode): void {
                 $q->where('code', $barcode)->orWhereRaw("barcodes::jsonb @> ?::jsonb", [json_encode([$barcode])]);
             })->first();
-            abort_unless($good, 422, 'Товар с таким штрихкодом не найден.');
+            abort_unless($good, 422, $allowedGoods ? 'Товар с таким ШК отсутствует в этой приемке.' : 'Товар с таким штрихкодом не найден.');
 
             $cell = $cellId ? Cell::query()->visibleTo($tenant)->whereKey($cellId)->first() : Cell::query()->visibleTo($tenant)->where('warehouse_id', $acceptance->warehouse_id)->orderBy('id')->first();
             abort_unless($cell && (int) $cell->warehouse_id === (int) $acceptance->warehouse_id, 422, 'Ячейка для размещения не найдена.');
