@@ -186,7 +186,7 @@ function taskSkuCount(row: ReferenceRow): string {
         ? src.goods.length
         : Number(src.goods_count ?? src.products_count ?? 0);
     const count = Number(src.pieces_count ?? src.items_count ?? src.total_pieces ?? src.planned_pieces ?? row.fact_count ?? 0);
-    return `${Number.isFinite(sku) ? sku : 0}/${Number.isFinite(count) ? count : 0}`;
+    return `${Number.isFinite(sku) ? sku : 0} / ${Number.isFinite(count) ? count : 0}`;
 }
 const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
