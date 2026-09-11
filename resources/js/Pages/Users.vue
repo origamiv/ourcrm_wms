@@ -481,6 +481,7 @@ useCardRoute<UserRow>({
                             <td>{{ row.phone || "—" }}</td>
                             <td
                                 class="user-roles-cell"
+                                @click.stop
                                 @dblclick="beginRoleEdit(row, $event)"
                                 title="Двойной щелчок — изменить роли"
                             >
