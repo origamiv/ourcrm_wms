@@ -303,6 +303,10 @@ async function pickAcceptance() {
             conductingAcceptance.value = response.acceptance;
         }
         acceptanceBarcode.value = "";
+        if (response.acceptance && Number(response.acceptance.status) === 1) {
+            conductingAcceptance.value = null;
+            return;
+        }
         acceptanceNotice.value = "ШК принят";
         await nextTick();
         acceptanceInput.value?.focus();
