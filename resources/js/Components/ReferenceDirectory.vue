@@ -2,7 +2,7 @@
 import { goodsTree, flattenGoods } from "../lib/goodsTree";
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
-import { Head, usePage } from "@inertiajs/vue3";
+import { Head, router, usePage } from "@inertiajs/vue3";
 import RussianDateInput from "./RussianDateInput.vue";
 import { formatDate } from "../lib/dates";
 import DocumentPrintFields from "./DocumentPrintFields.vue";
@@ -28,7 +28,8 @@ interface ReferenceRow extends EntityRow {
     status: number | null;
     deleted_at: string | null;
 }
-const props = defineProps<{ entity: keyof typeof references }>();
+const props = defineProps<{ entity: keyof typeof references; taskView?: "table" | "kanban" }>();
+const emit = defineEmits<{ toggleTaskView: [] }>();
 const definition = references[props.entity];
 const columnSettingsOpen = ref(false);
 const columnOrder = ref<string[]>([]);
@@ -171,7 +172,7 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
@@ -190,6 +191,7 @@ const kizColumns = computed(() =>
           : [],
 );
 const isGood = props.entity === "goods";
+const isTask = props.entity === "tasks";
 const isGoodsSection =
     isGood ||
     ["type_goods", "unit_goods", "kind_kiz", "kizes"].includes(props.entity);
@@ -214,6 +216,9 @@ const dateFilter = ref("");
 const page = usePage<any>();
 const clientScope = computed<{ id: string; name: string } | null>(() =>
     isIndividual ? (page.props.clientScope ?? null) : null,
+);
+const warehouseScope = computed<{ id: string; name: string } | null>(() =>
+    props.entity === "cells" ? (page.props.warehouseScope ?? null) : null,
 );
 const store = createEntitySync<ReferenceRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
@@ -269,6 +274,23 @@ const query = ref(""),
 const selected = ref<ReferenceRow | null>(null),
     deleting = ref<ReferenceRow | null>(null),
     conflict = ref<ReferenceRow | null>(null);
+// Selection is keyed by id and intentionally lives outside the paginated slice,
+// so moving between pages does not clear previously selected records.
+const checkedIds = ref<Set<string>>(new Set());
+const pageChecked = computed(() => visible.value.length > 0 && visible.value.every((row) => checkedIds.value.has(String(row.id))));
+const somePageChecked = computed(() => visible.value.some((row) => checkedIds.value.has(String(row.id))));
+function toggleChecked(id: string | number) {
+    const next = new Set(checkedIds.value);
+    const key = String(id);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    checkedIds.value = next;
+}
+function togglePageChecked() {
+    const next = new Set(checkedIds.value);
+    if (pageChecked.value) visible.value.forEach((row) => next.delete(String(row.id)));
+    else visible.value.forEach((row) => next.add(String(row.id)));
+    checkedIds.value = next;
+}
 const editing = ref(false),
     viewing = ref(false),
     saving = ref(false),
@@ -299,6 +321,11 @@ const filtered = computed(() =>
             if (
                 clientScope.value &&
                 String(row.client_id) !== clientScope.value.id
+            )
+                return false;
+            if (
+                warehouseScope.value &&
+                String(row.warehouse_id) !== warehouseScope.value.id
             )
                 return false;
             if (
@@ -433,6 +460,23 @@ watch(
     },
 );
 const pendingDocumentDefaults = new Set<string>();
+const pendingTaskDefaults = new Set<string>();
+function applyTaskDefaults() {
+    if (!isTask || !editing.value || viewing.value || selected.value) return;
+    const defaults: Record<string, [string, (row: ReferenceRow) => boolean]> = {
+        client_id: ["clients", () => true],
+        task_type_id: ["task_types", () => true],
+        status_id: ["task_statuses", (row) => String(row.id) === "1" || row.shortname === "new"],
+        priority_id: ["priorities", (row) => row.shortname === "medium" || /средн/i.test(String(row.name ?? ""))],
+        warehouse_id: ["warehouses", () => true],
+    };
+    for (const [field, [entity, predicate]] of Object.entries(defaults)) {
+        if (!pendingTaskDefaults.has(field) || (form.value[field] != null && form.value[field] !== "")) { pendingTaskDefaults.delete(field); continue; }
+        if (!lookupStores[entity]?.ready.value) continue;
+        const available = choices(entity); const found = available.find(predicate) ?? available[0];
+        if (found) { form.value[field] = found.id; pendingTaskDefaults.delete(field); }
+    }
+}
 function applyDocumentDefaults() {
     if (!isDocument || !editing.value || viewing.value) return;
     for (const [field, entity] of [
@@ -463,8 +507,10 @@ watch(
     ],
     applyDocumentDefaults,
 );
+watch(() => [editing.value, viewing.value, selected.value, ...Object.values(lookupStores).flatMap((s) => [s.ready.value, s.rows.value])], applyTaskDefaults);
 function changeLookup(field: string) {
     pendingDocumentDefaults.delete(field);
+    pendingTaskDefaults.delete(field);
     if (isDocument && field === "client_id") form.value.customer_id = null;
 }
 function displayName(row: ReferenceRow) {
@@ -474,6 +520,11 @@ function displayName(row: ReferenceRow) {
         row.shortname ||
         `Запись №${row.id}`
     );
+}
+function openGoodDetail(row: ReferenceRow) {
+    const url = `/goods/goods/${encodeURIComponent(row.id)}/view`;
+    if (online.value) router.visit(url);
+    else router.push({ url, component: "GoodDetail", props: { ...page.props, goodId: row.id } });
 }
 async function open(row: ReferenceRow | null, readOnly = false) {
     if (saving.value) return;
@@ -549,7 +600,10 @@ function fillForm(row: ReferenceRow | null, readOnly = false) {
         ...(isGood ? { is_category: row?.is_category ?? 2 } : {}),
         status: row ? row.status : isDocument ? 0 : 1,
         ...(clientScope.value ? { client_id: clientScope.value.id } : {}),
+        ...(warehouseScope.value ? { warehouse_id: warehouseScope.value.id } : {}),
     };
+    pendingTaskDefaults.clear();
+    if (isTask && !row) ["client_id", "task_type_id", "status_id", "priority_id", "warehouse_id"].forEach((field) => pendingTaskDefaults.add(field));
     for (const field of definition.fields)
         if (field.kind === "json")
             form.value[field.key] =
@@ -671,6 +725,33 @@ async function save(remove = false) {
         saving.value = false;
     }
 }
+function normalizedHeader(value: unknown) {
+    return String(value ?? "").trim().toLocaleLowerCase("ru").replace(/[\s_#№.-]+/g, "");
+}
+async function importData(format: string, file?: File, text?: string) {
+    if (!file && !text) return;
+    if (!online.value || saving.value) {
+        notice.value = "Импорт доступен только при подключении к серверу.";
+        return;
+    }
+    saving.value = true;
+    notice.value = "Читаем файл…";
+    try {
+        const upload = new FormData();
+        if (file) upload.append("file", file);
+        else upload.append("file", new Blob([text ?? ""], { type: "text/plain" }), "clipboard.txt");
+        upload.append("format", format);
+        if (warehouseScope.value) upload.append("warehouse_id", warehouseScope.value.id);
+        upload.append("columns", JSON.stringify(definition.fields.map((field) => ({ key: field.key, label: field.label }))));
+        const response = await http(`/web/import/${encodeURIComponent(props.entity)}`, "POST", upload);
+        for (const row of response.data ?? []) await store.apply(row);
+        notice.value = response.imported ? `Импортировано записей: ${response.imported}` : "В файле не найдено строк для импорта.";
+    } catch (e) {
+        notice.value = e instanceof Error ? `Импорт не выполнен: ${e.message}` : "Импорт не выполнен.";
+    } finally {
+        saving.value = false;
+    }
+}
 async function confirmDelete() {
     if (!deleting.value || !online.value || saving.value) return;
     ++detailRequest;
@@ -745,13 +826,20 @@ useCardRoute<ReferenceRow>({
             /><GoodsTabs
                 v-else-if="isGoodsSection"
             /><ClientTabs v-else-if="isClientSection" /><AdminTabs v-else />
-            <p v-if="clientScope" class="notice">
-                Клиент: <strong>{{ clientScope.name }}</strong>
+            <p v-if="clientScope || warehouseScope" class="notice">
+                <template v-if="clientScope">Клиент: <strong>{{ clientScope.name }}</strong></template>
+                <template v-else>Склад: <strong>{{ warehouseScope?.name }}</strong></template>
             </p>
             <div class="page-heading">
-                <h1>{{ definition.title }}</h1>
+                <div class="heading-title-group">
+                    <h1>{{ warehouseScope ? `${definition.title} для склада ${warehouseScope.name}` : clientScope ? `${definition.title} для клиента ${clientScope.name}` : definition.title }}</h1>
+                    <button v-if="props.entity === 'tasks'" type="button" class="task-view-toggle" @click="emit('toggleTaskView')">
+                        <img :src="props.taskView === 'kanban' ? '/design/crm/table.svg' : '/design/crm/kanban.svg'" alt="" />
+                        <span>{{ props.taskView === 'kanban' ? 'Таблица' : 'Канбан' }}</span>
+                    </button>
+                </div>
                 <div class="page-heading-actions">
-                    <DataTransferMenu :rows="filtered" :columns="orderedColumns" :filename="String(props.entity)" />
+                    <DataTransferMenu :rows="filtered" :columns="orderedColumns" :filename="String(props.entity)" @import="importData" />
                     <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">Добавить запись</button>
                 </div>
             </div>
@@ -769,6 +857,7 @@ useCardRoute<ReferenceRow>({
             <p v-if="error || warning" class="notice" role="alert">
                 {{ error || warning }}
             </p>
+            <slot v-if="props.entity === 'tasks' && props.taskView === 'kanban'" name="task-kanban" />
             <div v-if="isGood" class="goods-tree-controls">
                 <button
                     type="button"
@@ -786,7 +875,7 @@ useCardRoute<ReferenceRow>({
                 </button>
                 <span>Категории — папки, товары — коробки</span>
             </div>
-            <div class="table-scroll">
+            <div v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'" class="table-scroll">
                 <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
                     <div class="column-settings-title">
                         <span>Показывать колонки</span>
@@ -826,6 +915,15 @@ useCardRoute<ReferenceRow>({
                 >
                     <thead>
                         <tr>
+                            <th scope="col" class="check-column">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Выбрать все записи на странице"
+                                    :checked="pageChecked"
+                                    :indeterminate="somePageChecked && !pageChecked"
+                                    @change="togglePageChecked"
+                                />
+                            </th>
                             <th scope="col" class="id-column">#</th>
                             <th v-if="isColumnVisible('__name')">
                                 <button @click="descending = !descending">
@@ -891,6 +989,7 @@ useCardRoute<ReferenceRow>({
                             </th>
                         </tr>
                         <tr class="filter-row">
+                            <th class="check-column"></th>
                             <th class="id-column"></th>
                             <th v-if="isColumnVisible('__name')">
                                 <input
@@ -1019,8 +1118,16 @@ useCardRoute<ReferenceRow>({
                                     ? goodsFiltered || expandedGoods.has(row.id)
                                     : undefined
                             "
-                            @dblclick="open(row, true)"
+                            @dblclick="isGood ? openGoodDetail(row) : open(row, true)"
                         >
+                            <td class="check-column" @dblclick.stop>
+                                <input
+                                    type="checkbox"
+                                    :aria-label="`Выбрать запись №${row.id}`"
+                                    :checked="checkedIds.has(String(row.id))"
+                                    @change="toggleChecked(row.id)"
+                                />
+                            </td>
                             <td class="id-column">{{ row.id }}</td>
                             <td v-if="isColumnVisible('__name')">
                                 <div
@@ -1196,6 +1303,13 @@ useCardRoute<ReferenceRow>({
                                             alt=""
                                         /></button
                                     ><button
+                                        v-if="props.entity === 'warehouses'"
+                                        :aria-label="`Ячейки склада: ${displayName(row)}`"
+                                        title="Ячейки"
+                                        @click.stop="router.visit(`/fulfillment/cells?warehouse_id=${row.id}`)"
+                                    >
+                                        <img src="/design/crm/cells.svg" alt="" />
+                                    </button><button
                                         :aria-label="`Редактировать: ${displayName(row)}`"
                                         title="Редактировать"
                                         :disabled="
@@ -1250,7 +1364,7 @@ useCardRoute<ReferenceRow>({
                     </tbody>
                 </table>
             </div>
-            <footer class="list-footer">
+            <footer v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'" class="list-footer">
                 <span
                     >Найдено: {{ filtered.length
                     }}<template v-if="isGood">
@@ -1761,6 +1875,43 @@ useCardRoute<ReferenceRow>({
 }
 .table-scroll {
     position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.task-view-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: center;
+    margin-left: 12px;
+    padding: 7px 12px;
+    border: 1px solid #2274a5;
+    border-radius: 6px;
+    background: #fff;
+    color: #2274a5;
+    cursor: pointer;
+}
+.task-view-toggle img { width: 18px; height: 18px; object-fit: contain; }
+.heading-title-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+.heading-title-group h1 {
+    margin: 0;
+}
+.check-column {
+    width: 34px;
+    min-width: 34px;
+    text-align: center;
+}
+.check-column input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #2274a5;
+    cursor: pointer;
 }
 .column-settings-panel {
     position: absolute;
