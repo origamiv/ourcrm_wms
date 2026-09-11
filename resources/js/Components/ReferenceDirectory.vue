@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { goodsTree, flattenGoods } from "../lib/goodsTree";
 import { useCardRoute } from "../lib/cardRoute";
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { Head, router, usePage } from "@inertiajs/vue3";
 import RussianDateInput from "./RussianDateInput.vue";
 import { formatDate } from "../lib/dates";
@@ -276,6 +276,42 @@ const query = ref(""),
 const selected = ref<ReferenceRow | null>(null),
     deleting = ref<ReferenceRow | null>(null),
     conflict = ref<ReferenceRow | null>(null);
+const conductingAcceptance = ref<ReferenceRow | null>(null);
+const acceptanceBarcode = ref("");
+const acceptanceSaving = ref(false);
+const acceptanceNotice = ref("");
+const acceptanceInput = ref<HTMLInputElement | null>(null);
+function openAcceptance(row: ReferenceRow) {
+    if (row.deleted_at || !online.value) return;
+    editing.value = false;
+    conductingAcceptance.value = row;
+    acceptanceBarcode.value = "";
+    acceptanceNotice.value = "";
+    void nextTick(() => acceptanceInput.value?.focus());
+}
+function closeAcceptance() {
+    if (!acceptanceSaving.value) conductingAcceptance.value = null;
+}
+async function pickAcceptance() {
+    if (!conductingAcceptance.value || !acceptanceBarcode.value.trim() || acceptanceSaving.value || !online.value) return;
+    acceptanceSaving.value = true;
+    acceptanceNotice.value = "";
+    try {
+        const response = await http(`/api/acceptances/${conductingAcceptance.value.id}/pick`, "POST", { barcode: acceptanceBarcode.value.trim() });
+        if (response.acceptance) {
+            await store.apply(response.acceptance);
+            conductingAcceptance.value = response.acceptance;
+        }
+        acceptanceBarcode.value = "";
+        acceptanceNotice.value = "ШК принят";
+        await nextTick();
+        acceptanceInput.value?.focus();
+    } catch (e) {
+        acceptanceNotice.value = e instanceof HttpError ? e.message : e instanceof Error ? e.message : "Не удалось провести приемку";
+    } finally {
+        acceptanceSaving.value = false;
+    }
+}
 // Selection is keyed by id and intentionally lives outside the paginated slice,
 // so moving between pages does not clear previously selected records.
 const checkedIds = ref<Set<string>>(new Set());
@@ -818,7 +854,7 @@ useCardRoute<ReferenceRow>({
 </script>
 <template>
     <Head :title="definition.title" />
-    <div class="users-workspace" :class="{ 'has-editor': editing }">
+    <div class="users-workspace" :class="{ 'has-editor': editing || conductingAcceptance }">
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
@@ -1300,6 +1336,13 @@ useCardRoute<ReferenceRow>({
                             </td>
                             <td>
                                 <div class="row-actions">
+                                    <button
+                                        v-if="isAcceptance"
+                                        :aria-label="`Провести приемку: ${displayName(row)}`"
+                                        title="Провести приемку"
+                                        :disabled="!online || saving || !!row.deleted_at || Number(row.status) === 1"
+                                        @click.stop="openAcceptance(row)"
+                                    ><span class="acceptance-play-icon" aria-hidden="true">▶</span></button>
                                     <DocumentDownload
                                         v-if="isDocument"
                                         :id="row.id"
@@ -1427,6 +1470,26 @@ useCardRoute<ReferenceRow>({
             @cancel="deleting = null"
             @confirm="confirmDelete"
         />
+        <aside v-if="conductingAcceptance" class="editor acceptance-editor" aria-label="Провести приемку">
+            <header>
+                <div>
+                    <small>ПРОВЕДЕНИЕ ПРИЕМКИ</small>
+                    <h2>Провести приемку N {{ conductingAcceptance.id }}</h2>
+                </div>
+                <button type="button" aria-label="Закрыть проведение приемки" :disabled="acceptanceSaving" @click="closeAcceptance">×</button>
+            </header>
+            <div class="editor-content acceptance-content">
+                <div class="acceptance-progress">
+                    <div class="acceptance-progress-label"><span>Прогресс</span><b>{{ conductingAcceptance.fact_count ?? 0 }} из {{ conductingAcceptance.plan_count ?? 0 }}</b></div>
+                    <div class="acceptance-progress-track"><i :style="{ width: `${Math.min(100, Number(conductingAcceptance.plan_count) > 0 ? Number(conductingAcceptance.fact_count ?? 0) / Number(conductingAcceptance.plan_count) * 100 : 0)}%` }"></i></div>
+                </div>
+                <p v-if="acceptanceNotice" class="notice" role="status">{{ acceptanceNotice }}</p>
+                <form class="acceptance-pick-form" @submit.prevent="pickAcceptance">
+                    <label>Штрихкод товара<input ref="acceptanceInput" v-model="acceptanceBarcode" inputmode="numeric" autocomplete="off" autofocus :disabled="acceptanceSaving" placeholder="Введите или отсканируйте ШК" /></label>
+                    <button type="submit" class="primary" :disabled="acceptanceSaving || !acceptanceBarcode.trim()">{{ acceptanceSaving ? "Сохраняем…" : "Сохранить" }}</button>
+                </form>
+            </div>
+        </aside>
         <aside v-if="editing" class="editor" aria-label="Карточка записи">
             <header>
                 <div>
@@ -2051,4 +2114,23 @@ td,
 .editor h2 {
     overflow-wrap: anywhere;
 }
+.acceptance-play-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #e1f3e7;
+    color: #1e892f;
+    font-size: 10px;
+    line-height: 1;
+}
+.acceptance-content { display: grid; gap: 18px; }
+.acceptance-progress { display: grid; gap: 8px; }
+.acceptance-progress-label { display: flex; justify-content: space-between; color: #667085; font-size: 12px; }
+.acceptance-progress-label b { color: #1e892f; font-weight: 700; }
+.acceptance-progress-track { height: 9px; border-radius: 6px; background: #e1f3e7; overflow: hidden; }
+.acceptance-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
+.acceptance-pick-form { display: grid; gap: 14px; }
+.acceptance-pick-form label { display: grid; gap: 7px; }
 </style>
