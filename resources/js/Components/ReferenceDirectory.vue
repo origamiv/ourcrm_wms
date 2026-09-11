@@ -334,7 +334,9 @@ const editing = ref(false),
     saving = ref(false),
     notice = ref("");
 const form = ref<Record<string, any>>({ name: "", status: 1 });
-const statusLabels: Record<string, string> = isDocument
+const statusLabels: Record<string, string> = isAcceptance
+    ? { "0": "Новая", "1": "Завершена", "2": "Отменена", "3": "В процессе" }
+    : isDocument
     ? { "0": "Новый", "1": "Активен", "2": "Отменен", "3": "Отправлен" }
     : isDocType
       ? { "1": "Активен", "2": "Отключен" }

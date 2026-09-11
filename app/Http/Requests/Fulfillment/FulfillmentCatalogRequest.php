@@ -80,7 +80,7 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'type_acceptance_id' => ['nullable', 'integer', 'min:1'],
                 'started_at' => ['nullable', 'date'],
                 'finished_at' => ['nullable', 'date', 'after_or_equal:started_at'],
-                'status' => ['required', 'integer', 'in:0,1,2'],
+                'status' => ['required', 'integer', 'in:0,1,2,3'],
                 'tenant_id' => ['prohibited'],
             ];
         }

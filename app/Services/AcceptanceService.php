@@ -77,7 +77,7 @@ final class AcceptanceService
             $fact = (int) $acceptance->fact_count + 1;
             $plan = (int) ($acceptance->plan_count ?? 0);
             $done = $plan > 0 && $fact >= $plan;
-            $acceptance->forceFill(['fact_count' => $fact, 'progress' => $plan > 0 ? min(100, (int) round($fact / $plan * 100)) : 0, 'status' => $done ? 1 : $acceptance->status, 'finished_at' => $done ? now() : null])->save();
+            $acceptance->forceFill(['fact_count' => $fact, 'progress' => $plan > 0 ? min(100, (int) round($fact / $plan * 100)) : 0, 'status' => $done ? 1 : 3, 'finished_at' => $done ? now() : null])->save();
             if ($task) {
                 $task->forceFill(['fact_count' => $fact, 'status' => 1]);
                 if ($done) {
