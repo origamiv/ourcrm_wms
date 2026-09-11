@@ -58,6 +58,7 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
             $rules = [
                 'warehouse_id' => ['required', 'integer', 'min:1'],
                 'cell_id' => ['required', 'integer', 'min:1'],
+                'good_id' => ['required', 'integer', 'min:1'],
                 'user_id' => ['nullable', 'integer', 'min:1'],
                 'cnt' => ['required', 'integer', 'min:0'],
                 'put_at' => ['nullable', 'date'],
