@@ -535,7 +535,7 @@ useCardRoute<UserRow>({
                                         >
                                     </div>
                                     <div class="roles-dropdown">
-                                        <button type="button" class="roles-dropdown-toggle" @click.stop="roleDropdownOpen = !roleDropdownOpen">
+                                        <button type="button" class="roles-dropdown-toggle" aria-label="Роли пользователя" @click.stop="roleDropdownOpen = !roleDropdownOpen">
                                             Выбрать роли <span>⌄</span>
                                         </button>
                                         <div v-if="roleDropdownOpen" class="roles-dropdown-menu" @click.stop>
