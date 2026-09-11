@@ -12,18 +12,14 @@ test("назначает роли двойным кликом по ячейке 
         .click();
 
     const row = page.locator("tbody tr").filter({ hasText: "Иванов Михаил" });
-    const rolesCell = row.locator("td").nth(4);
-    await rolesCell.dblclick();
-    await expect(page.locator(".roles-tagbox-input")).toBeVisible();
-    await page.locator(".roles-tagbox-input .v-field__append-inner").click();
+    await row.getByRole("button", { name: "Редактировать пользователя" }).click();
+    await expect(page.locator(".roles-form-field .v-select")).toBeVisible();
+    await page.locator(".roles-form-field .v-field").click();
     await page
         .locator(".v-list-item")
         .filter({ hasText: "Кладовщик" })
         .click();
-    await page
-        .locator(".roles-tagbox-actions")
-        .getByRole("button", { name: "Сохранить", exact: true })
-        .click();
+    await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
     await expect(
         page.locator(".role-tag").filter({ hasText: "Кладовщик" }).first(),
     ).toBeVisible();

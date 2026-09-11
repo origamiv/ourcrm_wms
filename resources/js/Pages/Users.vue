@@ -28,9 +28,7 @@ const rolesStore = createEntitySync<any>(
     "roles",
 );
 const roleRows = rolesStore.rows;
-const roleEditingUserId = ref<string | null>(null);
 const roleDraft = ref<string[]>([]);
-const roleSaving = ref(false);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -151,6 +149,7 @@ function open(row: UserRow | null, forPassword = false, readOnly = false) {
             ]),
         ),
     };
+    roleDraft.value = (row?.roles ?? []).map((role) => String(role.id));
 }
 const roleOptions = computed(() =>
     roleRows.value
@@ -160,46 +159,6 @@ const roleOptions = computed(() =>
             name: role.name || role.slug || `Роль №${role.id}`,
         })),
 );
-function beginRoleEdit(row: UserRow, event?: Event) {
-    event?.stopPropagation();
-    if (!online.value || !ready.value || row.deleted_at || roleSaving.value)
-        return;
-    roleEditingUserId.value = row.id;
-    roleDraft.value = (row.roles ?? []).map((role) => String(role.id));
-}
-function cancelRoleEdit() {
-    if (!roleSaving.value) {
-        roleEditingUserId.value = null;
-        roleDraft.value = [];
-    }
-}
-function closeRoleEditorOutside(event: MouseEvent) {
-    if (!roleEditingUserId.value) return;
-    const target = event.target as HTMLElement | null;
-    if (!target?.closest('.user-roles-cell') && !target?.closest('.v-overlay-container')) cancelRoleEdit();
-}
-async function saveRoles(row: UserRow) {
-    if (!online.value || roleSaving.value) return;
-    roleSaving.value = true;
-    notice.value = "";
-    try {
-        const result = await http(`/web/users/${row.id}/roles`, "POST", {
-            role_ids: roleDraft.value.map(Number),
-            version: row.version,
-        });
-        await store.apply(result.data);
-        roleEditingUserId.value = null;
-        roleDraft.value = [];
-        notice.value = "Роли пользователя сохранены";
-    } catch (e) {
-        notice.value =
-            e instanceof HttpError
-                ? e.message
-                : "Не удалось сохранить роли пользователя.";
-    } finally {
-        roleSaving.value = false;
-    }
-}
 function close() {
     if (!saving.value) {
         editing.value = false;
@@ -262,20 +221,33 @@ async function save(action = "update") {
             creating.value || action !== "update" ? "POST" : "PUT",
             body,
         );
-        await store.apply(result.data);
-        selected.value = result.data;
+        let savedData = result.data;
+        await store.apply(savedData);
+        if (action === "update" || creating.value) {
+            const rolesResult = await http(
+                `/web/users/${savedData.id}/roles`,
+                "POST",
+                {
+                    role_ids: roleDraft.value.map(Number),
+                    version: savedData.version,
+                },
+            );
+            savedData = rolesResult.data;
+            await store.apply(savedData);
+        }
+        selected.value = savedData;
         form.value = {
             ...fields,
-            status: result.data.status,
+            status: savedData.status,
             ...Object.fromEntries(
-                Object.keys(labels).map((key) => [key, result.data[key] ?? ""]),
+                Object.keys(labels).map((key) => [key, savedData[key] ?? ""]),
             ),
         };
         creating.value = false;
         form.value.password = "";
         form.value.password_confirmation = "";
         notice.value = "Изменения сохранены";
-        if (action === "password" && result.data.id === page.props.auth.id) {
+        if (action === "password" && savedData.id === page.props.auth.id) {
             await endSession();
         }
         if (action === "delete") editing.value = false;
@@ -306,12 +278,10 @@ function reviewConflict() {
 onMounted(() => {
     void store.start();
     void rolesStore.start();
-    document.addEventListener('click', closeRoleEditorOutside);
 });
 onUnmounted(() => {
     store.stop();
     rolesStore.stop();
-    document.removeEventListener('click', closeRoleEditorOutside);
 });
 
 useCardRoute<UserRow>({
@@ -491,50 +461,8 @@ useCardRoute<UserRow>({
                             <td
                                 class="user-roles-cell"
                                 @click.stop
-                                @dblclick="beginRoleEdit(row, $event)"
-                                title="Двойной щелчок — изменить роли"
                             >
-                                <div
-                                    v-if="roleEditingUserId === row.id"
-                                    class="roles-tagbox"
-                                    @click.stop
-                                >
-                                    <VSelect
-                                        v-model="roleDraft"
-                                        class="roles-tagbox-input"
-                                        :items="roleOptions"
-                                        item-title="name"
-                                        item-value="id"
-                                        multiple
-                                        chips
-                                        closable-chips
-                                        density="compact"
-                                        variant="outlined"
-                                        hide-details
-                                        placeholder="Выберите роли"
-                                    />
-                                    <div class="roles-tagbox-actions">
-                                        <button
-                                            type="button"
-                                            @click="saveRoles(row)"
-                                            :disabled="roleSaving"
-                                        >
-                                            {{
-                                                roleSaving
-                                                    ? "Сохраняем…"
-                                                    : "Сохранить"
-                                            }}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            @click="cancelRoleEdit"
-                                            :disabled="roleSaving"
-                                        >
-                                            Отмена
-                                        </button>
-                                    </div>
-                                </div>
-                                <div v-else class="role-tags">
+                                <div class="role-tags">
                                     <span
                                         v-for="role in row.roles ?? []"
                                         :key="role.id"
@@ -545,15 +473,6 @@ useCardRoute<UserRow>({
                                             role.slug ||
                                             `Роль №${role.id}`
                                         }}
-                                        <button
-                                            type="button"
-                                            :aria-label="`Снять роль ${role.name || role.slug || role.id}`"
-                                            @click.stop="
-                                                beginRoleEdit(row, $event)
-                                            "
-                                        >
-                                            ×
-                                        </button>
                                     </span>
                                     <span
                                         v-if="!(row.roles ?? []).length"
@@ -780,6 +699,22 @@ useCardRoute<UserRow>({
                                     <option :value="2">Отключен</option>
                                 </select></label
                             >
+                            <label class="roles-form-field">
+                                Роли
+                                <VSelect
+                                    v-model="roleDraft"
+                                    :items="roleOptions"
+                                    item-title="name"
+                                    item-value="id"
+                                    multiple
+                                    chips
+                                    closable-chips
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    placeholder="Выберите роли"
+                                />
+                            </label>
                         </div>
                         <template v-if="creating || passwordMode"
                             ><label
@@ -881,42 +816,19 @@ useCardRoute<UserRow>({
 .roles-placeholder {
     color: #79848d;
 }
-.roles-tagbox {
-    position: relative;
-    z-index: 3;
-    min-width: 250px;
-    padding: 6px;
-    border: 1px solid #1e892f;
-    border-radius: 6px;
-    background: #fff;
-    box-shadow: 0 5px 16px #0c456726;
+.roles-form-field {
+    min-width: 240px;
 }
-.roles-tagbox-input {
+.roles-form-field .roles-tagbox-input {
     width: 100%;
 }
-.roles-tagbox-input :deep(.v-field) {
+.roles-form-field .roles-tagbox-input :deep(.v-field) {
     border-radius: 5px;
     background: #fff;
 }
-.roles-tagbox-input :deep(.v-chip) {
+.roles-form-field .roles-tagbox-input :deep(.v-chip) {
     background: #e1f3e7;
     color: #176b27;
     font-size: 12px;
-}
-.roles-tagbox-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
-}
-.roles-tagbox-actions button {
-    padding: 4px 8px;
-    border: 1px solid #a8d4a9;
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-}
-.roles-tagbox-actions button:first-child {
-    background: #1e892f;
-    color: #fff;
 }
 </style>
