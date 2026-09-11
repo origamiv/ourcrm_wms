@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/token', [WmsAuthController::class, 'token'])->middleware('throttle:20,1');
 Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
     Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
+    Route::get('/worktime/state', [App\Http\Controllers\WorktimeController::class, 'state']);
+    Route::get('/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
+    Route::post('/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);
     Route::post('/auth/logout', [WmsAuthController::class, 'revoke']);
     Route::post('/acceptances/{id}/pick', [App\Http\Controllers\AcceptanceController::class, 'pick'])->whereNumber('id');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {

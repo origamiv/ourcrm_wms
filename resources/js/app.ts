@@ -51,6 +51,7 @@ import Home from "./Pages/Home.vue";
 import Users from "./Pages/Users.vue";
 import RolesRights from "./Pages/RolesRights.vue";
 import Roles from "./Pages/Roles.vue";
+import Worktime from "./Pages/Worktime.vue";
 import Permissions from "./Pages/Permissions.vue";
 import "./lib/http";
 
@@ -105,6 +106,7 @@ const pages: Record<string, any> = {
     Roles,
     Permissions,
     RolesRights,
+    Worktime,
 };
 createInertiaApp({
     title: (title) => `${title} · WMS`,

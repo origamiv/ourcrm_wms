@@ -2,13 +2,14 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import { http, endSession } from "../lib/http";
+import WorktimeControls from "./WorktimeControls.vue";
 const page = usePage<any>();
 const collapsed = ref(false),
     leaving = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
 function go(
-    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces",
+    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces" | "Worktime",
     url: string,
 ) {
     if (navigator.onLine) router.visit(url);
@@ -75,6 +76,13 @@ onUnmounted(() => {
                         src="/design/crm/workspace.svg"
                         alt=""
                     /><span class="nav-label">Главная</span></a
+                >
+                <a
+                    href="/main/worktime"
+                    aria-label="Рабочий график"
+                    :class="{ active: page.url === '/main/worktime' }"
+                    @click.prevent="go('Worktime', '/main/worktime')"
+                    ><img class="nav-icon" src="/design/crm/view.svg" alt="" /><span class="nav-label">Рабочий график</span></a
                 >
                 <a
                     v-if="page.props.auth.is_admin"
@@ -170,6 +178,7 @@ onUnmounted(() => {
                               ? "Фулфилмент"
                               : "Рабочий стол"
                 }}</span>
+                <WorktimeControls />
                 <div class="account">
                     <span class="header-avatar"
                         ><img src="/design/crm/profile.svg" alt=""

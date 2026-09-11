@@ -13,6 +13,10 @@ Route::get('/login', Login::class)->name('login');
 Route::post('/logout', [WmsAuthController::class, 'logout'])->name('logout');
 Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group(function () {
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
+    Route::get('/web/worktime/state', [App\Http\Controllers\WorktimeController::class, 'state']);
+    Route::get('/web/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
+    Route::post('/web/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);
+    Route::get('/main/worktime', [App\Http\Controllers\WorktimeController::class, 'page']);
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
         Route::post('/web/export/pdf', [App\Http\Controllers\DataExportController::class, 'pdf']);

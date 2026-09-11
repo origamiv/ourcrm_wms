@@ -16,7 +16,7 @@ final class SectionPageController
             'integration' => ['webhooks' => 'IntegrationWebhooks', 'data' => 'IntegrationData', 'rules' => 'IntegrationRules', 'services' => 'IntegrationServices', 'type_hook' => 'IntegrationHookTypes', 'type_processing' => 'IntegrationProcessingTypes'],
             'fulfillment' => ['warehouses' => 'Warehouses', 'cells' => 'Cells', 'cell_goods' => 'CellGoods', 'acceptances' => 'Acceptances', 'type_acceptance' => 'TypeAcceptances', 'type_services' => 'TypeServices', 'services_ff' => 'ServicesFf', 'tasks' => 'Tasks', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses', 'type_storage' => 'TypeStorage', 'task_types' => 'TaskTypes', 'task_statuses' => 'TaskStatuses', 'priorities' => 'Priorities', 'zones' => 'Zones'],
             'goods' => ['goods' => 'Goods', 'good_cards' => 'GoodCardDetail', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
-            'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
+            'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts', 'worktime' => 'Worktime'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals', 'services' => 'ClientServices', 'accounts' => 'ClientAccounts'],
         ];
         $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
@@ -25,6 +25,7 @@ final class SectionPageController
         }
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
+        if ($top === 'worktime') return Inertia::render('Worktime');
         $goodId = null;
         $taskId = null;
         $clientScope = null;
