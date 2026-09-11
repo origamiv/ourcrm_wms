@@ -297,7 +297,7 @@ async function pickAcceptance() {
     acceptanceSaving.value = true;
     acceptanceNotice.value = "";
     try {
-        const response = await http(`/api/acceptances/${conductingAcceptance.value.id}/pick`, "POST", { barcode: acceptanceBarcode.value.trim() });
+        const response = await http(`/web/acceptances/${conductingAcceptance.value.id}/pick`, "POST", { barcode: acceptanceBarcode.value.trim() });
         if (response.acceptance) {
             await store.apply(response.acceptance);
             conductingAcceptance.value = response.acceptance;
