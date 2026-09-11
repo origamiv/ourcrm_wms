@@ -37,6 +37,7 @@ const hiddenColumns = ref<string[]>([]);
 const draggedColumn = ref<string | null>(null);
 const isCellGood = props.entity === "cell_goods";
 const isAcceptance = props.entity === "acceptances";
+const isTask = props.entity === "tasks";
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
@@ -56,6 +57,7 @@ const configurableColumns = computed(() => [
                   : "Название",
     }] : []),
     ...definition.fields,
+    ...(isTask ? [{ key: "__sku_count", label: "Количество SKU/товара" }] : []),
     ...(!isCellGood ? [{
         key: "status",
         label: props.entity === "kizes" ? "Состояние" : "Статус",
@@ -88,6 +90,7 @@ const renderedSpecialColumns = new Set([
     "doc_type_id",
     "doc_date",
     "amount",
+    "__sku_count",
     "status",
 ]);
 const extraColumns = computed(() =>
@@ -177,6 +180,14 @@ function lookupInitial(entity: string, value: unknown): string {
     const name = lookupOption(entity, value)?.name;
     return name ? String(name).trim().slice(0, 1).toUpperCase() : "?";
 }
+function taskSkuCount(row: ReferenceRow): string {
+    const src = row.src && typeof row.src === "object" ? row.src : {};
+    const sku = Array.isArray(src.goods)
+        ? src.goods.length
+        : Number(src.goods_count ?? src.products_count ?? 0);
+    const count = Number(src.pieces_count ?? src.items_count ?? src.total_pieces ?? src.planned_pieces ?? row.fact_count ?? 0);
+    return `${Number.isFinite(sku) ? sku : 0}/${Number.isFinite(count) ? count : 0}`;
+}
 const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
@@ -200,7 +211,6 @@ const kizColumns = computed(() =>
           : [],
 );
 const isGood = props.entity === "goods";
-const isTask = props.entity === "tasks";
 const isGoodsSection =
     isGood ||
     ["type_goods", "unit_goods", "kind_kiz", "kizes"].includes(props.entity);
@@ -1033,6 +1043,7 @@ useCardRoute<ReferenceRow>({
                                 <th v-if="isColumnVisible('amount')">Сумма</th></template
                             >
                             <th v-if="isTask && isColumnVisible('client_id')">Клиент</th>
+                            <th v-if="isTask && isColumnVisible('__sku_count')">Количество SKU/товара</th>
                             <th v-for="field in extraColumns" :key="field.key">
                                 {{ field.label }}
                             </th>
@@ -1131,6 +1142,7 @@ useCardRoute<ReferenceRow>({
                                 <th v-if="isColumnVisible('amount')"></th>
                             </template>
                             <th v-if="isTask && isColumnVisible('client_id')"></th>
+                            <th v-if="isTask && isColumnVisible('__sku_count')"></th>
                             <th v-for="field in extraColumns" :key="field.key"></th>
                             <th
                                 v-for="field in kizColumns"
@@ -1333,6 +1345,9 @@ useCardRoute<ReferenceRow>({
                             </template>
                             <td v-if="isTask && isColumnVisible('client_id')">
                                 {{ columnValue(row, { key: 'client_id', label: 'Клиент', kind: 'lookup', lookup: 'clients' }) }}
+                            </td>
+                            <td v-if="isTask && isColumnVisible('__sku_count')">
+                                {{ taskSkuCount(row) }}
                             </td>
                             <td v-for="field in extraColumns" :key="field.key">
                                 <div v-if="isTask && (field.key === 'task_type_id' || field.key === 'priority_id')" class="lookup-avatar-cell">
