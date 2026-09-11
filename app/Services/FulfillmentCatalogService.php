@@ -13,6 +13,8 @@ use App\Models\Cell;
 use App\Models\CellGood;
 use App\Models\Acceptance;
 use App\Models\TypeAcceptance;
+use App\Models\TypeService;
+use App\Models\ServiceFf;
 use App\Models\Good;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -23,7 +25,7 @@ final class FulfillmentCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'task_types', 'task_statuses', 'priorities'], true), 404);
+        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'priorities'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
@@ -38,6 +40,8 @@ final class FulfillmentCatalogService
                 'cell_goods' => CellGood::class,
                 'acceptances' => Acceptance::class,
                 'type_acceptance' => TypeAcceptance::class,
+                'type_services' => TypeService::class,
+                'services_ff' => ServiceFf::class,
                 'task_types' => \App\Models\TaskType::class,
                 'task_statuses' => \App\Models\TaskStatus::class,
                 'priorities' => \App\Models\Priority::class,
@@ -119,6 +123,16 @@ final class FulfillmentCatalogService
                         if ($value !== null && ! $related::visibleTo($tenant)->whereKey($value)->exists()) {
                             throw \Illuminate\Validation\ValidationException::withMessages([$field => 'Выберите доступную запись.']);
                         }
+                    }
+                }
+                if ($catalog === 'services_ff') {
+                    $unit = $data['unit_id'] ?? $row->unit_id;
+                    $type = $data['type_service_ff'] ?? $row->type_service_ff;
+                    if ($unit !== null && ! \App\Models\GoodUnit::visibleTo($tenant)->whereKey($unit)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['unit_id' => 'Выберите доступную единицу измерения.']);
+                    }
+                    if ($type !== null && ! TypeService::visibleTo($tenant)->whereKey($type)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['type_service_ff' => 'Выберите доступный тип услуги.']);
                     }
                 }
                 $row->forceFill(array_intersect_key($data, array_flip(array_diff(config('sync.entities.'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']))));

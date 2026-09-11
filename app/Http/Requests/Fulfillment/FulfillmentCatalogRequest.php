@@ -23,6 +23,8 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                     'cell_goods' => 'pgsql.wms.cell_goods',
                     'zones' => 'pgsql.wms.zones',
                     'type_storage' => 'pgsql.wms.type_storage',
+                    'type_services' => 'pgsql.wms.type_services',
+                    'services_ff' => 'pgsql.wms.services_ff',
                     default => 'pgsql.wms.type_warehouses',
                 }, 'shortname')
                     ->ignore($this->route('id'))
@@ -81,6 +83,18 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'started_at' => ['nullable', 'date'],
                 'finished_at' => ['nullable', 'date', 'after_or_equal:started_at'],
                 'status' => ['required', 'integer', 'in:0,1,2,3'],
+                'tenant_id' => ['prohibited'],
+            ];
+        }
+        if ($this->route('catalog') === 'services_ff') {
+            $rules = [
+                'name' => ['required', 'string', 'max:255'],
+                'shortname' => ['nullable', 'string', 'max:255', 'regex:/^[a-z][a-z0-9_]*$/'],
+                'status' => ['required', 'integer', 'in:0,1,2'],
+                'unit_id' => ['nullable', 'integer', 'min:1'],
+                'price' => ['nullable', 'numeric', 'min:0'],
+                'type_service_ff' => ['nullable', 'integer', 'min:1'],
+                'is_visible' => ['nullable', 'integer', 'in:0,1'],
                 'tenant_id' => ['prohibited'],
             ];
         }

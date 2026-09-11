@@ -57,6 +57,8 @@ const tabs = [
             },
             { label: "Типы задач", url: "/fulfillment/task_types", component: "TaskTypes", icon: "goods" },
             { label: "Типы приемки", url: "/fulfillment/type_acceptance", component: "TypeAcceptances", icon: "goods" },
+            { label: "Типы услуг", url: "/fulfillment/type_services", component: "TypeServices", icon: "goods" },
+            { label: "Услуги фулфилмента", url: "/fulfillment/services_ff", component: "ServicesFf", icon: "goods" },
             { label: "Статусы задач", url: "/fulfillment/task_statuses", component: "TaskStatuses", icon: "goods" },
             { label: "Приоритеты", url: "/fulfillment/priorities", component: "Priorities", icon: "goods" },
             {

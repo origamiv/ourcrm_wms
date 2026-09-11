@@ -41,6 +41,8 @@ export interface ReferenceField {
         | "tasks"
         | "acceptances"
         | "type_acceptance"
+        | "type_services"
+        | "services_ff"
         | "warehouses"
         | "marketplaces"
         | "task_types"
@@ -225,6 +227,20 @@ export const references = {
     type_acceptance: {
         title: "Типы приемки",
         fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    type_services: {
+        title: "Типы услуг",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    services_ff: {
+        title: "Услуги фулфилмента",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "unit_id", label: "Единица измерения", kind: "lookup", lookup: "unit_goods" },
+            { key: "price", label: "Цена", kind: "money" },
+            { key: "type_service_ff", label: "Тип услуги", kind: "lookup", lookup: "type_services" },
+            { key: "is_visible", label: "Видима", kind: "flag" },
+        ] as ReferenceField[],
     },
     task_types: { title: "Типы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
     task_statuses: { title: "Статусы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },

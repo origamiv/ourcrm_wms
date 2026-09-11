@@ -174,7 +174,7 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "type_services", "services_ff", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
