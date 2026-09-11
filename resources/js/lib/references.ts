@@ -189,7 +189,7 @@ export const references = {
             { key: "level", label: "Уровень", kind: "number" },
             { key: "number", label: "Номер", kind: "number" },
             { key: "priority", label: "Приоритет", kind: "number" },
-            { key: "type_storage_id", label: "Тип хранения", kind: "lookup", lookup: "type_storage" },
+            { key: "type_storage_id", label: "Тип хранения", kind: "lookup", lookup: "type_storage", required: true },
         ] as ReferenceField[],
     },
     cell_goods: {
