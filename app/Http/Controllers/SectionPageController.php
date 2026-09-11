@@ -14,7 +14,7 @@ final class SectionPageController
     {
         $pages = [
             'integration' => ['webhooks' => 'IntegrationWebhooks', 'data' => 'IntegrationData', 'rules' => 'IntegrationRules', 'services' => 'IntegrationServices', 'type_hook' => 'IntegrationHookTypes', 'type_processing' => 'IntegrationProcessingTypes'],
-            'fulfillment' => ['warehouses' => 'Warehouses', 'cells' => 'Cells', 'tasks' => 'Tasks', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses', 'type_storage' => 'TypeStorage', 'task_types' => 'TaskTypes', 'task_statuses' => 'TaskStatuses', 'priorities' => 'Priorities', 'zones' => 'Zones'],
+            'fulfillment' => ['warehouses' => 'Warehouses', 'cells' => 'Cells', 'cell_goods' => 'CellGoods', 'tasks' => 'Tasks', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses', 'type_storage' => 'TypeStorage', 'task_types' => 'TaskTypes', 'task_statuses' => 'TaskStatuses', 'priorities' => 'Priorities', 'zones' => 'Zones'],
             'goods' => ['goods' => 'Goods', 'good_cards' => 'GoodCardDetail', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals'],

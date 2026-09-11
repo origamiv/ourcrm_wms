@@ -31,7 +31,7 @@ final class DataImportController
 
     private function storeImport(Request $request, string $entity, FulfillmentCatalogService $service, User $actor)
     {
-        abort_unless(in_array($entity, ['warehouses', 'cells', 'zones', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage'], true), 422, 'Импорт этого раздела пока не поддерживается.');
+        abort_unless(in_array($entity, ['warehouses', 'cells', 'cell_goods', 'zones', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage'], true), 422, 'Импорт этого раздела пока не поддерживается.');
         $file = $request->file('file');
         abort_unless($file instanceof UploadedFile && $file->isValid(), 422, 'Файл не загружен.');
         $format = strtoupper((string) $request->input('format', 'XLS'));
@@ -46,7 +46,7 @@ final class DataImportController
                 if ($key && !in_array($key, ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'], true)) $payload[$key] = $value;
             }
             if (!$payload) continue;
-            $payload['status'] = $payload['status'] ?? 1;
+            if ($entity !== 'cell_goods') $payload['status'] = $payload['status'] ?? 1;
             if ($entity === 'cells' && $request->filled('warehouse_id')) {
                 $payload['warehouse_id'] = (int) $request->input('warehouse_id');
             }
@@ -72,7 +72,7 @@ final class DataImportController
                     ], static fn ($v) => $v !== null && $v !== ''))
                     : Str::slug((string) $payload['name'], '_');
             }
-            if (!isset($payload['name']) || trim((string) $payload['name']) === '') continue;
+            if ($entity !== 'cell_goods' && (!isset($payload['name']) || trim((string) $payload['name']) === '')) continue;
             $result[] = $service->save($actor, $entity, $payload);
         }
         return response()->json(['imported' => count($result), 'data' => $result]);

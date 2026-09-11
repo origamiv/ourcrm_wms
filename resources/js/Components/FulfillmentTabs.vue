@@ -14,6 +14,12 @@ const tabs = [
         icon: "goods",
     },
     {
+        label: "Размещения",
+        url: "/fulfillment/cell_goods",
+        component: "CellGoods",
+        icon: "goods",
+    },
+    {
         label: "Задачи",
         url: "/fulfillment/tasks",
         component: "Tasks",

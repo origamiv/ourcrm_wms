@@ -37,6 +37,7 @@ export interface ReferenceField {
         | "type_storage"
         | "zones"
         | "cells"
+        | "cell_goods"
         | "warehouses"
         | "marketplaces"
         | "task_types"
@@ -187,6 +188,17 @@ export const references = {
             { key: "row", label: "Ряд", kind: "number" },
             { key: "level", label: "Уровень", kind: "number" },
             { key: "number", label: "Номер", kind: "number" },
+        ] as ReferenceField[],
+    },
+    cell_goods: {
+        title: "Размещения",
+        fields: [
+            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
+            { key: "cell_id", label: "Ячейка", kind: "lookup", lookup: "cells", required: true },
+            { key: "cnt", label: "Количество", kind: "number", required: true },
+            { key: "put_at", label: "Размещено", kind: "datetime" },
+            { key: "leave_at", label: "Выбыло", kind: "datetime" },
+            { key: "src", label: "Источник", kind: "json", detail: true },
         ] as ReferenceField[],
     },
     task_types: { title: "Типы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },

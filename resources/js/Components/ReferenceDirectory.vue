@@ -35,6 +35,7 @@ const columnSettingsOpen = ref(false);
 const columnOrder = ref<string[]>([]);
 const hiddenColumns = ref<string[]>([]);
 const draggedColumn = ref<string | null>(null);
+const isCellGood = props.entity === "cell_goods";
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
@@ -44,7 +45,7 @@ const configurableColumns = computed(() => [
         key: "__id",
         label: "#",
     },
-    {
+    ...(!isCellGood ? [{
         key: "__name",
         label:
             props.entity === "kizes"
@@ -52,12 +53,12 @@ const configurableColumns = computed(() => [
                 : props.entity === "client_individuals"
                   ? "ФИО"
                   : "Название",
-    },
+    }] : []),
     ...definition.fields,
-    {
+    ...(!isCellGood ? [{
         key: "status",
         label: props.entity === "kizes" ? "Состояние" : "Статус",
-    },
+    }] : []),
     {
         key: "__actions",
         label: "Действия",
@@ -172,7 +173,7 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "cell_goods", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
@@ -1457,7 +1458,7 @@ useCardRoute<ReferenceRow>({
                             (isIntegration && !detailReady)
                         "
                     >
-                        <label v-if="!isKiz"
+                        <label v-if="!isKiz && !isCellGood"
                             >{{ isIndividual ? "ФИО *" : "Название *"
                             }}<input
                                 v-model="form.name"
@@ -1690,7 +1691,7 @@ useCardRoute<ReferenceRow>({
                                 )?.settings?.print?.fields ?? []
                             "
                         />
-                        <label v-if="!isKiz"
+                        <label v-if="!isKiz && !isCellGood"
                             >Статус<select
                                 v-model="form.status"
                                 aria-label="Статус"

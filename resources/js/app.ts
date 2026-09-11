@@ -11,6 +11,7 @@ import TypeWarehouses from "./Pages/TypeWarehouses.vue";
 import TypeStorage from "./Pages/TypeStorage.vue";
 import Zones from "./Pages/Zones.vue";
 import Cells from "./Pages/Cells.vue";
+import CellGoods from "./Pages/CellGoods.vue";
 import Tasks from "./Pages/Tasks.vue";
 import TaskTypes from "./Pages/TaskTypes.vue";
 import TaskStatuses from "./Pages/TaskStatuses.vue";
@@ -68,6 +69,7 @@ const pages: Record<string, any> = {
     TypeStorage,
     Zones,
     Cells,
+    CellGoods,
     Tasks,
     TaskTypes,
     TaskStatuses,

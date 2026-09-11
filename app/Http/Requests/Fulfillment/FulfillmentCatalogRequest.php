@@ -20,6 +20,7 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                     'delivery_services' => 'pgsql.wms.delivery_services',
                     'warehouses' => 'pgsql.wms.warehouses',
                     'cells' => 'pgsql.wms.cells',
+                    'cell_goods' => 'pgsql.wms.cell_goods',
                     'zones' => 'pgsql.wms.zones',
                     'type_storage' => 'pgsql.wms.type_storage',
                     default => 'pgsql.wms.type_warehouses',
@@ -51,6 +52,17 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'row' => ['nullable', 'integer', 'min:0'],
                 'level' => ['nullable', 'integer', 'min:0'],
                 'number' => ['nullable', 'integer', 'min:0'],
+            ];
+        }
+        if ($this->route('catalog') === 'cell_goods') {
+            $rules = [
+                'warehouse_id' => ['required', 'integer', 'min:1'],
+                'cell_id' => ['required', 'integer', 'min:1'],
+                'cnt' => ['required', 'integer', 'min:0'],
+                'put_at' => ['nullable', 'date'],
+                'leave_at' => ['nullable', 'date', 'after_or_equal:put_at'],
+                'src' => ['nullable', 'array'],
+                'tenant_id' => ['prohibited'],
             ];
         }
 
