@@ -15,7 +15,7 @@ test("назначает роли двойным кликом по ячейке 
     const rolesCell = row.locator("td").nth(4);
     await rolesCell.dblclick();
     await expect(
-        page.getByLabel("Роли пользователя", { exact: true }),
+        page.getByRole("button", { name: "Выбрать роли", exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: /Выбрать роли/ }).click();
     await page
