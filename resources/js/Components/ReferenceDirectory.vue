@@ -36,6 +36,7 @@ const columnOrder = ref<string[]>([]);
 const hiddenColumns = ref<string[]>([]);
 const draggedColumn = ref<string | null>(null);
 const isCellGood = props.entity === "cell_goods";
+const isAcceptance = props.entity === "acceptances";
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
@@ -45,7 +46,7 @@ const configurableColumns = computed(() => [
         key: "__id",
         label: "#",
     },
-    ...(!isCellGood ? [{
+    ...(!isCellGood && !isAcceptance ? [{
         key: "__name",
         label:
             props.entity === "kizes"
@@ -173,7 +174,7 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "cell_goods", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
@@ -1475,7 +1476,7 @@ useCardRoute<ReferenceRow>({
                             (isIntegration && !detailReady)
                         "
                     >
-                        <label v-if="!isKiz && !isCellGood"
+                        <label v-if="!isKiz && !isCellGood && !isAcceptance"
                             >{{ isIndividual ? "ФИО *" : "Название *"
                             }}<input
                                 v-model="form.name"
@@ -1709,7 +1710,7 @@ useCardRoute<ReferenceRow>({
                                 )?.settings?.print?.fields ?? []
                             "
                         />
-                        <label v-if="!isKiz && !isCellGood"
+                                <label v-if="!isKiz && !isCellGood && !isAcceptance"
                             >Статус<select
                                 v-model="form.status"
                                 aria-label="Статус"

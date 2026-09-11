@@ -11,6 +11,8 @@ use App\Models\TypeStorage;
 use App\Models\Zone;
 use App\Models\Cell;
 use App\Models\CellGood;
+use App\Models\Acceptance;
+use App\Models\TypeAcceptance;
 use App\Models\Good;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -21,7 +23,7 @@ final class FulfillmentCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'task_types', 'task_statuses', 'priorities'], true), 404);
+        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'task_types', 'task_statuses', 'priorities'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
@@ -34,6 +36,8 @@ final class FulfillmentCatalogService
                 'zones' => Zone::class,
                 'cells' => Cell::class,
                 'cell_goods' => CellGood::class,
+                'acceptances' => Acceptance::class,
+                'type_acceptance' => TypeAcceptance::class,
                 'task_types' => \App\Models\TaskType::class,
                 'task_statuses' => \App\Models\TaskStatus::class,
                 'priorities' => \App\Models\Priority::class,
@@ -102,6 +106,19 @@ final class FulfillmentCatalogService
                     }
                     if (array_key_exists('user_id', $data) && $data['user_id'] !== null && ! User::visibleTo($tenant)->whereKey($data['user_id'])->exists()) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['user_id' => 'Выберите доступного пользователя.']);
+                    }
+                }
+                if ($catalog === 'acceptances') {
+                    foreach ([
+                        'client_id' => \App\Models\Client::class,
+                        'warehouse_id' => Warehouse::class,
+                        'task_id' => \App\Models\Task::class,
+                        'type_acceptance_id' => TypeAcceptance::class,
+                    ] as $field => $related) {
+                        $value = $data[$field] ?? $row->{$field};
+                        if ($value !== null && ! $related::visibleTo($tenant)->whereKey($value)->exists()) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([$field => 'Выберите доступную запись.']);
+                        }
                     }
                 }
                 $row->forceFill(array_intersect_key($data, array_flip(array_diff(config('sync.entities.'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']))));

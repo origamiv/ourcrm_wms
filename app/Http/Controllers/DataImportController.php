@@ -31,7 +31,7 @@ final class DataImportController
 
     private function storeImport(Request $request, string $entity, FulfillmentCatalogService $service, User $actor)
     {
-        abort_unless(in_array($entity, ['warehouses', 'cells', 'cell_goods', 'zones', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage'], true), 422, 'Импорт этого раздела пока не поддерживается.');
+        abort_unless(in_array($entity, ['warehouses', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'zones', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage'], true), 422, 'Импорт этого раздела пока не поддерживается.');
         $file = $request->file('file');
         abort_unless($file instanceof UploadedFile && $file->isValid(), 422, 'Файл не загружен.');
         $format = strtoupper((string) $request->input('format', 'XLS'));

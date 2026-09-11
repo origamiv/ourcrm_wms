@@ -20,6 +20,12 @@ const tabs = [
         icon: "goods",
     },
     {
+        label: "Приемки",
+        url: "/fulfillment/acceptances",
+        component: "Acceptances",
+        icon: "goods",
+    },
+    {
         label: "Задачи",
         url: "/fulfillment/tasks",
         component: "Tasks",
@@ -50,6 +56,7 @@ const tabs = [
                 icon: "goods",
             },
             { label: "Типы задач", url: "/fulfillment/task_types", component: "TaskTypes", icon: "goods" },
+            { label: "Типы приемки", url: "/fulfillment/type_acceptance", component: "TypeAcceptances", icon: "goods" },
             { label: "Статусы задач", url: "/fulfillment/task_statuses", component: "TaskStatuses", icon: "goods" },
             { label: "Приоритеты", url: "/fulfillment/priorities", component: "Priorities", icon: "goods" },
             {

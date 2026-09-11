@@ -69,6 +69,21 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'tenant_id' => ['prohibited'],
             ];
         }
+        if ($this->route('catalog') === 'acceptances') {
+            $rules = [
+                'client_id' => ['nullable', 'integer', 'min:1'],
+                'warehouse_id' => ['nullable', 'integer', 'min:1'],
+                'task_id' => ['nullable', 'integer', 'min:1'],
+                'plan_count' => ['nullable', 'integer', 'min:0'],
+                'fact_count' => ['nullable', 'integer', 'min:0'],
+                'progress' => ['nullable', 'integer', 'min:0', 'max:100'],
+                'type_acceptance_id' => ['nullable', 'integer', 'min:1'],
+                'started_at' => ['nullable', 'date'],
+                'finished_at' => ['nullable', 'date', 'after_or_equal:started_at'],
+                'status' => ['required', 'integer', 'in:0,1,2'],
+                'tenant_id' => ['prohibited'],
+            ];
+        }
 
         return $rules;
     }

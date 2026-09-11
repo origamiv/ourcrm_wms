@@ -38,6 +38,9 @@ export interface ReferenceField {
         | "zones"
         | "cells"
         | "cell_goods"
+        | "tasks"
+        | "acceptances"
+        | "type_acceptance"
         | "warehouses"
         | "marketplaces"
         | "task_types"
@@ -204,6 +207,24 @@ export const references = {
             { key: "leave_at", label: "Выбыло", kind: "datetime" },
             { key: "src", label: "Источник", kind: "json", detail: true },
         ] as ReferenceField[],
+    },
+    acceptances: {
+        title: "Приемки",
+        fields: [
+            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients" },
+            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses" },
+            { key: "task_id", label: "Задача", kind: "lookup", lookup: "tasks" },
+            { key: "type_acceptance_id", label: "Тип приемки", kind: "lookup", lookup: "type_acceptance" },
+            { key: "plan_count", label: "Плановое количество", kind: "number" },
+            { key: "fact_count", label: "Фактическое количество", kind: "number" },
+            { key: "progress", label: "Прогресс", kind: "number" },
+            { key: "started_at", label: "Начата", kind: "datetime" },
+            { key: "finished_at", label: "Завершена", kind: "datetime" },
+        ] as ReferenceField[],
+    },
+    type_acceptance: {
+        title: "Типы приемки",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
     },
     task_types: { title: "Типы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
     task_statuses: { title: "Статусы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
