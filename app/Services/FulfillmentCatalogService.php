@@ -82,6 +82,10 @@ final class FulfillmentCatalogService
                     if ($zone !== null && ! Zone::visibleTo($tenant)->whereKey($zone)->exists()) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['zone_id' => 'Выберите доступную зону.']);
                     }
+                    $storageType = $data['type_storage_id'] ?? $row->type_storage_id;
+                    if ($storageType !== null && ! TypeStorage::visibleTo($tenant)->whereKey($storageType)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['type_storage_id' => 'Выберите доступный тип хранения.']);
+                    }
                 }
                 if ($catalog === 'cell_goods') {
                     $warehouse = (int) ($data['warehouse_id'] ?? $row->warehouse_id);

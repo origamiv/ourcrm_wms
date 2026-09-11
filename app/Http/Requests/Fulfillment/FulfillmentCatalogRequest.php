@@ -52,6 +52,8 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'row' => ['nullable', 'integer', 'min:0'],
                 'level' => ['nullable', 'integer', 'min:0'],
                 'number' => ['nullable', 'integer', 'min:0'],
+                'priority' => ['nullable', 'integer'],
+                'type_storage_id' => ['nullable', 'integer', 'min:1'],
             ];
         }
         if ($this->route('catalog') === 'cell_goods') {

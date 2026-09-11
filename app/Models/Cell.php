@@ -18,6 +18,8 @@ final class Cell extends BaseModel
         'row' => 'integer',
         'level' => 'integer',
         'number' => 'integer',
+        'priority' => 'integer',
+        'type_storage_id' => 'integer',
         'status' => 'integer',
     ];
 
@@ -29,5 +31,10 @@ final class Cell extends BaseModel
     public function zone(): BelongsTo
     {
         return $this->belongsTo(Zone::class);
+    }
+
+    public function storageType(): BelongsTo
+    {
+        return $this->belongsTo(TypeStorage::class, 'type_storage_id');
     }
 }
