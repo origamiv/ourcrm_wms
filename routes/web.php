@@ -53,6 +53,9 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::post('/web/clients/{party}', [App\Http\Controllers\ClientPartyController::class, 'store'])->whereIn('party', ['companies', 'individuals']);
         Route::put('/web/clients/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'update'])->whereIn('party', ['companies', 'individuals'])->whereNumber('id');
         Route::delete('/web/clients/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'destroy'])->whereIn('party', ['companies', 'individuals'])->whereNumber('id');
+        Route::post('/web/clients/{client_catalog}', [App\Http\Controllers\ClientCatalogController::class, 'store'])->whereIn('client_catalog', ['services', 'accounts']);
+        Route::put('/web/clients/{client_catalog}/{id}', [App\Http\Controllers\ClientCatalogController::class, 'update'])->whereIn('client_catalog', ['services', 'accounts'])->whereNumber('id');
+        Route::delete('/web/clients/{client_catalog}/{id}', [App\Http\Controllers\ClientCatalogController::class, 'destroy'])->whereIn('client_catalog', ['services', 'accounts'])->whereNumber('id');
 
         Route::post('/web/{reference}', [App\Http\Controllers\ReferenceController::class, 'store'])->whereIn('reference', ['modules', 'features', 'icons', 'files']);
         Route::put('/web/{reference}/{id}', [App\Http\Controllers\ReferenceController::class, 'update'])->whereIn('reference', ['modules', 'features', 'icons', 'files'])->whereNumber('id');

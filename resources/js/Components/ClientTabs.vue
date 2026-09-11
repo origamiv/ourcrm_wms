@@ -26,6 +26,18 @@ const tabs = [
         icon: "roles",
     },
     {
+        label: "Сервисы",
+        url: "/clients/services",
+        component: "ClientServices",
+        icon: "administration",
+    },
+    {
+        label: "Доступы",
+        url: "/clients/accounts",
+        component: "ClientAccounts",
+        icon: "administration",
+    },
+    {
         label: "Справочники",
         url: "/clients/references",
         component: "",

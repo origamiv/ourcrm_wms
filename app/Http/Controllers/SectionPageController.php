@@ -17,7 +17,7 @@ final class SectionPageController
             'fulfillment' => ['warehouses' => 'Warehouses', 'cells' => 'Cells', 'cell_goods' => 'CellGoods', 'acceptances' => 'Acceptances', 'type_acceptance' => 'TypeAcceptances', 'type_services' => 'TypeServices', 'services_ff' => 'ServicesFf', 'tasks' => 'Tasks', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses', 'type_storage' => 'TypeStorage', 'task_types' => 'TaskTypes', 'task_statuses' => 'TaskStatuses', 'priorities' => 'Priorities', 'zones' => 'Zones'],
             'goods' => ['goods' => 'Goods', 'good_cards' => 'GoodCardDetail', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
-            'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals'],
+            'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals', 'services' => 'ClientServices', 'accounts' => 'ClientAccounts'],
         ];
         $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
         if ($left === 'integration') {

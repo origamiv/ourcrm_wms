@@ -47,6 +47,9 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
         Route::post('/clients/{party}', [App\Http\Controllers\ClientPartyController::class, 'store'])->whereIn('party', ['companies', 'individuals']);
         Route::put('/clients/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'update'])->whereIn('party', ['companies', 'individuals'])->whereNumber('id');
         Route::delete('/clients/{party}/{id}', [App\Http\Controllers\ClientPartyController::class, 'destroy'])->whereIn('party', ['companies', 'individuals'])->whereNumber('id');
+        Route::post('/clients/{client_catalog}', [App\Http\Controllers\ClientCatalogController::class, 'store'])->whereIn('client_catalog', ['services', 'accounts']);
+        Route::put('/clients/{client_catalog}/{id}', [App\Http\Controllers\ClientCatalogController::class, 'update'])->whereIn('client_catalog', ['services', 'accounts'])->whereNumber('id');
+        Route::delete('/clients/{client_catalog}/{id}', [App\Http\Controllers\ClientCatalogController::class, 'destroy'])->whereIn('client_catalog', ['services', 'accounts'])->whereNumber('id');
 
         Route::post('/{reference}', [App\Http\Controllers\ReferenceController::class, 'store'])->whereIn('reference', ['modules', 'features', 'icons', 'files']);
         Route::put('/{reference}/{id}', [App\Http\Controllers\ReferenceController::class, 'update'])->whereIn('reference', ['modules', 'features', 'icons', 'files'])->whereNumber('id');

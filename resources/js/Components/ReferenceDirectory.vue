@@ -42,6 +42,9 @@ const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
 const fixedColumnKeys = new Set(["__id", "__actions"]);
+function isFixedColumn(key: string): boolean {
+    return fixedColumnKeys.has(key) || (["client_services", "client_accounts"].includes(props.entity) && ["__name", "shortname", "status"].includes(key));
+}
 const configurableColumns = computed(() => [
     {
         key: "__id",
@@ -101,7 +104,7 @@ const extraColumns = computed(() =>
         : [],
 );
 function isColumnVisible(key: string): boolean {
-    if (fixedColumnKeys.has(key)) return true;
+    if (isFixedColumn(key)) return true;
     return !hiddenColumns.value.includes(key) && allColumns.value.some((field) => field.key === key);
 }
 function loadColumnSettings() {
@@ -132,7 +135,7 @@ function saveColumnSettings() {
     );
 }
 function toggleColumn(key: string) {
-    if (fixedColumnKeys.has(key)) return;
+    if (isFixedColumn(key)) return;
     hiddenColumns.value = hiddenColumns.value.includes(key)
         ? hiddenColumns.value.filter((item) => item !== key)
         : [...hiddenColumns.value, key];
@@ -217,7 +220,8 @@ const isGoodsSection =
 const isIndividual = props.entity === "client_individuals";
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
-const isClientSection = isIndividual || isDocument || isDocType;
+const isClientCatalog = ["client_services", "client_accounts"].includes(props.entity);
+const isClientSection = isIndividual || isDocument || isDocType || isClientCatalog;
 const basePath = isIntegration
     ? `/integration/${props.entity.replace("integration_", "")}`
     : isFulfillment
@@ -967,7 +971,7 @@ useCardRoute<ReferenceRow>({
                         </button>
                     </div>
                     <div
-                        v-for="field in allColumns.filter((item) => !fixedColumnKeys.has(item.key))"
+                        v-for="field in allColumns.filter((item) => !isFixedColumn(item.key))"
                         :key="field.key"
                         class="column-settings-item"
                         draggable="true"
@@ -1098,6 +1102,8 @@ useCardRoute<ReferenceRow>({
                                             'client_individuals',
                                             'client_documents',
                                             'client_doc_types',
+                                            'client_services',
+                                            'client_accounts',
                                         ].includes(props.entity)
                                             ? 'Поиск по краткому названию'
                                             : 'Поиск по категории'

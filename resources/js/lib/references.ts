@@ -28,6 +28,8 @@ export interface ReferenceField {
         | "clients"
         | "client_doc_types"
         | "client_companies"
+        | "client_services"
+        | "client_accounts"
         | "goods"
         | "good_cards"
         | "type_goods"
@@ -475,6 +477,28 @@ export const references = {
                 kind: "lookup",
                 lookup: "users",
             },
+        ] as ReferenceField[],
+    },
+    client_services: {
+        title: "Сервисы",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients", required: true },
+        ] as ReferenceField[],
+    },
+    client_accounts: {
+        title: "Доступы",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients", required: true },
+            { key: "host", label: "Host" },
+            { key: "login", label: "Имя пользователя" },
+            { key: "pass", label: "Пароль", detail: true },
+            { key: "token", label: "Токен", kind: "textarea", detail: true },
+            { key: "descr", label: "Описание", kind: "textarea", detail: true },
+            { key: "group_id", label: "Группа", kind: "number" },
+            { key: "server_id", label: "Сервер", kind: "number" },
+            { key: "src", label: "API", kind: "json", detail: true },
         ] as ReferenceField[],
     },
     modules: {
