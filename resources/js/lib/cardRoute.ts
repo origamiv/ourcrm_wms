@@ -25,7 +25,7 @@ export function useCardRoute<T extends { id: string }>(options: {
             const [id, action] = path.slice(options.base.length + 1).split("/");
             const row =
                 id && id !== "0"
-                    ? options.rows.value.find((row) => row.id === id)
+                    ? options.rows.value.find((row) => String(row.id) === id)
                     : null;
             if (appliedUrl === url && (!id || id === "0" || row)) return;
             applying = true;
