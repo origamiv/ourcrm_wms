@@ -1862,9 +1862,11 @@ useCardRoute<ReferenceRow>({
 }
 .client-form input,
 .client-form select,
+.client-form textarea,
 .filter-row input,
-.filter-row select {
-    border-color: #a8d4a9;
+.filter-row select,
+.filter-row textarea {
+    border: 1px solid #a8d4a9;
 }
 .list-footer {
     flex-wrap: wrap;

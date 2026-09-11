@@ -50,7 +50,8 @@ a:focus-visible {
     outline-offset: 3px;
 }
 input,
-select {
+select,
+textarea {
     width: 100%;
     border: 1px solid #d7dce3;
     border-radius: 6px;
@@ -59,8 +60,13 @@ select {
     font: inherit;
     min-width: 0;
 }
+select {
+    appearance: auto;
+    -webkit-appearance: menulist;
+}
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
     outline: 2px solid #a8d4a9;
     border-color: #1e892f;
 }
@@ -1190,7 +1196,11 @@ td {
     border-radius: 0 10px 10px 0;
 }
 .editor input {
-    border-color: #a8d4a9;
+    border: 1px solid #a8d4a9;
+}
+.editor select,
+.editor textarea {
+    border: 1px solid #a8d4a9;
 }
 .action-icon {
     display: inline-block;
