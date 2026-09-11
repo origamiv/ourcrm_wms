@@ -113,7 +113,10 @@ export class EntityCache<T extends EntityRow> {
                 ]);
                 await done;
                 this.memory = new Map(
-                    (entries as Entry<T>[]).map((e) => [e.id, e]),
+                    (entries as Entry<T>[]).map((e) => [
+                        String(e.id),
+                        { ...e, id: String(e.id) },
+                    ]),
                 );
                 this.meta = meta ?? {
                     cursor: null,
@@ -150,9 +153,16 @@ export class EntityCache<T extends EntityRow> {
                 this.fail();
             }
         for (const c of changes) {
-            const old = this.memory.get(c.id);
+            const id = String(c.id);
+            const normalized = { ...c, id } as Change<T>;
+            // Older in-memory data may contain both numeric and string keys
+            // for the same entity. Remove those aliases before upserting.
+            for (const key of this.memory.keys()) {
+                if (String(key) === id && key !== id) this.memory.delete(key);
+            }
+            const old = this.memory.get(id);
             if (!old || BigInt(c.version) >= BigInt(old.version))
-                this.memory.set(c.id, c);
+                this.memory.set(id, normalized);
         }
         if (meta) this.meta = meta;
         return this.rows();
