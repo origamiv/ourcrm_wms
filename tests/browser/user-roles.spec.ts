@@ -15,7 +15,7 @@ test("назначает роли двойным кликом по ячейке 
     const rolesCell = row.locator("td").nth(4);
     await rolesCell.dblclick();
     await expect(page.locator(".roles-tagbox .tagbox")).toBeVisible();
-    await page.locator(".roles-tagbox .tagbox-arrow").click();
+    await page.locator(".roles-tagbox .combo-arrow").click();
     await page
         .locator(".combobox-item")
         .filter({ hasText: "Кладовщик" })
