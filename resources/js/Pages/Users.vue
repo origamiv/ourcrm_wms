@@ -31,6 +31,7 @@ const roleRows = rolesStore.rows;
 const roleEditingUserId = ref<string | null>(null);
 const roleDraft = ref<string[]>([]);
 const roleSaving = ref(false);
+const roleDropdownOpen = ref(false);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -164,12 +165,25 @@ function beginRoleEdit(row: UserRow, event?: Event) {
         return;
     roleEditingUserId.value = row.id;
     roleDraft.value = (row.roles ?? []).map((role) => String(role.id));
+    roleDropdownOpen.value = false;
 }
 function cancelRoleEdit() {
     if (!roleSaving.value) {
         roleEditingUserId.value = null;
         roleDraft.value = [];
+        roleDropdownOpen.value = false;
     }
+}
+function toggleRole(roleId: string | number) {
+    const id = String(roleId);
+    roleDraft.value = roleDraft.value.includes(id)
+        ? roleDraft.value.filter((value) => value !== id)
+        : [...roleDraft.value, id];
+}
+function closeRoleEditorOutside(event: MouseEvent) {
+    if (!roleEditingUserId.value) return;
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.user-roles-cell')) cancelRoleEdit();
 }
 async function saveRoles(row: UserRow) {
     if (!online.value || roleSaving.value) return;
@@ -183,6 +197,7 @@ async function saveRoles(row: UserRow) {
         await store.apply(result.data);
         roleEditingUserId.value = null;
         roleDraft.value = [];
+        roleDropdownOpen.value = false;
         notice.value = "Роли пользователя сохранены";
     } catch (e) {
         notice.value =
@@ -299,10 +314,12 @@ function reviewConflict() {
 onMounted(() => {
     void store.start();
     void rolesStore.start();
+    document.addEventListener('click', closeRoleEditorOutside);
 });
 onUnmounted(() => {
     store.stop();
     rolesStore.stop();
+    document.removeEventListener('click', closeRoleEditorOutside);
 });
 
 useCardRoute<UserRow>({
@@ -517,27 +534,17 @@ useCardRoute<UserRow>({
                                             >Выберите роли</span
                                         >
                                     </div>
-                                    <select
-                                        v-model="roleDraft"
-                                        multiple
-                                        aria-label="Роли пользователя"
-                                    >
-                                        <option
-                                            v-for="role in roleRows.filter(
-                                                (item) =>
-                                                    item.status === 1 &&
-                                                    !item.deleted_at,
-                                            )"
-                                            :key="role.id"
-                                            :value="String(role.id)"
-                                        >
-                                            {{
-                                                role.name ||
-                                                role.slug ||
-                                                `Роль №${role.id}`
-                                            }}
-                                        </option>
-                                    </select>
+                                    <div class="roles-dropdown">
+                                        <button type="button" class="roles-dropdown-toggle" @click.stop="roleDropdownOpen = !roleDropdownOpen">
+                                            Выбрать роли <span>⌄</span>
+                                        </button>
+                                        <div v-if="roleDropdownOpen" class="roles-dropdown-menu" @click.stop>
+                                            <label v-for="role in roleRows.filter((item) => item.status === 1 && !item.deleted_at)" :key="role.id" class="roles-dropdown-option">
+                                                <input type="checkbox" :checked="roleDraft.includes(String(role.id))" @change="toggleRole(role.id)" />
+                                                <span>{{ role.name || role.slug || `Роль №${role.id}` }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                     <div class="roles-tagbox-actions">
                                         <button
                                             type="button"
@@ -921,6 +928,7 @@ useCardRoute<UserRow>({
     min-height: 78px;
     margin-top: 6px;
 }
+.roles-dropdown{position:relative;margin-top:6px}.roles-dropdown-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:6px 8px;border:1px solid #a8d4a9;border-radius:4px;background:#fff;color:#1e892f;cursor:pointer}.roles-dropdown-menu{position:absolute;z-index:20;top:calc(100% + 4px);left:0;right:0;max-height:180px;overflow:auto;padding:5px;border:1px solid #a8d4a9;border-radius:5px;background:#fff;box-shadow:0 8px 18px #0c456726}.roles-dropdown-option{display:flex;align-items:center;gap:7px;padding:6px 5px;margin:0;border-radius:3px;cursor:pointer;font-size:12px}.roles-dropdown-option:hover{background:#e1f3e7}.roles-dropdown-option input{margin:0}
 .roles-tagbox-actions {
     display: flex;
     gap: 6px;
