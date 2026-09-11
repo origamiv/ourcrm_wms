@@ -398,7 +398,7 @@ useCardRoute<DirectoryRow>({
                     }}</strong>
                 </p>
                 <div class="page-heading">
-                    <h1>{{ title }}</h1>
+                    <h1>{{ clientScope ? `${title} для клиента ${clientScope.name}` : scope ? `${title} для компании ${scope.name}` : title }}</h1>
                     <div class="page-heading-actions">
                         <DataTransferMenu :rows="filtered" :columns="columnFields" :filename="props.entity" />
                         <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">+ Добавить {{ singular }}</button>
@@ -858,6 +858,8 @@ useCardRoute<DirectoryRow>({
 <style scoped>
 .table-scroll {
     position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 .column-settings-panel {
     position: absolute;

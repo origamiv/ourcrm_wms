@@ -14,6 +14,12 @@ const tabs = [
         icon: "goods",
     },
     {
+        label: "Задачи",
+        url: "/fulfillment/tasks",
+        component: "Tasks",
+        icon: "roles_rights",
+    },
+    {
         label: "Справочники",
         url: "/fulfillment/references",
         component: "",
@@ -37,6 +43,9 @@ const tabs = [
                 component: "Zones",
                 icon: "goods",
             },
+            { label: "Типы задач", url: "/fulfillment/task_types", component: "TaskTypes", icon: "goods" },
+            { label: "Статусы задач", url: "/fulfillment/task_statuses", component: "TaskStatuses", icon: "goods" },
+            { label: "Приоритеты", url: "/fulfillment/priorities", component: "Priorities", icon: "goods" },
             {
                 label: "Маркетплейсы",
                 url: "/fulfillment/marketplaces",

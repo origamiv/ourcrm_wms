@@ -1,0 +1,1 @@
+<?php declare(strict_types=1); namespace App\Models; class Task extends BaseModel { protected $table='wms.tasks'; protected $guarded=['*']; protected $casts=['planned_at'=>'datetime','started_at'=>'datetime','completed_at'=>'datetime','src'=>'array','fact_count'=>'integer','status_id'=>'integer','priority_id'=>'integer','task_type_id'=>'integer']; }

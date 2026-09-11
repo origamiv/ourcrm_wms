@@ -14,8 +14,8 @@ final class SectionPageController
     {
         $pages = [
             'integration' => ['webhooks' => 'IntegrationWebhooks', 'data' => 'IntegrationData', 'rules' => 'IntegrationRules', 'services' => 'IntegrationServices', 'type_hook' => 'IntegrationHookTypes', 'type_processing' => 'IntegrationProcessingTypes'],
-            'fulfillment' => ['warehouses' => 'Warehouses', 'cells' => 'Cells', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses', 'type_storage' => 'TypeStorage', 'zones' => 'Zones'],
-            'goods' => ['goods' => 'Goods', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
+            'fulfillment' => ['warehouses' => 'Warehouses', 'cells' => 'Cells', 'tasks' => 'Tasks', 'marketplaces' => 'Marketplaces', 'delivery_services' => 'DeliveryServices', 'type_warehouses' => 'TypeWarehouses', 'type_storage' => 'TypeStorage', 'task_types' => 'TaskTypes', 'task_statuses' => 'TaskStatuses', 'priorities' => 'Priorities', 'zones' => 'Zones'],
+            'goods' => ['goods' => 'Goods', 'good_cards' => 'GoodCardDetail', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals'],
         ];
@@ -25,12 +25,21 @@ final class SectionPageController
         }
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
+        $goodId = null;
         $clientScope = null;
+        $warehouseScope = null;
         if ($left === 'clients' && in_array($top, ['companies', 'individuals'], true)) {
             $input = $request->validate(['client_id' => ['sometimes', 'required', 'integer', 'min:1']]);
             if (isset($input['client_id'])) {
                 $client = \App\Models\Client::visibleTo($request->user()->tenant_id)->findOrFail($input['client_id']);
                 $clientScope = ['id' => (string) $client->id, 'name' => $client->name ?: ($client->shortname ?: 'Клиент №'.$client->id)];
+            }
+        }
+        if ($left === 'fulfillment' && $top === 'cells') {
+            $input = $request->validate(['warehouse_id' => ['sometimes', 'required', 'integer', 'min:1']]);
+            if (isset($input['warehouse_id'])) {
+                $warehouse = \App\Models\Warehouse::visibleTo($request->user()->tenant_id)->findOrFail($input['warehouse_id']);
+                $warehouseScope = ['id' => (string) $warehouse->id, 'name' => $warehouse->name ?: ($warehouse->shortname ?: 'Склад №'.$warehouse->id)];
             }
         }
 
@@ -54,7 +63,14 @@ final class SectionPageController
                 if ($clientScope !== null) {
                     $query->where('client_id', $clientScope['id']);
                 }
+                if ($warehouseScope !== null) {
+                    $query->where('warehouse_id', $warehouseScope['id']);
+                }
                 $row = $query->findOrFail($id);
+                if ($left === 'goods' && $top === 'goods' && $action === 'view') {
+                    $goodId = (string) $row->id;
+                    $component = 'GoodDetail';
+                }
                 if ($top === 'company_contacts' && $request->has('company_id')) {
                     abort_unless((string) $row->company_id === (string) $request->query('company_id'), 404);
                 }
@@ -64,6 +80,6 @@ final class SectionPageController
             return app(CompanyDirectoryController::class)->contactsPage($request);
         }
 
-        return Inertia::render($component, ['clientScope' => $clientScope]);
+        return Inertia::render($component, ['clientScope' => $clientScope, 'warehouseScope' => $warehouseScope, 'goodId' => $goodId]);
     }
 }

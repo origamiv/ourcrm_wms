@@ -11,11 +11,17 @@ import TypeWarehouses from "./Pages/TypeWarehouses.vue";
 import TypeStorage from "./Pages/TypeStorage.vue";
 import Zones from "./Pages/Zones.vue";
 import Cells from "./Pages/Cells.vue";
+import Tasks from "./Pages/Tasks.vue";
+import TaskTypes from "./Pages/TaskTypes.vue";
+import TaskStatuses from "./Pages/TaskStatuses.vue";
+import Priorities from "./Pages/Priorities.vue";
 import DeliveryServices from "./Pages/DeliveryServices.vue";
 import KindKiz from "./Pages/KindKiz.vue";
 import GoodTypes from "./Pages/GoodTypes.vue";
 import GoodUnits from "./Pages/GoodUnits.vue";
 import Goods from "./Pages/Goods.vue";
+import GoodDetail from "./Pages/GoodDetail.vue";
+import GoodCardDetail from "./Pages/GoodCardDetail.vue";
 import DocTypes from "./Pages/DocTypes.vue";
 import Documents from "./Pages/Documents.vue";
 import ClientIndividuals from "./Pages/ClientIndividuals.vue";
@@ -46,6 +52,8 @@ const pages: Record<string, any> = {
     IntegrationProcessingTypes,
 
     Goods,
+    GoodDetail,
+    GoodCardDetail,
     GoodTypes,
     KindKiz,
     DeliveryServices,
@@ -55,6 +63,10 @@ const pages: Record<string, any> = {
     TypeStorage,
     Zones,
     Cells,
+    Tasks,
+    TaskTypes,
+    TaskStatuses,
+    Priorities,
     Kizes,
     GoodUnits,
     DocTypes,

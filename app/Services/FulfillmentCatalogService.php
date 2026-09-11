@@ -19,7 +19,7 @@ final class FulfillmentCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells'], true), 404);
+        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells', 'task_types', 'task_statuses', 'priorities'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
@@ -31,6 +31,9 @@ final class FulfillmentCatalogService
                 'type_storage' => TypeStorage::class,
                 'zones' => Zone::class,
                 'cells' => Cell::class,
+                'task_types' => \App\Models\TaskType::class,
+                'task_statuses' => \App\Models\TaskStatus::class,
+                'priorities' => \App\Models\Priority::class,
             };
             $sync = app(EntitySyncService::class);
             $sync->prepareWrite($tenant, $model, $id);
@@ -78,7 +81,7 @@ final class FulfillmentCatalogService
                     }
                 }
                 $row->forceFill(array_intersect_key($data, array_flip(array_diff(config('sync.entities.'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']))));
-                if (! $id) {
+                if (! $id && ! in_array($catalog, ['task_types','task_statuses','priorities'], true)) {
                     $row->tenant_id = $tenant;
                 }
                 $row->save();

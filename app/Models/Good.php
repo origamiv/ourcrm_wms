@@ -10,7 +10,7 @@ final class Good extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['has_children' => 'boolean', 'category_manual' => 'boolean', 'articul' => 'array', 'barcodes' => 'array', 'status' => 'integer', 'level' => 'integer', 'is_category' => 'integer', 'is_from_external' => 'integer'];
+    protected $casts = ['has_children' => 'boolean', 'category_manual' => 'boolean', 'articul' => 'array', 'barcodes' => 'array', 'src' => 'array', 'status' => 'integer', 'level' => 'integer', 'is_category' => 'integer', 'is_from_external' => 'integer'];
 
     public function cards(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

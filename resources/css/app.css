@@ -1399,3 +1399,11 @@ td {
     text-align: left;
     white-space: nowrap;
 }
+
+/* Табличная область заполняет рабочую панель даже при небольшом числе строк. */
+.users-list > .table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.main-panel { min-height: 0; height: 100%; }
+.users-workspace { min-height: 0; height: auto; flex: 1 1 auto; }

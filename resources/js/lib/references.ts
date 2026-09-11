@@ -38,7 +38,10 @@ export interface ReferenceField {
         | "zones"
         | "cells"
         | "warehouses"
-        | "marketplaces";
+        | "marketplaces"
+        | "task_types"
+        | "task_statuses"
+        | "priorities";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -184,6 +187,28 @@ export const references = {
             { key: "row", label: "Ряд", kind: "number" },
             { key: "level", label: "Уровень", kind: "number" },
             { key: "number", label: "Номер", kind: "number" },
+        ] as ReferenceField[],
+    },
+    task_types: { title: "Типы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
+    task_statuses: { title: "Статусы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
+    priorities: { title: "Приоритеты", fields: [{ key: "shortname", label: "Краткое название" }, { key: "icon", label: "Иконка" }] as ReferenceField[] },
+    tasks: {
+        title: "Задачи",
+        fields: [
+            { key: "shortname", label: "Краткое название" },
+            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients", required: true },
+            { key: "task_type_id", label: "Тип задачи", kind: "lookup", lookup: "task_types", required: true },
+            { key: "status_id", label: "Статус задачи", kind: "lookup", lookup: "task_statuses", required: true },
+            { key: "priority_id", label: "Приоритет", kind: "lookup", lookup: "priorities", required: true },
+            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
+            { key: "planned_at", label: "Запланировано", kind: "datetime" },
+            { key: "started_at", label: "Начато", kind: "datetime" },
+            { key: "completed_at", label: "Завершено", kind: "datetime" },
+            { key: "fact_count", label: "Фактическое количество", kind: "number" },
+            { key: "comment", label: "Комментарий", kind: "textarea", detail: true },
+            { key: "internal_comment", label: "Внутренний комментарий", kind: "textarea", detail: true },
+            { key: "order_id", label: "Заказ", kind: "number" },
+            { key: "src", label: "Источник", kind: "json", detail: true },
         ] as ReferenceField[],
     },
     marketplaces: {

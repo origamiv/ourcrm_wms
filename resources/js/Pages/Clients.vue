@@ -110,6 +110,11 @@ function openParties(row: ClientRow, party: "companies" | "individuals") {
             },
         });
 }
+function openDocuments(row: ClientRow) {
+    if (saving.value || row.deleted_at) return;
+    const url = `/clients/documents?client_id=${encodeURIComponent(row.id)}`;
+    router.visit(url);
+}
 function open(row: ClientRow | null, readOnly = false) {
     if (saving.value) return;
     selected.value = row;
@@ -296,13 +301,21 @@ useCardRoute<ClientRow>({
                             <td>
                                 <div class="row-actions">
                                     <button
+                                        :aria-label="`Документы: ${displayName(row)}`"
+                                        title="Документы"
+                                        :disabled="saving || !!row.deleted_at"
+                                        @click="openDocuments(row)"
+                                    >
+                                        <img src="/design/crm/files.svg" alt="" />
+                                    </button>
+                                    <button
                                         :aria-label="`Юрлица: ${displayName(row)}`"
                                         title="Юрлица"
                                         :disabled="saving || !!row.deleted_at"
                                         @click="openParties(row, 'companies')"
                                     >
                                         <img
-                                            src="/design/crm/companies.svg"
+                                            src="/design/crm/client_companies.svg"
                                             alt=""
                                         />
                                     </button>

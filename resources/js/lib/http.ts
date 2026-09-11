@@ -32,13 +32,14 @@ export async function http(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
+        const multipart = typeof FormData !== "undefined" && data instanceof FormData;
         const r = await fetch(url, {
             method,
             credentials: "same-origin",
             signal: controller.signal,
             headers: {
                 Accept: "application/json",
-                "Content-Type": "application/json",
+                ...(multipart ? {} : { "Content-Type": "application/json" }),
                 "X-CSRF-TOKEN":
                     document.querySelector<HTMLMetaElement>(
                         'meta[name="csrf-token"]',
@@ -53,7 +54,7 @@ export async function http(
                     )?.content ?? "",
                 ),
             },
-            body: data === undefined ? undefined : JSON.stringify(data),
+            body: data === undefined ? undefined : multipart ? data : JSON.stringify(data),
         });
         if (r.ok && responseType === "blob") {
             if (sessionEnded) throw new Error("Сеанс завершён");
