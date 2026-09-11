@@ -10,6 +10,7 @@ Route::post('/auth/token', [WmsAuthController::class, 'token'])->middleware('thr
 Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
     Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::post('/auth/logout', [WmsAuthController::class, 'revoke']);
+    Route::post('/acceptances/{id}/pick', [App\Http\Controllers\AcceptanceController::class, 'pick'])->whereNumber('id');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
         Route::get('/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'show'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::post('/integration/{integration_catalog}', [App\Http\Controllers\IntegrationController::class, 'store'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing']);
