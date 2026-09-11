@@ -48,10 +48,10 @@ final class EntitySyncService
                 'mode' => $cursor ? 'delta' : 'snapshot', 'from' => $from, 'target' => (string) $target->revision, 'after' => ''];
         }
         if ($state['mode'] === 'snapshot') {
-            $tenantWhere = $tenant === null ? 'tenant_id IS NULL' : 'tenant_id = ?';
+            $tenantWhere = $tenant === null ? 'tenant_id IS NULL' : '(tenant_id = ? OR tenant_id IS NULL)';
             $rows = DB::select('SELECT * FROM (SELECT DISTINCT ON (entity_id) * FROM public.entity_changes WHERE entity = ? AND '.$tenantWhere.' AND revision <= ? ORDER BY entity_id, revision DESC) latest WHERE entity_id > ? AND operation = ? ORDER BY entity_id LIMIT ?', [$entity, ...($tenant === null ? [] : [$tenant]), $state['target'], $state['after'], 'upsert', $size + 1]);
         } else {
-            $rows = DB::table('public.entity_changes')->where('entity', $entity)->where('tenant_id', $tenant)->where('revision', '>', max((int) $state['from'], (int) $state['after']))
+            $rows = DB::table('public.entity_changes')->where('entity', $entity)->when($tenant === null, fn ($query) => $query->whereNull('tenant_id'), fn ($query) => $query->where(fn ($q) => $q->where('tenant_id', $tenant)->orWhereNull('tenant_id')))->where('revision', '>', max((int) $state['from'], (int) $state['after']))
                 ->where('revision', '<=', $state['target'])->orderBy('revision')->limit($size + 1)->get()->all();
         }
         $more = count($rows) > $size;
