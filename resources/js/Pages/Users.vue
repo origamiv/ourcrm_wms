@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCardRoute } from "../lib/cardRoute";
-import { computed, ref, onMounted, onUnmounted, watch } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import AdminTabs from "../Components/AdminTabs.vue";
@@ -31,6 +31,7 @@ const roleRows = rolesStore.rows;
 const roleEditingUserId = ref<string | null>(null);
 const roleDraft = ref<string[]>([]);
 const roleSaving = ref(false);
+const roleTagboxRef = ref<any>(null);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -160,6 +161,13 @@ const roleOptions = computed(() =>
             name: role.name || role.slug || `Роль №${role.id}`,
         })),
 );
+function keepRolePanelOpen() {
+    if (!roleEditingUserId.value || roleSaving.value) return;
+    void nextTick(() => {
+        roleTagboxRef.value?.focus?.();
+        roleTagboxRef.value?.openPanel?.();
+    });
+}
 function beginRoleEdit(row: UserRow, event?: Event) {
     event?.stopPropagation();
     if (!online.value || !ready.value || row.deleted_at || roleSaving.value)
@@ -500,6 +508,7 @@ useCardRoute<UserRow>({
                                     @click.stop
                                 >
                                     <TagBox
+                                        ref="roleTagboxRef"
                                         v-model="roleDraft"
                                         class="roles-tagbox-input"
                                         :data="roleOptions"
@@ -508,6 +517,7 @@ useCardRoute<UserRow>({
                                         :limit-to-list="true"
                                         :has-down-arrow="true"
                                         :editable="false"
+                                        @value-change="keepRolePanelOpen"
                                     />
                                     <div class="roles-tagbox-actions">
                                         <button
