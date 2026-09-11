@@ -20,6 +20,9 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
         Route::put('/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'update'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff'])->whereNumber('id');
         Route::delete('/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'destroy'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff'])->whereNumber('id');
         Route::post('/fulfillment/tasks', [App\Http\Controllers\TaskController::class, 'store']);
+        Route::get('/fulfillment/tasks/{id}/history', [App\Http\Controllers\TaskController::class, 'history'])->whereNumber('id');
+        Route::get('/fulfillment/tasks/{id}/task_document', [App\Http\Controllers\TaskController::class, 'taskDocument'])->whereNumber('id');
+        Route::get('/fulfillment/tasks/{id}/pick_list', [App\Http\Controllers\TaskController::class, 'pickList'])->whereNumber('id');
         Route::put('/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'update'])->whereNumber('id');
         Route::delete('/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'destroy'])->whereNumber('id');
         Route::post('/goods/{catalog}', [App\Http\Controllers\GoodCatalogController::class, 'store'])->whereIn('catalog', ['type_goods', 'unit_goods', 'kind_kiz']);

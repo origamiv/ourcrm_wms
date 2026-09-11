@@ -26,6 +26,7 @@ import GoodTypes from "./Pages/GoodTypes.vue";
 import GoodUnits from "./Pages/GoodUnits.vue";
 import Goods from "./Pages/Goods.vue";
 import GoodDetail from "./Pages/GoodDetail.vue";
+import TaskDetail from "./Pages/TaskDetail.vue";
 import GoodCardDetail from "./Pages/GoodCardDetail.vue";
 import DocTypes from "./Pages/DocTypes.vue";
 import Documents from "./Pages/Documents.vue";
@@ -63,6 +64,7 @@ const pages: Record<string, any> = {
 
     Goods,
     GoodDetail,
+    TaskDetail,
     GoodCardDetail,
     GoodTypes,
     KindKiz,

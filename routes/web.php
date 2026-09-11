@@ -25,6 +25,9 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::put('/web/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'update'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'priorities'])->whereNumber('id');
         Route::delete('/web/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'destroy'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'priorities'])->whereNumber('id');
         Route::post('/web/fulfillment/tasks', [App\Http\Controllers\TaskController::class, 'store']);
+        Route::get('/web/fulfillment/tasks/{id}/history', [App\Http\Controllers\TaskController::class, 'history'])->whereNumber('id');
+        Route::get('/web/fulfillment/tasks/{id}/task_document', [App\Http\Controllers\TaskController::class, 'taskDocument'])->whereNumber('id');
+        Route::get('/web/fulfillment/tasks/{id}/pick_list', [App\Http\Controllers\TaskController::class, 'pickList'])->whereNumber('id');
         Route::post('/web/acceptances/{id}/pick', [App\Http\Controllers\AcceptanceController::class, 'pick'])->whereNumber('id');
         Route::put('/web/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'update'])->whereNumber('id');
         Route::delete('/web/fulfillment/tasks/{id}', [App\Http\Controllers\TaskController::class, 'destroy'])->whereNumber('id');

@@ -26,6 +26,7 @@ final class SectionPageController
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
         $goodId = null;
+        $taskId = null;
         $clientScope = null;
         $warehouseScope = null;
         if ($left === 'clients' && in_array($top, ['companies', 'individuals'], true)) {
@@ -71,6 +72,10 @@ final class SectionPageController
                     $goodId = (string) $row->id;
                     $component = 'GoodDetail';
                 }
+                if ($left === 'fulfillment' && $top === 'tasks' && $action === 'view') {
+                    $taskId = (string) $row->id;
+                    $component = 'TaskDetail';
+                }
                 if ($top === 'company_contacts' && $request->has('company_id')) {
                     abort_unless((string) $row->company_id === (string) $request->query('company_id'), 404);
                 }
@@ -80,6 +85,6 @@ final class SectionPageController
             return app(CompanyDirectoryController::class)->contactsPage($request);
         }
 
-        return Inertia::render($component, ['clientScope' => $clientScope, 'warehouseScope' => $warehouseScope, 'goodId' => $goodId]);
+        return Inertia::render($component, ['clientScope' => $clientScope, 'warehouseScope' => $warehouseScope, 'goodId' => $goodId, 'taskId' => $taskId]);
     }
 }

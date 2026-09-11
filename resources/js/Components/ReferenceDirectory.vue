@@ -587,6 +587,11 @@ function openGoodDetail(row: ReferenceRow) {
     if (online.value) router.visit(url);
     else router.push({ url, component: "GoodDetail", props: { ...page.props, goodId: row.id } });
 }
+function openTaskDetail(row: ReferenceRow) {
+    const url = `/fulfillment/tasks/${encodeURIComponent(row.id)}/view`;
+    if (online.value) router.visit(url);
+    else router.push({ url, component: "TaskDetail", props: { ...page.props, taskId: row.id } });
+}
 async function open(row: ReferenceRow | null, readOnly = false) {
     if (saving.value) return;
     const request = ++detailRequest;
@@ -1194,7 +1199,7 @@ useCardRoute<ReferenceRow>({
                                     ? goodsFiltered || expandedGoods.has(row.id)
                                     : undefined
                             "
-                            @dblclick="isGood ? openGoodDetail(row) : open(row, true)"
+                            @dblclick="isGood ? openGoodDetail(row) : isTask ? openTaskDetail(row) : open(row, true)"
                         >
                             <td class="check-column" @dblclick.stop>
                                 <input

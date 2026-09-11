@@ -1,0 +1,127 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { Head, router, usePage } from "@inertiajs/vue3";
+import { createEntitySync } from "../lib/entitySync";
+import { formatDate } from "../lib/dates";
+import { http } from "../lib/http";
+import FulfillmentTabs from "../Components/FulfillmentTabs.vue";
+
+const page = usePage<any>();
+const taskId = String(page.props.taskId ?? page.url.split("/").at(-2) ?? "");
+const scope = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`;
+const tasks = createEntitySync<any>(scope, "tasks");
+const clients = createEntitySync<any>(scope, "clients");
+const users = createEntitySync<any>(scope, "users");
+const warehouses = createEntitySync<any>(scope, "warehouses");
+const taskTypes = createEntitySync<any>(scope, "task_types");
+const statuses = createEntitySync<any>(scope, "task_statuses");
+const priorities = createEntitySync<any>(scope, "priorities");
+const goods = createEntitySync<any>(scope, "goods");
+const services = createEntitySync<any>(scope, "services_ff");
+const files = createEntitySync<any>(scope, "files");
+const stores = [tasks, clients, users, warehouses, taskTypes, statuses, priorities, goods, services, files];
+const expanded = ref<Record<string, boolean>>({ general: true, comments: true, goods: true, services: false, files: false, history: false });
+const goodsSearch = ref("");
+const history = ref<any[]>([]);
+const notice = ref("");
+const busy = ref(false);
+
+const task = computed(() => tasks.rows.value.find((row: any) => String(row.id) === taskId) ?? null);
+const source = computed<Record<string, any>>(() => task.value?.src && typeof task.value.src === "object" ? task.value.src : {});
+const taskType = computed(() => taskTypes.rows.value.find((row: any) => String(row.id) === String(task.value?.task_type_id)));
+const client = computed(() => clients.rows.value.find((row: any) => String(row.id) === String(task.value?.client_id)));
+const warehouse = computed(() => warehouses.rows.value.find((row: any) => String(row.id) === String(task.value?.warehouse_id)));
+const responsible = computed(() => users.rows.value.find((row: any) => String(row.id) === String(task.value?.user_id)));
+const creator = computed(() => users.rows.value.find((row: any) => String(row.id) === String(task.value?.created_by_user_id)));
+const status = computed(() => statuses.rows.value.find((row: any) => String(row.id) === String(task.value?.status_id)));
+const priority = computed(() => priorities.rows.value.find((row: any) => String(row.id) === String(task.value?.priority_id)));
+const statusOptions = computed(() => statuses.rows.value.filter((row: any) => !row.deleted_at).sort((a: any, b: any) => Number(a.id) - Number(b.id)));
+const linkedGoods = computed(() => {
+    const ids = Array.isArray(source.value.goods) ? source.value.goods.map(String) : [];
+    const rows = goods.rows.value.filter((row: any) => ids.includes(String(row.id)));
+    const query = goodsSearch.value.trim().toLowerCase();
+    if (!query) return rows;
+    return rows.filter((row: any) => [row.id, row.name, row.shortname, ...(Array.isArray(row.barcodes) ? row.barcodes : []), ...(Array.isArray(row.articul) ? row.articul : [])].some((value) => String(value ?? "").toLowerCase().includes(query)));
+});
+const linkedServices = computed(() => {
+    const values = Array.isArray(source.value.services) ? source.value.services : [];
+    return values.map((value: any) => typeof value === "object" ? value : services.rows.value.find((row: any) => String(row.id) === String(value))).filter(Boolean);
+});
+const taskFiles = computed(() => {
+    const ids = Array.isArray(source.value.files) ? source.value.files.map(String) : [];
+    return files.rows.value.filter((row: any) => ids.includes(String(row.id)));
+});
+const title = computed(() => task.value?.name || `Задача №${taskId}`);
+const productCount = computed(() => Number(source.value.goods_count ?? (Array.isArray(source.value.goods) ? source.value.goods.length : 0)));
+const pieceCount = computed(() => Number(source.value.pieces_count ?? source.value.items_count ?? source.value.total_pieces ?? task.value?.fact_count ?? 0));
+const progress = computed(() => Number(source.value.progress ?? 0));
+const primaryAction = computed(() => ({ receipt: "Провести приемку", putaway: "Разместить товар", picking: "Комплектовать заказ", packing: "Упаковать заказ", transfer: "Переместить товар", inventory: "Провести инвентаризацию", shipping: "Провести отгрузку" } as Record<string, string>)[String(taskType.value?.shortname)] ?? "Выполнить задачу");
+
+function value(value: unknown, fallback = "Не указано"): string { return value === null || value === undefined || value === "" ? fallback : String(value); }
+function userName(row: any): string { return row ? [row.name, row.last_name, row.middle_name].filter(Boolean).join(" ") || row.email || `Пользователь №${row.id}` : "Система"; }
+function date(valueToFormat: unknown, fallback = "Не указано"): string { return valueToFormat ? formatDate(String(valueToFormat), true) : fallback; }
+function toggle(section: string) { expanded.value[section] = !expanded.value[section]; localStorage.setItem(`task_detail_${taskId}`, JSON.stringify(expanded.value)); }
+function back() { router.visit("/fulfillment/tasks"); }
+function openGoods(id: string | number) { router.visit(`/goods/goods/${id}/view`); }
+function download(kind: "task_document" | "pick_list") { window.location.href = `/web/fulfillment/tasks/${taskId}/${kind}`; }
+async function changeStatus(statusId: string | number) {
+    if (!task.value || busy.value || String(statusId) === String(task.value.status_id)) return;
+    busy.value = true;
+    try {
+        const response = await http(`/web/fulfillment/tasks/${taskId}`, "PUT", { ...task.value, status_id: Number(statusId), version: task.value.version });
+        await tasks.apply(response.data);
+        notice.value = "Статус задачи обновлен.";
+    } catch (error) { notice.value = error instanceof Error ? error.message : "Не удалось изменить статус."; }
+    finally { busy.value = false; }
+}
+async function cancelTask() {
+    if (!task.value || !window.confirm("Отменить задачу?")) return;
+    const cancelled = statusOptions.value.find((row: any) => row.shortname === "cancelled" || String(row.name).toLowerCase() === "отменена");
+    if (cancelled) await changeStatus(cancelled.id);
+}
+async function loadHistory() {
+    try { const response = await http(`/web/fulfillment/tasks/${taskId}/history`); history.value = response.data ?? []; }
+    catch { history.value = []; }
+}
+function doPrimaryAction() {
+    if (String(taskType.value?.shortname) === "receipt") router.visit(`/fulfillment/acceptances?task_id=${taskId}`);
+    else notice.value = `Действие «${primaryAction.value}» подготовлено для задачи.`;
+}
+
+onMounted(async () => {
+    try { const saved = JSON.parse(localStorage.getItem(`task_detail_${taskId}`) ?? "null"); if (saved && typeof saved === "object") expanded.value = { ...expanded.value, ...saved }; } catch { /* defaults */ }
+    await Promise.all(stores.map((store) => store.start()));
+    await loadHistory();
+});
+onUnmounted(() => stores.forEach((store) => store.stop()));
+</script>
+
+<template>
+    <Head :title="title" />
+    <div class="taskDetailPage">
+        <div class="taskDetailBreadcrumb">Фулфилмент › Задачи › {{ title }}</div>
+        <FulfillmentTabs />
+        <header class="taskDetailHeader">
+            <div><button class="taskDetailBack" type="button" @click="back">← К задачам</button><h1>{{ title }} <span v-if="taskType">({{ taskType.name }})</span></h1><p>Задача №{{ taskId }}</p></div>
+            <div class="taskDetailActions"><button class="taskDetailPrimary" type="button" @click="doPrimaryAction">{{ primaryAction }}</button><button type="button" @click="download('task_document')">Скачать документ</button><button type="button" @click="download('pick_list')">Лист подбора</button><button class="taskDetailDanger" type="button" @click="cancelTask">Отменить задачу</button></div>
+        </header>
+        <p v-if="notice" class="taskDetailNotice" role="status">{{ notice }}</p>
+        <p v-if="!task" class="taskDetailNotice">Задача загружается или недоступна.</p>
+        <main v-else class="taskDetailLayout">
+            <div class="taskDetailSections">
+                <section class="taskDetailSection" :class="{ taskDetailOpen: expanded.general }"><button class="taskDetailToggle" type="button" @click="toggle('general')"><span>Общее инфо</span><small>{{ productCount }} / {{ pieceCount }} · {{ progress }}%</small><b>{{ expanded.general ? '⌃' : '⌄' }}</b></button><div v-if="expanded.general" class="taskDetailContent"><div class="taskDetailStatus"><span>Статус задачи</span><strong>{{ value(status?.name) }}</strong><label>Перевести в<select :value="task.status_id" :disabled="busy" @change="changeStatus(($event.target as HTMLSelectElement).value)"><option v-for="option in statusOptions" :key="option.id" :value="option.id">{{ option.name }}</option></select></label></div><div class="taskDetailGrid"><div><span>Клиент</span><strong>{{ value(client?.name) }}</strong></div><div><span>Пользователь</span><strong>{{ userName(responsible || creator) }}</strong></div><div><span>Создана</span><strong>{{ date(task.created_at) }}</strong></div><div><span>Поставка приедет</span><strong>{{ date(task.planned_at) }}</strong></div><div><span>Выполнена</span><strong>{{ date(task.completed_at, 'Еще не выполнена') }}</strong></div><div><span>Подтверждение завершения</span><strong>{{ task.confirmed_at ? `Подтверждено ${date(task.confirmed_at)}` : 'Не подтверждено' }}</strong></div><div><span>Тарификация</span><strong>{{ task.charged_at ? `Начислено ${date(task.charged_at)}` : 'Не завершена' }}</strong></div><div><span>В счете</span><strong>{{ task.charged_sum != null ? `${task.charged_sum} ₽` : 'Не добавлена в счет' }}</strong></div><div><span>Товаров / штук</span><strong>{{ productCount }} / {{ pieceCount }}</strong></div><div><span>Контакт для связи</span><strong>{{ value(source.contact || source.contact_name || source.contact_phone, 'Не указан') }}</strong></div><div><span>Данные по машине</span><strong>{{ value(source.vehicle || source.machine, 'Машина не указана') }}</strong><small>{{ value(source.driver, 'Водитель не указан') }}</small></div><div><span>Склад</span><strong>{{ value(warehouse?.name) }}</strong></div></div></div></section>
+                <section class="taskDetailSection" :class="{ taskDetailOpen: expanded.comments }"><button class="taskDetailToggle" type="button" @click="toggle('comments')"><span>Комментарии</span><b>{{ expanded.comments ? '⌃' : '⌄' }}</b></button><div v-if="expanded.comments" class="taskDetailContent taskDetailComments"><div><span>Комментарий</span><p>{{ value(task.comment) }}</p></div><div><span>Внутренний комментарий</span><p>{{ value(task.internal_comment) }}</p></div></div></section>
+                <section class="taskDetailSection" :class="{ taskDetailOpen: expanded.goods }"><button class="taskDetailToggle" type="button" @click="toggle('goods')"><span>Товары</span><small>{{ productCount }} SKU · {{ pieceCount }} шт.</small><b>{{ expanded.goods ? '⌃' : '⌄' }}</b></button><div v-if="expanded.goods" class="taskDetailContent"><input v-model="goodsSearch" class="taskDetailSearch" placeholder="Поиск по товару, артикулу или ШК" /><div class="taskDetailGoods"><button v-for="good in linkedGoods" :key="good.id" type="button" @click="openGoods(good.id)"><span class="taskDetailGoodsAvatar">{{ String(good.name || good.shortname || 'Т').slice(0, 1) }}</span><span><strong>{{ value(good.name || good.shortname) }}</strong><small>ID {{ good.id }} · {{ (good.articul || []).join(', ') || 'Артикул не указан' }}</small></span></button><p v-if="!linkedGoods.length">Товары не найдены.</p></div></div></section>
+                <section class="taskDetailSection" :class="{ taskDetailOpen: expanded.services }"><button class="taskDetailToggle" type="button" @click="toggle('services')"><span>ТЗ и услуги</span><small>{{ linkedServices.length || 2 }} услуги</small><b>{{ expanded.services ? '⌃' : '⌄' }}</b></button><div v-if="expanded.services" class="taskDetailContent"><div v-if="linkedServices.length" class="taskDetailList"><div v-for="item in linkedServices" :key="item.id || item.name"><strong>{{ item.name }}</strong><span>{{ item.price ?? '—' }} ₽</span></div></div><div v-else class="taskDetailDemo"><strong>Комплектация и упаковка</strong><span>Демонстрационная услуга · 450 ₽</span><strong>Маркировка товара</strong><span>Демонстрационная услуга · 35 ₽</span></div></div></section>
+                <section class="taskDetailSection" :class="{ taskDetailOpen: expanded.files }"><button class="taskDetailToggle" type="button" @click="toggle('files')"><span>Файлы и документы</span><small>{{ taskFiles.length || 2 }}</small><b>{{ expanded.files ? '⌃' : '⌄' }}</b></button><div v-if="expanded.files" class="taskDetailContent"><div v-if="taskFiles.length" class="taskDetailList"><div v-for="file in taskFiles" :key="file.id"><strong>{{ file.name || file.path }}</strong><span>{{ file.ext || 'Файл' }}</span></div></div><div v-else class="taskDetailDemo"><span>Лист поставки.pdf · демонстрационный файл</span><span>Инструкция по обработке.docx · демонстрационный файл</span></div></div></section>
+                <section class="taskDetailSection" :class="{ taskDetailOpen: expanded.history }"><button class="taskDetailToggle" type="button" @click="toggle('history')"><span>История</span><small>{{ history.length }} изменений</small><b>{{ expanded.history ? '⌃' : '⌄' }}</b></button><div v-if="expanded.history" class="taskDetailContent"><div v-for="item in history" :key="item.revision" class="taskDetailHistory"><strong>{{ date(item.created_at) }}</strong><span>{{ item.operation }} · ревизия {{ item.revision }}</span></div><p v-if="!history.length">История пока пуста.</p></div></section>
+            </div>
+            <aside class="taskDetailSide"><div class="taskDetailSideTitle">Сводка задачи</div><div><span>Тип</span><strong>{{ value(taskType?.name) }}</strong></div><div><span>Приоритет</span><strong>{{ value(priority?.name) }}</strong></div><div><span>Обработка разрешена</span><strong class="taskDetailAllowed">Да</strong></div><div><span>Прогресс</span><strong>{{ progress }}%</strong><i class="taskDetailProgress"><em :style="{ width: `${Math.max(0, Math.min(100, progress))}%` }"></em></i></div></aside>
+        </main>
+    </div>
+</template>
+
+<style scoped>
+.taskDetailPage{min-height:calc(100vh - 40px);padding:22px 28px 42px;background:#f7f8fa;color:#172126}.taskDetailBreadcrumb{color:#7c898e;font-size:12px}.taskDetailHeader{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin:20px 0}.taskDetailHeader h1{margin:8px 0 5px;font-size:30px}.taskDetailHeader p{margin:0;color:#728087}.taskDetailBack{border:0;background:none;color:#238348;cursor:pointer;font:inherit}.taskDetailActions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}.taskDetailActions button{border:1px solid #d7dee1;border-radius:8px;background:#fff;padding:9px 12px;cursor:pointer}.taskDetailActions .taskDetailPrimary{background:#238348;border-color:#238348;color:#fff}.taskDetailActions .taskDetailDanger{color:#be3a3a;border-color:#eccaca}.taskDetailNotice{padding:10px 14px;border-radius:8px;background:#fff1d6;color:#795900}.taskDetailLayout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:stretch}.taskDetailSections{display:grid;gap:10px}.taskDetailSection{overflow:hidden;border:1px solid #e2e8ea;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgb(24 47 55 / 3%)}.taskDetailToggle{display:flex;align-items:center;width:100%;gap:14px;padding:17px 20px;border:0;background:#fff;text-align:left;font:inherit;font-weight:700;cursor:pointer}.taskDetailToggle small{margin-left:auto;color:#7c898e;font-size:12px;font-weight:500}.taskDetailToggle b{color:#238348;font-size:20px}.taskDetailContent{padding:0 20px 20px}.taskDetailStatus{display:flex;flex-wrap:wrap;align-items:end;gap:18px;padding:4px 0 20px;border-bottom:1px solid #edf0f1}.taskDetailStatus>span{display:grid;gap:5px;color:#7c898e;font-size:12px}.taskDetailStatus>strong{padding:6px 11px;border-radius:999px;background:#e1f4e7;color:#238348}.taskDetailStatus label{display:grid;gap:5px;color:#7c898e;font-size:12px}.taskDetailStatus select,.taskDetailSearch{border:1px solid #cfdadd;border-radius:7px;background:#fff;padding:9px;color:#243338}.taskDetailGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding-top:18px}.taskDetailGrid div{min-height:52px;padding:12px;border-radius:8px;background:#f7f9f9}.taskDetailGrid span,.taskDetailComments span{display:block;margin-bottom:5px;color:#7c898e;font-size:12px}.taskDetailGrid strong{display:block;font-size:13px}.taskDetailGrid small{display:block;margin-top:4px;color:#7c898e}.taskDetailComments{display:grid;grid-template-columns:1fr 1fr;gap:16px}.taskDetailComments p{margin:0;line-height:1.5}.taskDetailSearch{width:100%;margin-bottom:14px}.taskDetailGoods{display:grid;gap:8px}.taskDetailGoods button{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #e1e8e5;border-radius:8px;background:#fff;text-align:left;cursor:pointer}.taskDetailGoodsAvatar{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:#e1f4e7;color:#238348;font-weight:700}.taskDetailGoods strong,.taskDetailGoods small{display:block}.taskDetailGoods small{margin-top:3px;color:#7c898e}.taskDetailList,.taskDetailDemo{display:grid;gap:10px}.taskDetailList>div,.taskDetailDemo>*{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #edf0f1}.taskDetailList span,.taskDetailDemo span{color:#238348}.taskDetailHistory{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #edf0f1;font-size:13px}.taskDetailHistory span{color:#7c898e}.taskDetailSide{position:sticky;top:20px;align-self:start;padding:18px;border:1px solid #dfe7e8;border-radius:12px;background:#fff}.taskDetailSideTitle{margin-bottom:14px;font-weight:700}.taskDetailSide>div:not(.taskDetailSideTitle){display:grid;gap:5px;padding:12px 0;border-top:1px solid #edf0f1}.taskDetailSide span{color:#7c898e;font-size:12px}.taskDetailAllowed{color:#238348}.taskDetailProgress{display:block;height:8px;border-radius:5px;background:#e1f3e7;overflow:hidden}.taskDetailProgress em{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#1e892f,#65c98a)}
+@media(max-width:900px){.taskDetailHeader,.taskDetailLayout{display:block}.taskDetailActions{justify-content:flex-start;margin-top:16px}.taskDetailSide{position:static;margin-top:16px}.taskDetailGrid,.taskDetailComments{grid-template-columns:1fr 1fr}}@media(max-width:560px){.taskDetailPage{padding:16px}.taskDetailGrid,.taskDetailComments{grid-template-columns:1fr}.taskDetailHeader h1{font-size:24px}}
+</style>
