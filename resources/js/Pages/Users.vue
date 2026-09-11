@@ -9,18 +9,28 @@ import type { UserRow } from "../lib/cache";
 import { http, HttpError, endSession } from "../lib/http";
 import TableColumnSettings from "../Components/TableColumnSettings.vue";
 import DataTransferMenu from "../Components/DataTransferMenu.vue";
+import { createEntitySync } from "../lib/entitySync";
 const page = usePage<any>();
 const columnSettingsOpen = ref(false);
 const columnFields = [
     { key: "name", label: "ФИО" },
     { key: "email", label: "Email" },
     { key: "phone", label: "Телефон" },
+    { key: "roles", label: "Роли" },
     { key: "status", label: "Статус" },
 ];
 const store = createUsers(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
 );
 const { rows, syncing, ready, online, warning, error } = store;
+const rolesStore = createEntitySync<any>(
+    `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
+    "roles",
+);
+const roleRows = rolesStore.rows;
+const roleEditingUserId = ref<string | null>(null);
+const roleDraft = ref<string[]>([]);
+const roleSaving = ref(false);
 const emailQuery = ref(""),
     phoneQuery = ref("");
 const query = ref(""),
@@ -142,6 +152,47 @@ function open(row: UserRow | null, forPassword = false, readOnly = false) {
         ),
     };
 }
+function roleName(roleId: string) {
+    return (
+        roleRows.value.find((role) => String(role.id) === String(roleId))
+            ?.name ?? `Роль №${roleId}`
+    );
+}
+function beginRoleEdit(row: UserRow, event?: Event) {
+    event?.stopPropagation();
+    if (!online.value || !ready.value || row.deleted_at || roleSaving.value)
+        return;
+    roleEditingUserId.value = row.id;
+    roleDraft.value = (row.roles ?? []).map((role) => String(role.id));
+}
+function cancelRoleEdit() {
+    if (!roleSaving.value) {
+        roleEditingUserId.value = null;
+        roleDraft.value = [];
+    }
+}
+async function saveRoles(row: UserRow) {
+    if (!online.value || roleSaving.value) return;
+    roleSaving.value = true;
+    notice.value = "";
+    try {
+        const result = await http(`/web/users/${row.id}/roles`, "POST", {
+            role_ids: roleDraft.value.map(Number),
+            version: row.version,
+        });
+        await store.apply(result.data);
+        roleEditingUserId.value = null;
+        roleDraft.value = [];
+        notice.value = "Роли пользователя сохранены";
+    } catch (e) {
+        notice.value =
+            e instanceof HttpError
+                ? e.message
+                : "Не удалось сохранить роли пользователя.";
+    } finally {
+        roleSaving.value = false;
+    }
+}
 function close() {
     if (!saving.value) {
         editing.value = false;
@@ -245,8 +296,14 @@ function reviewConflict() {
     notice.value =
         "Версия обновлена. Ваши поля сохранены в форме — проверьте их перед повторным сохранением.";
 }
-onMounted(store.start);
-onUnmounted(store.stop);
+onMounted(() => {
+    void store.start();
+    void rolesStore.start();
+});
+onUnmounted(() => {
+    store.stop();
+    rolesStore.stop();
+});
 
 useCardRoute<UserRow>({
     base: "/main/users",
@@ -291,8 +348,18 @@ useCardRoute<UserRow>({
             <div class="page-heading">
                 <h1>Пользователи</h1>
                 <div class="page-heading-actions">
-                    <DataTransferMenu :rows="visible" :columns="columnFields" filename="users" />
-                    <button class="primary" :disabled="!online || !ready" @click="open(null)">＋ <span>Добавить пользователя</span></button>
+                    <DataTransferMenu
+                        :rows="visible"
+                        :columns="columnFields"
+                        filename="users"
+                    />
+                    <button
+                        class="primary"
+                        :disabled="!online || !ready"
+                        @click="open(null)"
+                    >
+                        ＋ <span>Добавить пользователя</span>
+                    </button>
                 </div>
             </div>
             <div class="sync-line" role="status">
@@ -325,8 +392,16 @@ useCardRoute<UserRow>({
                                 </button>
                             </th>
                             <th>Телефон</th>
+                            <th>Роли</th>
                             <th>Статус</th>
-                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" storage-key="users-columns" /></th>
+                            <th>
+                                Действия
+                                <TableColumnSettings
+                                    v-model:open="columnSettingsOpen"
+                                    :columns="columnFields"
+                                    storage-key="users-columns"
+                                />
+                            </th>
                         </tr>
                         <tr class="column-filters">
                             <th class="id-column"></th>
@@ -347,6 +422,9 @@ useCardRoute<UserRow>({
                                     aria-label="Поиск по телефону"
                                     v-model="phoneQuery"
                                 />
+                            </th>
+                            <th>
+                                <span></span>
                             </th>
                             <th>
                                 <select
@@ -401,6 +479,113 @@ useCardRoute<UserRow>({
                             </td>
                             <td>{{ row.email || "—" }}</td>
                             <td>{{ row.phone || "—" }}</td>
+                            <td
+                                class="user-roles-cell"
+                                @dblclick="beginRoleEdit(row, $event)"
+                                title="Двойной щелчок — изменить роли"
+                            >
+                                <div
+                                    v-if="roleEditingUserId === row.id"
+                                    class="roles-tagbox"
+                                    @click.stop
+                                >
+                                    <div class="role-tags">
+                                        <span
+                                            v-for="roleId in roleDraft"
+                                            :key="roleId"
+                                            class="role-tag"
+                                        >
+                                            {{ roleName(roleId) }}
+                                            <button
+                                                type="button"
+                                                :aria-label="`Убрать роль ${roleName(roleId)}`"
+                                                @click="
+                                                    roleDraft =
+                                                        roleDraft.filter(
+                                                            (id) =>
+                                                                id !== roleId,
+                                                        )
+                                                "
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                        <span
+                                            v-if="!roleDraft.length"
+                                            class="roles-placeholder"
+                                            >Выберите роли</span
+                                        >
+                                    </div>
+                                    <select
+                                        v-model="roleDraft"
+                                        multiple
+                                        aria-label="Роли пользователя"
+                                    >
+                                        <option
+                                            v-for="role in roleRows.filter(
+                                                (item) =>
+                                                    item.status === 1 &&
+                                                    !item.deleted_at,
+                                            )"
+                                            :key="role.id"
+                                            :value="String(role.id)"
+                                        >
+                                            {{
+                                                role.name ||
+                                                role.slug ||
+                                                `Роль №${role.id}`
+                                            }}
+                                        </option>
+                                    </select>
+                                    <div class="roles-tagbox-actions">
+                                        <button
+                                            type="button"
+                                            @click="saveRoles(row)"
+                                            :disabled="roleSaving"
+                                        >
+                                            {{
+                                                roleSaving
+                                                    ? "Сохраняем…"
+                                                    : "Сохранить"
+                                            }}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            @click="cancelRoleEdit"
+                                            :disabled="roleSaving"
+                                        >
+                                            Отмена
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-else class="role-tags">
+                                    <span
+                                        v-for="role in row.roles ?? []"
+                                        :key="role.id"
+                                        class="role-tag"
+                                    >
+                                        {{
+                                            role.name ||
+                                            role.slug ||
+                                            `Роль №${role.id}`
+                                        }}
+                                        <button
+                                            type="button"
+                                            :aria-label="`Снять роль ${role.name || role.slug || role.id}`"
+                                            @click.stop="
+                                                beginRoleEdit(row, $event)
+                                            "
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                    <span
+                                        v-if="!(row.roles ?? []).length"
+                                        class="roles-placeholder"
+                                        >—</span
+                                    >
+                                </div>
+                            </td>
                             <td>
                                 <span
                                     class="badge"
@@ -682,3 +867,73 @@ useCardRoute<UserRow>({
         </aside>
     </div>
 </template>
+
+<style scoped>
+.user-roles-cell {
+    min-width: 220px;
+    vertical-align: top;
+    cursor: default;
+}
+.role-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-height: 28px;
+}
+.role-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border: 1px solid #a8d4a9;
+    border-radius: 999px;
+    background: #e1f3e7;
+    color: #176b27;
+    font-size: 12px;
+    line-height: 1.2;
+}
+.role-tag button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+}
+.roles-placeholder {
+    color: #79848d;
+}
+.roles-tagbox {
+    position: relative;
+    z-index: 3;
+    min-width: 250px;
+    padding: 6px;
+    border: 1px solid #1e892f;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 5px 16px #0c456726;
+}
+.roles-tagbox select {
+    width: 100%;
+    min-height: 78px;
+    margin-top: 6px;
+}
+.roles-tagbox-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+.roles-tagbox-actions button {
+    padding: 4px 8px;
+    border: 1px solid #a8d4a9;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+.roles-tagbox-actions button:first-child {
+    background: #1e892f;
+    color: #fff;
+}
+</style>

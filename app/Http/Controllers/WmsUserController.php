@@ -48,8 +48,8 @@ final class WmsUserController extends BaseApiController
         return response()->json(['data' => $users->save($request->user(), $request->validated(), $id)]);
     }
 
-    /** Действие: activate, block, delete, restore или password. Конфликт версии возвращает 409 и current. */
-    #[PathParameter('action', description: 'activate, block, delete, restore или password', type: 'string')]
+    /** Действие: activate, block, delete, restore, password или roles. Конфликт версии возвращает 409 и current. */
+    #[PathParameter('action', description: 'activate, block, delete, restore, password или roles', type: 'string')]
     #[BodyParameter('password', description: 'Только для password: не менее 12 символов.', type: 'string')]
     #[BodyParameter('password_confirmation', description: 'Подтверждение нового пароля для действия password.', type: 'string')]
     #[Response(409, 'Запись изменена другим пользователем.', type: 'array{message: string, current: array{id: string, name: ?string, last_name: ?string, middle_name: ?string, nick: ?string, email: ?string, phone: ?string, status: ?int, tenant_id: ?string, created_at: ?string, updated_at: ?string, deleted_at: ?string, version: string}}')]

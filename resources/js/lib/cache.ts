@@ -15,6 +15,7 @@ export interface UserRow extends EntityRow {
     deleted_at: string | null;
     created_at: string | null;
     updated_at: string | null;
+    roles: Array<{ id: string; name: string | null; slug: string | null; status: number | null }>;
     version: string;
 }
 export interface Change<T extends EntityRow = UserRow> {

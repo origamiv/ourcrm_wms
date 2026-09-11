@@ -38,6 +38,9 @@ final class UserService
                 abort_if($user->trashed() && $action !== 'restore', 422, 'Сначала восстановите пользователя.');
                 abort_if(! $user->trashed() && $action === 'restore', 422, 'Пользователь не удалён.');
             }
+            if ($action === 'roles') {
+                return $this->saveRoles($actor, $user, $data, $id);
+            }
             $statusChanged = $id && $action === 'update' && array_key_exists('status', $data) && (int) $data['status'] !== $user->status;
             $disabling = $statusChanged && (int) $data['status'] !== 1;
             if (in_array($action, ['delete', 'block'], true) || $disabling) {
@@ -88,5 +91,54 @@ final class UserService
 
             return $this->sync->current($user->id, $tenant);
         }, 3);
+    }
+
+    /** @return array<string, mixed> */
+    private function saveRoles(User $actor, User $user, array $data, ?string $id): array
+    {
+        abort_unless($id !== null, 422, 'Роли можно назначать только существующему пользователю.');
+
+        $roleIds = array_values(array_unique(array_map('intval', $data['role_ids'] ?? [])));
+        $roles = \App\Models\Role::visibleTo($actor->tenant_id)
+            ->where('status', 1)
+            ->whereNull('deleted_at')
+            ->whereIn('id', $roleIds)
+            ->get(['id']);
+        abort_unless($roles->count() === count($roleIds), 422, 'Выберите доступные активные роли.');
+
+        $links = DB::table('main.role_user')->where('user_id', $user->id)->where('tenant_id', $actor->tenant_id)->lockForUpdate()->get();
+        $activeAdmin = fn (array $ids): bool => DB::table('main.role_user as ru')
+            ->join('main.roles as r', 'r.id', '=', 'ru.role_id')
+            ->where('ru.user_id', $user->id)
+            ->where('ru.tenant_id', $actor->tenant_id)
+            ->where('ru.status', 1)
+            ->whereNull('ru.deleted_at')
+            ->where('r.slug', 'admin')
+            ->where('r.status', 1)
+            ->whereNull('r.deleted_at')
+            ->whereIn('ru.role_id', $ids)
+            ->exists();
+        if ($user->id === $actor->id && ! $activeAdmin($roleIds)) {
+            abort(422, 'Нельзя снять роль admin у своей учётной записи.');
+        }
+
+        foreach ($links as $link) {
+            if (in_array((int) $link->role_id, $roleIds, true)) {
+                DB::table('main.role_user')->where('id', $link->id)->update(['status' => 1, 'deleted_at' => null]);
+            } else {
+                DB::table('main.role_user')->where('id', $link->id)->update(['status' => 2, 'deleted_at' => now()]);
+            }
+        }
+        $existing = $links->pluck('role_id')->map(fn ($value) => (int) $value)->all();
+        foreach (array_diff($roleIds, $existing) as $roleId) {
+            DB::table('main.role_user')->insert([
+                'role_id' => $roleId,
+                'user_id' => $user->id,
+                'tenant_id' => $actor->tenant_id,
+                'status' => 1,
+            ]);
+        }
+
+        return $this->sync->current($user->id, $actor->tenant_id);
     }
 }

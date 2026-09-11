@@ -115,3 +115,7 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000024_sync_integrations.php'))->up();
     DB::table('integration.services')->insert(['name' => 'Тестовый сервис', 'status' => 1, 'tenant_id' => 'test_org']);
 });
+
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_11_000033_sync_user_roles.php'))->up();
+});

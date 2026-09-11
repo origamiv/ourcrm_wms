@@ -82,6 +82,6 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::get('/web/users/{id}', [WmsUserController::class, 'show'])->whereNumber('id');
         Route::post('/web/users', [WmsUserController::class, 'store']);
         Route::put('/web/users/{id}', [WmsUserController::class, 'update'])->whereNumber('id');
-        Route::post('/web/users/{id}/{action}', [WmsUserController::class, 'action'])->whereNumber('id')->whereIn('action', ['activate', 'block', 'delete', 'restore', 'password']);
+        Route::post('/web/users/{id}/{action}', [WmsUserController::class, 'action'])->whereNumber('id')->whereIn('action', ['activate', 'block', 'delete', 'restore', 'password', 'roles']);
     });
 });
