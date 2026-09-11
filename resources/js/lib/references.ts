@@ -216,6 +216,7 @@ export const references = {
             { key: "status_id", label: "Статус задачи", kind: "lookup", lookup: "task_statuses", required: true },
             { key: "priority_id", label: "Приоритет", kind: "lookup", lookup: "priorities", required: true },
             { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
+            { key: "user_id", label: "Ответственный", kind: "lookup", lookup: "users" },
             { key: "planned_at", label: "Запланировано", kind: "datetime" },
             { key: "started_at", label: "Начато", kind: "datetime" },
             { key: "completed_at", label: "Завершено", kind: "datetime" },
