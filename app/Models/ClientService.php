@@ -10,10 +10,5 @@ final class ClientService extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['status' => 'integer', 'client_id' => 'integer'];
-
-    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-    {
-        return $this->belongsTo(Client::class);
-    }
+    protected $casts = ['status' => 'integer'];
 }

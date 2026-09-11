@@ -483,7 +483,6 @@ export const references = {
         title: "Сервисы",
         fields: [
             { key: "shortname", label: "Краткое название" },
-            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients", required: true },
         ] as ReferenceField[],
     },
     client_accounts: {

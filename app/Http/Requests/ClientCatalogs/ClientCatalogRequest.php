@@ -13,12 +13,12 @@ abstract class ClientCatalogRequest extends BaseRequest
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'shortname' => ['nullable', 'string', 'max:255', 'regex:/^[a-z][a-z0-9_]*$/'],
-            'client_id' => ['required', 'integer', 'min:1'],
             'status' => ['present', 'nullable', 'integer', 'in:0,1,2,3'],
             'tenant_id' => ['prohibited'],
         ];
         if ($this->route('client_catalog') === 'accounts') {
             $rules += [
+                'client_id' => ['required', 'integer', 'min:1'],
                 'host' => ['nullable', 'string', 'max:255'],
                 'login' => ['nullable', 'string', 'max:255'],
                 'pass' => ['nullable', 'string', 'max:255'],

@@ -38,9 +38,11 @@ final class ClientCatalogService
             if ($delete) {
                 $row->delete();
             } else {
-                $clientId = $data['client_id'] ?? $row->client_id;
-                if (! Client::visibleTo($tenant)->whereKey($clientId)->exists()) {
-                    throw ValidationException::withMessages(['client_id' => 'Выберите доступного клиента.']);
+                if ($catalog === 'accounts') {
+                    $clientId = $data['client_id'] ?? $row->client_id;
+                    if (! Client::visibleTo($tenant)->whereKey($clientId)->exists()) {
+                        throw ValidationException::withMessages(['client_id' => 'Выберите доступного клиента.']);
+                    }
                 }
                 $fields = array_diff(config('sync.entities.client_'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']);
                 $row->forceFill(array_intersect_key($data, array_flip($fields)));

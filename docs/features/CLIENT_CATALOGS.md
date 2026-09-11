@@ -1,6 +1,6 @@
 # Сервисы и доступы клиентов
 
-Добавлены таблицы `clients.services` и `clients.accounts`. Их базовые поля соответствуют аналогичным таблицам схемы `access`; дополнительно обе таблицы содержат обязательные `client_id` и `tenant_id`.
+Добавлены таблицы `clients.services` и `clients.accounts`. Их базовые поля соответствуют аналогичным таблицам схемы `access`; `clients.accounts` дополнительно содержит `client_id` и `tenant_id`, а `clients.services` — только `tenant_id`.
 
 Разделы интерфейса:
 
