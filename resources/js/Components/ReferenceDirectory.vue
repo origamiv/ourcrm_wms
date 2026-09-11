@@ -1486,6 +1486,7 @@ useCardRoute<ReferenceRow>({
                             <SearchableSelect
                                 v-else-if="
                                     (isGood && field.key === 'parent_id') ||
+                                    (isCellGood && field.key === 'good_id') ||
                                     (isKiz &&
                                         ['client_id', 'good_id'].includes(
                                             field.key,
