@@ -185,6 +185,7 @@ async function confirmDelete() {
 }
 async function save(action = "update") {
     if (!online.value || saving.value || viewing.value) return;
+    const wasCreating = creating.value && action === "update";
     saving.value = true;
     notice.value = "";
     conflict.value = null;
@@ -234,6 +235,12 @@ async function save(action = "update") {
             );
             savedData = rolesResult.data;
             await store.apply(savedData);
+        }
+        if (wasCreating) {
+            saving.value = false;
+            open(null);
+            notice.value = "Пользователь создан. Можно добавить следующего.";
+            return;
         }
         selected.value = savedData;
         form.value = {

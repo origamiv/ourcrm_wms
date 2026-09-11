@@ -93,6 +93,7 @@ async function confirmDelete() {
 }
 async function save() {
     if (!online.value || saving.value || viewing.value) return;
+    const creating = !selected.value;
     saving.value = true;
     formError.value = "";
     notice.value = "";
@@ -112,9 +113,15 @@ async function save() {
             payload,
         );
         await store.apply(response.data);
-        selected.value = response.data;
+        if (creating) {
+            saving.value = false;
+            open(null);
+            notice.value = "Запись создана. Можно добавить следующую.";
+        } else {
+            selected.value = response.data;
+        }
         conflict.value = null;
-        notice.value = "Изменения сохранены";
+        if (!creating) notice.value = "Изменения сохранены";
     } catch (error) {
         if (error instanceof HttpError && error.status === 409)
             conflict.value = error.body.current;

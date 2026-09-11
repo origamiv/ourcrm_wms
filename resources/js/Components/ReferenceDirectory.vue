@@ -661,6 +661,7 @@ async function save(remove = false) {
         (isIntegration && !detailReady.value && !remove)
     )
         return;
+    const creating = !selected.value && !remove;
     saving.value = true;
     notice.value = "";
     try {
@@ -711,10 +712,17 @@ async function save(remove = false) {
             await store.sync();
             if (!remove) revealGood(response.data);
         }
-        selected.value = response.data;
-        if (isGood) form.value.is_category = response.data.is_category;
+        if (creating) {
+            // Keep the editor open for rapid consecutive entry creation.
+            saving.value = false;
+            fillForm(null, false);
+            notice.value = "Запись создана. Можно добавить следующую.";
+        } else {
+            selected.value = response.data;
+            if (isGood) form.value.is_category = response.data.is_category;
+        }
         conflict.value = null;
-        notice.value = "Изменения сохранены";
+        if (!creating) notice.value = "Изменения сохранены";
         if (remove) editing.value = false;
     } catch (e) {
         if (e instanceof HttpError && e.status === 409)

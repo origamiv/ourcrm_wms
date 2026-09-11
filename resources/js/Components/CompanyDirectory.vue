@@ -294,6 +294,7 @@ function applySuggestion(fields: Record<string, any>) {
 }
 async function save(remove = false) {
     if (!online.value || saving.value || (!remove && viewing.value)) return;
+    const creating = !selected.value && !remove;
     saving.value = true;
     notice.value = "";
     try {
@@ -306,9 +307,15 @@ async function save(remove = false) {
             },
         );
         await store.apply(response.data);
-        selected.value = response.data;
+        if (creating) {
+            saving.value = false;
+            open(null);
+            notice.value = "Запись создана. Можно добавить следующую.";
+        } else {
+            selected.value = response.data;
+        }
         conflict.value = null;
-        notice.value = "Изменения сохранены";
+        if (!creating) notice.value = "Изменения сохранены";
         if (remove) editing.value = false;
     } catch (e) {
         if (e instanceof HttpError && e.status === 409)
