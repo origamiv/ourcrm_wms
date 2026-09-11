@@ -602,6 +602,9 @@ function fillForm(row: ReferenceRow | null, readOnly = false) {
         status: row ? row.status : isDocument ? 0 : 1,
         ...(clientScope.value ? { client_id: clientScope.value.id } : {}),
         ...(warehouseScope.value ? { warehouse_id: warehouseScope.value.id } : {}),
+        ...(isTask && !row
+            ? { created_by_user_id: page.props.auth.id }
+            : {}),
     };
     pendingTaskDefaults.clear();
     if (isTask && !row) ["client_id", "task_type_id", "status_id", "priority_id", "warehouse_id"].forEach((field) => pendingTaskDefaults.add(field));
@@ -1448,6 +1451,12 @@ useCardRoute<ReferenceRow>({
                     Загрузить актуальные данные
                 </button>
                 <form @submit.prevent="save()">
+                    <input
+                        v-if="isTask"
+                        v-model="form.created_by_user_id"
+                        type="hidden"
+                        name="created_by_user_id"
+                    />
                     <fieldset
                         class="client-form"
                         :disabled="
