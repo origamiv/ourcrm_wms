@@ -159,8 +159,8 @@ function destroyRoleTagbox() {
     const $ = (window as any).jQuery;
     if ($ && $(input).data("tagbox")) $(input).tagbox("destroy");
 }
-function setRoleTagboxInput(element: Element | null) {
-    roleTagboxInput.value = element as HTMLInputElement | null;
+function setRoleTagboxInput(element: Element | object | null) {
+    roleTagboxInput.value = element instanceof HTMLInputElement ? element : null;
 }
 async function initRoleTagbox() {
     await nextTick();
