@@ -76,10 +76,20 @@ final class AcceptanceService
 
             $fact = (int) $acceptance->fact_count + 1;
             $plan = (int) ($acceptance->plan_count ?? 0);
+            $progress = $plan > 0 ? min(100, (int) round($fact / $plan * 100)) : 0;
             $done = $plan > 0 && $fact >= $plan;
-            $acceptance->forceFill(['fact_count' => $fact, 'progress' => $plan > 0 ? min(100, (int) round($fact / $plan * 100)) : 0, 'status' => $done ? 1 : 3, 'finished_at' => $done ? now() : null])->save();
+            $acceptance->forceFill([
+                'fact_count' => $fact,
+                'progress' => $progress,
+                'status' => $done ? 1 : 3,
+                'started_at' => $acceptance->started_at ?? now(),
+                'finished_at' => $done ? now() : null,
+            ])->save();
             if ($task) {
-                $task->forceFill(['fact_count' => $fact, 'status' => 1]);
+                $taskSrc = is_array($task->src) ? $task->src : [];
+                $taskSrc['progress'] = $progress;
+                $taskSrc['fact_count'] = $fact;
+                $task->forceFill(['fact_count' => $fact, 'src' => $taskSrc, 'status' => 1]);
                 if ($done) {
                     $completed = TaskStatus::query()->where(function ($q): void {
                         $q->where('shortname', 'completed')->orWhereRaw('lower(name) = ?', ['завершена']);

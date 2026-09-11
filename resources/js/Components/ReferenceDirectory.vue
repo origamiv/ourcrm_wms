@@ -1323,7 +1323,11 @@ useCardRoute<ReferenceRow>({
                                 </td>
                             </template>
                             <td v-for="field in extraColumns" :key="field.key">
-                                {{ columnValue(row, field) }}
+                                <div v-if="isAcceptance && field.key === 'progress'" class="table-progress" :aria-label="`Прогресс: ${Number(row.progress ?? 0)}%`">
+                                    <span class="table-progress-track"><i :style="{ width: `${Math.max(0, Math.min(100, Number(row.progress ?? 0)))}%` }"></i></span>
+                                    <b>{{ Math.max(0, Math.min(100, Number(row.progress ?? 0))) }}%</b>
+                                </div>
+                                <template v-else>{{ columnValue(row, field) }}</template>
                             </td>
                             <td v-if="isColumnVisible('status')">
                                 <span
@@ -2131,6 +2135,10 @@ td,
     font-size: 10px;
     line-height: 1;
 }
+.table-progress { display: flex; align-items: center; gap: 8px; min-width: 130px; }
+.table-progress-track { display: block; width: 88px; height: 7px; border-radius: 5px; background: #e1f3e7; overflow: hidden; }
+.table-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
+.table-progress b { color: #1e892f; font-size: 11px; font-weight: 700; }
 .acceptance-content { display: grid; gap: 18px; }
 .acceptance-progress { display: grid; gap: 8px; }
 .acceptance-progress-label { display: flex; justify-content: space-between; color: #667085; font-size: 12px; }
