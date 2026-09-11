@@ -32,6 +32,8 @@ import DocTypes from "./Pages/DocTypes.vue";
 import Documents from "./Pages/Documents.vue";
 import ClientIndividuals from "./Pages/ClientIndividuals.vue";
 import ClientCompanies from "./Pages/ClientCompanies.vue";
+import ClientServices from "./Pages/ClientServices.vue";
+import ClientAccounts from "./Pages/ClientAccounts.vue";
 import Files from "./Pages/Files.vue";
 import Icons from "./Pages/Icons.vue";
 import Features from "./Pages/Features.vue";
@@ -90,6 +92,8 @@ const pages: Record<string, any> = {
     Documents,
     ClientIndividuals,
     ClientCompanies,
+    ClientServices,
+    ClientAccounts,
     Files,
     Icons,
     Features,
