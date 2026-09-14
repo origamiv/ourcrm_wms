@@ -63,7 +63,8 @@ final class WorktimeService
             $date = $event->event_at->setTimezone(config('app.timezone'))->toDateString();
             if (! isset($result[$date])) continue;
             $at = $event->event_at;
-            if ($event->event_type === 'start') { $open = $at; $result[$date]['started_at'] = $at->toIso8601String(); $result[$date]['state'] = 'working'; }
+            if ($event->event_type === 'vacation' || $event->event_type === 'sick') { $result[$date]['state'] = $event->event_type; $open = null; $pause = null; }
+            elseif ($event->event_type === 'start') { $open = $at; $result[$date]['started_at'] = $at->toIso8601String(); $result[$date]['state'] = 'working'; }
             elseif ($event->event_type === 'pause_start' && $open) { $pause = $at; $result[$date]['state'] = 'paused'; }
             elseif ($event->event_type === 'pause_end' && $pause) { $result[$date]['pause_minutes'] += $pause->diffInMinutes($at); $pause = null; $result[$date]['state'] = 'working'; }
             elseif ($event->event_type === 'finish' && $open) { $result[$date]['worked_minutes'] += max(0, $open->diffInMinutes($at) - $result[$date]['pause_minutes']); $result[$date]['finished_at'] = $at->toIso8601String(); $open = null; $result[$date]['state'] = 'finished'; }
