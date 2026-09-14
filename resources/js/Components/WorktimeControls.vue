@@ -44,14 +44,14 @@ onUnmounted(() => { if (timer) window.clearInterval(timer); });
 <template>
     <div class="worktimeControls" aria-label="Рабочий график">
         <span v-if="state === 'working' || state === 'paused'" class="worktimeTimer">{{ elapsedLabel }}</span>
-        <button v-if="state === 'not_started'" class="worktimeButton worktimeStart" aria-label="Начать день" title="Начать день" :disabled="loading" @click="action('start')"><span class="worktimeIcon">▶</span></button>
+        <button v-if="state === 'not_started'" class="worktimeButton worktimeStart" aria-label="Начать день" title="Начать день" :disabled="loading" @click="action('start')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5 19 12 8 18.5V5.5Z" fill="currentColor"/></svg></button>
         <template v-else>
-            <button class="worktimeButton worktimePause" :aria-label="state === 'paused' ? 'Продолжить' : 'Пауза'" :title="state === 'paused' ? 'Продолжить' : 'Пауза'" :disabled="loading" @click="action('pause')"><span class="worktimeIcon">{{ state === 'paused' ? '▶' : 'Ⅱ' }}</span></button>
-            <button v-if="state === 'working' || state === 'paused'" class="worktimeButton worktimeFinish" aria-label="Завершить день" title="Завершить день" :disabled="loading" @click="action('finish')"><span class="worktimeIcon">■</span></button>
+            <button class="worktimeButton worktimePause" :aria-label="state === 'paused' ? 'Продолжить' : 'Пауза'" :title="state === 'paused' ? 'Продолжить' : 'Пауза'" :disabled="loading" @click="action('pause')"><svg v-if="state !== 'paused'" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7V5Zm7 0h3v14h-3V5Z" fill="currentColor"/></svg><svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5 19 12 8 18.5V5.5Z" fill="currentColor"/></svg></button>
+            <button v-if="state === 'working' || state === 'paused'" class="worktimeButton worktimeFinish" aria-label="Завершить день" title="Завершить день" :disabled="loading" @click="action('finish')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="1.5" fill="currentColor"/></svg></button>
         </template>
     </div>
 </template>
 
 <style scoped>
-.worktimeControls{display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:24px;white-space:nowrap}.worktimeTimer{color:#0c1821;font:600 22px/1.3 Manrope,sans-serif;letter-spacing:.2px}.worktimeButton{display:inline-grid;place-items:center;width:28px;height:28px;border:0;border-radius:50%;padding:0;background:transparent;color:#2274a5;font:500 16px/1 Manrope,sans-serif;cursor:pointer}.worktimeButton:hover{background:#e1f0f3}.worktimeButton:disabled{opacity:.5;cursor:default}.worktimeStart{color:#2274a5}.worktimePause{color:#2274a5}.worktimeFinish{color:#c04b4b}.worktimeIcon{display:grid;place-items:center;width:24px;height:24px;font-size:18px;font-weight:700}.worktimeFinish .worktimeIcon{font-size:13px}@media(max-width:900px){.worktimeControls{margin-right:0}.worktimeTimer{font-size:16px}}
+.worktimeControls{display:flex;align-items:center;gap:16px;margin-left:auto;margin-right:24px;white-space:nowrap}.worktimeTimer{color:#0c1821;font:600 22px/1.3 Manrope,sans-serif;letter-spacing:.2px}.worktimeButton{display:inline-grid;place-items:center;width:23px;height:23px;border:0;border-radius:0;padding:0;background:transparent;color:#2274a5;cursor:pointer}.worktimeButton:hover{opacity:.7}.worktimeButton:disabled{opacity:.5;cursor:default}.worktimeButton svg{display:block;width:23px;height:23px}.worktimeStart{color:#2274a5}.worktimePause{color:#2274a5}.worktimeFinish{color:#ff5c5c}@media(max-width:900px){.worktimeControls{margin-right:0}.worktimeTimer{font-size:16px}}
 </style>
