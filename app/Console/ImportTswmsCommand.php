@@ -52,7 +52,7 @@ final class ImportTswmsCommand extends Command
         }
         config(['database.connections.tswms_client' => [
             'driver' => 'mysql', 'host' => $client->{'sql-server'} ?: config('database.connections.tswms.host'),
-            'port' => 3306, 'database' => $this->sourceDatabase, 'username' => $client->{'sql-user'}, 'password' => $client->{'sql-password'}, 'charset' => 'utf8mb4', 'collation' => 'utf8mb4_unicode_ci', 'prefix' => '',
+            'port' => 3306, 'database' => $this->sourceDatabase, 'username' => $client->{'sql-user'}, 'password' => $client->{'sql-password'}, 'charset' => 'utf8mb4', 'collation' => 'utf8mb4_unicode_ci', 'prefix' => '', 'options' => config('database.connections.tswms.options', []),
         ]]);
         DB::purge('tswms_client');
         $this->source = DB::connection('tswms_client');
@@ -75,7 +75,10 @@ final class ImportTswmsCommand extends Command
             [$key, $value] = explode('=', $line, 2);
             $env[trim($key)] = trim(trim($value), "\"'");
         }
-        config(['database.connections.tswms' => ['driver'=>'mysql','host'=>$env['DB_HOST'] ?? '127.0.0.1','port'=>$env['DB_PORT'] ?? 3306,'database'=>$env['DB_DATABASE'] ?? 'tswms_billing','username'=>$env['DB_USERNAME'] ?? 'root','password'=>$env['DB_PASSWORD'] ?? '','charset'=>'utf8mb4','collation'=>'utf8mb4_unicode_ci','prefix'=>'']]);
+        $sslCa = str_replace('/var/www/ts-wms/laravel-tswms', base_path('../tswms/laravel-tswms'), $env['MYSQL_ATTR_SSL_CA'] ?? '');
+        if ($sslCa === '' || ! is_file($sslCa)) $sslCa = base_path('../tswms/laravel-tswms/storage/root.crt');
+        $options = is_file($sslCa) ? [\PDO::MYSQL_ATTR_SSL_CA => $sslCa, \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false] : [];
+        config(['database.connections.tswms' => ['driver'=>'mysql','host'=>$env['DB_HOST'] ?? '127.0.0.1','port'=>$env['DB_PORT'] ?? 3306,'database'=>$env['DB_DATABASE'] ?? 'tswms_billing','username'=>$env['DB_USERNAME'] ?? 'root','password'=>$env['DB_PASSWORD'] ?? '','charset'=>'utf8mb4','collation'=>'utf8mb4_unicode_ci','prefix'=>'','options'=>$options]]);
     }
 
     private function runStep(string $name, callable $callback, array $only = []): void
