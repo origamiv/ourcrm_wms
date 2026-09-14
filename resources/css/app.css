@@ -1467,3 +1467,8 @@ td {
     .users-list { padding: 12px 8px; }
     .table-scroll { overflow-x: auto; }
 }
+@media (max-width: 767px) {
+    .topbar { z-index: 50; }
+    .mobile-menu-button { position: relative; z-index: 60; }
+    .workspace.mobileMenuOpen .mobile-menu-button { background: #e1f0f3; }
+}
