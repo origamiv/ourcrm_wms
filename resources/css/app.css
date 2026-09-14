@@ -1630,3 +1630,11 @@ td {
     html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(3):not(.check-column):not(.id-column) { display: inline-flex !important; width: calc(100% - 58px) !important; min-height: 42px !important; padding: 8px 4px 8px 10px !important; border: 0 !important; }
     html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(3) .name-button { display: block !important; visibility: visible !important; color: #0c1821 !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded { display: block !important; overflow: hidden !important; background: #e1f3e7 !important; border-color: #95c59d !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td { display: flex !important; width: 100% !important; min-height: 46px !important; flex-direction: row !important; align-items: center !important; background: transparent !important; border-color: #a8d4a9 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { width: 100% !important; min-height: 50px !important; flex-direction: column !important; align-items: flex-start !important; justify-content: center !important; gap: 3px !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column,
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { background: #fff !important; border-color: #95c59d !important; }
+}
