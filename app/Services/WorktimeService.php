@@ -66,7 +66,7 @@ final class WorktimeService
             if ($event->event_type === 'start') { $open = $at; $result[$date]['started_at'] = $at->toIso8601String(); $result[$date]['state'] = 'working'; }
             elseif ($event->event_type === 'pause_start' && $open) { $pause = $at; $result[$date]['state'] = 'paused'; }
             elseif ($event->event_type === 'pause_end' && $pause) { $result[$date]['pause_minutes'] += $pause->diffInMinutes($at); $pause = null; $result[$date]['state'] = 'working'; }
-            elseif ($event->event_type === 'finish' && $open) { $result[$date]['worked_minutes'] += max(0, $open->diffInMinutes($at) - $result[$date]['pause_minutes']); $result[$date]['finished_at'] = $at->toIso8601String(); $open = null; $state = 'finished'; }
+            elseif ($event->event_type === 'finish' && $open) { $result[$date]['worked_minutes'] += max(0, $open->diffInMinutes($at) - $result[$date]['pause_minutes']); $result[$date]['finished_at'] = $at->toIso8601String(); $open = null; $result[$date]['state'] = 'finished'; }
         }
         return $result;
     }
