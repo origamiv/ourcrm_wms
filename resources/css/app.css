@@ -1693,3 +1693,10 @@ td {
     html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:has(.name-button),
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { order: 2 !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded { display: block !important; width: 100% !important; background: #e1f3e7 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { display: flex !important; float: none !important; clear: both !important; width: 100% !important; max-width: none !important; margin: 0 !important; background: #e1f3e7 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column,
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { display: inline-flex !important; vertical-align: top !important; background: #fff !important; }
+}
