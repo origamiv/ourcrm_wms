@@ -5,6 +5,7 @@ import { http, endSession } from "../lib/http";
 import WorktimeControls from "./WorktimeControls.vue";
 const page = usePage<any>();
 const collapsed = ref(false),
+    mobileMenuOpen = ref(false),
     leaving = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
@@ -44,7 +45,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-    <div class="workspace" :class="{ collapsed }">
+    <div class="workspace" :class="{ collapsed, mobileMenuOpen }">
         <aside class="sidebar">
             <a href="/" class="brand" @click.prevent="go('Home', '/')"
                 ><img
@@ -158,6 +159,7 @@ onUnmounted(() => {
         </aside>
         <main class="main-panel">
             <header class="topbar">
+                <button class="mobile-menu-button" type="button" aria-label="Открыть меню" @click="mobileMenuOpen = !mobileMenuOpen">☰</button>
                 <span class="section-title">{{
                     page.url.startsWith("/main/")
                         ? "Администрирование"
