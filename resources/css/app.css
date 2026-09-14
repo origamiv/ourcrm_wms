@@ -1638,3 +1638,11 @@ td {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column,
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { background: #fff !important; border-color: #95c59d !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded { display: flex !important; flex-wrap: wrap !important; position: relative !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column { order: 2 !important; display: inline-flex !important; width: auto !important; min-height: 42px !important; padding: 8px 6px 8px 0 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { order: 1 !important; display: inline-flex !important; width: calc(100% - 58px) !important; min-height: 42px !important; padding: 8px 4px 8px 10px !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:last-child { order: 3 !important; position: absolute !important; top: 0 !important; right: 0 !important; width: auto !important; min-height: 42px !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { order: 4 !important; display: flex !important; width: 100% !important; }
+}
