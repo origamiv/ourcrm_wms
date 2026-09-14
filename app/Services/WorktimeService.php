@@ -16,8 +16,12 @@ final class WorktimeService
     {
         $last = Worktime::query()->where('user_id', $user->id)->latest('event_at')->first();
         $state = $this->stateFrom($last?->event_type);
+        $startedAt = null;
+        if (in_array($state, ['working', 'paused'], true)) {
+            $startedAt = Worktime::query()->where('user_id', $user->id)->where('event_type', 'start')->latest('event_at')->first()?->event_at;
+        }
 
-        return ['state' => $state, 'can_start' => $state === 'not_started', 'can_pause' => in_array($state, ['working', 'paused'], true), 'can_finish' => $state === 'working'];
+        return ['state' => $state, 'started_at' => $startedAt?->toIso8601String(), 'can_start' => $state === 'not_started', 'can_pause' => in_array($state, ['working', 'paused'], true), 'can_finish' => $state === 'working'];
     }
 
     public function event(User $user, string $action): array
