@@ -1616,3 +1616,12 @@ td {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { grid-column: auto !important; grid-row: auto !important; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:last-child { grid-column: 2 !important; grid-row: 1 / span 2 !important; align-self: center !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:not(.check-column):not(.id-column):not(:has(.name-button)):not(:last-child) { display: none !important; }
+    html body .main-panel .table-scroll table tbody tr td:has(.name-button) { display: inline-flex !important; order: 1 !important; width: calc(100% - 58px) !important; min-height: 42px !important; padding: 8px 4px 8px 10px !important; border: 0 !important; }
+    html body .main-panel .table-scroll table tbody tr td:has(.name-button) .name-button { display: block !important; visibility: visible !important; opacity: 1 !important; color: #0c1821 !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column { order: 2 !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:last-child { order: 3 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { grid-column: 1 / -1 !important; width: 100% !important; }
+}
