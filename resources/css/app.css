@@ -1646,3 +1646,7 @@ td {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:last-child { order: 3 !important; position: absolute !important; top: 0 !important; right: 0 !important; width: auto !important; min-height: 42px !important; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { order: 4 !important; display: flex !important; width: 100% !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr td:has(.name-button) .name-button::after { display: none !important; content: none !important; }
+}
