@@ -1670,3 +1670,11 @@ td {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 10px !important; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child)::before { flex: 0 0 150px; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr td.id-column { color: #0c1821 !important; font-weight: 600 !important; visibility: visible !important; opacity: 1 !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column { display: inline-flex !important; order: 2 !important; flex: 0 0 34px !important; width: 34px !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column { display: inline-flex !important; order: 2 !important; flex: 0 0 34px !important; width: 34px !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { order: 1 !important; flex: 1 1 auto !important; width: auto !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { order: 4 !important; }
+}
