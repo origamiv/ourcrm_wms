@@ -25,7 +25,6 @@ final class Login extends Component
             $this->password = '';
         }
         Auth::guard('web')->login($user);
-        session()->regenerate();
         session()->forget(['wms_tenant', 'wms_credential']);
         $this->tenants = $this->availableTenants($user);
         if (count($this->tenants) > 1) {
@@ -34,6 +33,7 @@ final class Login extends Component
             return;
         }
         $tenantId = (string) ($this->tenants[0]['id'] ?? $user->tenant_id);
+        session()->regenerate();
         $this->activateTenant($user, $tenantId);
         $this->redirect('/');
     }
@@ -44,6 +44,7 @@ final class Login extends Component
         abort_unless(in_array($tenantId, array_map('strval', $allowed), true), 403);
         $user = Auth::user();
         abort_unless($user, 403);
+        session()->regenerate();
         $this->activateTenant($user, $tenantId);
         session()->forget('wms_pending_tenants');
         $this->redirect('/');
