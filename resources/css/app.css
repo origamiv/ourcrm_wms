@@ -1625,3 +1625,8 @@ td {
     html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:last-child { order: 3 !important; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { grid-column: 1 / -1 !important; width: 100% !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(3):not(.check-column):not(.id-column) { display: inline-flex !important; width: calc(100% - 58px) !important; min-height: 42px !important; padding: 8px 4px 8px 10px !important; border: 0 !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(3) .name-button { display: block !important; visibility: visible !important; color: #0c1821 !important; }
+}
