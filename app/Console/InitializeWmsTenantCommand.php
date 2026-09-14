@@ -24,6 +24,8 @@ final class InitializeWmsTenantCommand extends Command
 
         DB::transaction(function () use ($tenantId, $tenant): void {
             DB::statement('SELECT wms.initialize_tenant_shares(?)', [$tenantId]);
+            $this->copyRoles($tenantId);
+            $this->copyFulfillmentCatalogs($tenantId);
             if ($tenant->owner_user_id !== null) {
                 $adminRole = DB::table('main.roles')->where('slug', 'admin')->where('status', 1)->whereNull('deleted_at')->first('id');
                 // В legacy-схеме уникальность задана по user_id + role_id, поэтому
@@ -40,5 +42,94 @@ final class InitializeWmsTenantCommand extends Command
         $this->components->info("WMS инициализирован для «{$tenant->name}» ({$tenantId}).");
         $this->line('Проверены контекст синхронизации, общие справочники, меню и права доступа.');
         return self::SUCCESS;
+    }
+
+    private function copyRoles(string $tenantId): void
+    {
+        $template = '29b164bf-3043-42a4-8de7-705ff3e502c7';
+        $this->syncSequence('main.roles');
+        $this->syncSequence('main.permission_role');
+        $roleMap = [];
+        foreach (DB::table('main.roles')->where('tenant_id', $template)->whereNull('deleted_at')->get() as $role) {
+            $values = (array) $role;
+            unset($values['id']);
+            $values['tenant_id'] = $tenantId;
+            $values['created_at'] = now();
+            $values['updated_at'] = now();
+            DB::table('main.roles')->updateOrInsert(['tenant_id' => $tenantId, 'slug' => $role->slug], $values);
+            $target = DB::table('main.roles')->where('tenant_id', $tenantId)->where('slug', $role->slug)->first('id');
+            $roleMap[(string) $role->id] = $target->id;
+        }
+        foreach (DB::table('main.permission_role')->where('tenant_id', $template)->whereNull('deleted_at')->get() as $link) {
+            if (! isset($roleMap[(string) $link->role_id])) {
+                continue;
+            }
+            $values = (array) $link;
+            unset($values['id']);
+            $values['tenant_id'] = $tenantId;
+            $values['role_id'] = $roleMap[(string) $link->role_id];
+            $values['created_at'] = now();
+            $values['updated_at'] = now();
+            DB::table('main.permission_role')->updateOrInsert(['tenant_id' => $tenantId, 'role_id' => $values['role_id'], 'permission_id' => $link->permission_id], $values);
+        }
+    }
+
+    private function copyFulfillmentCatalogs(string $tenantId): void
+    {
+        $template = '29b164bf-3043-42a4-8de7-705ff3e502c7';
+        $now = now();
+        foreach (['wms.marketplaces', 'wms.type_services', 'wms.services_ff', 'wms.delivery_services', 'wms.warehouses', 'wms.zones'] as $table) {
+            $this->syncSequence($table);
+        }
+        foreach (['wms.marketplaces', 'wms.type_services', 'wms.services_ff'] as $table) {
+            $rows = DB::table($table)->where('tenant_id', $template)->whereNull('deleted_at')->get();
+            foreach ($rows as $row) {
+                $values = (array) $row;
+                unset($values['id']);
+                $values['tenant_id'] = $tenantId;
+                $values['shortname'] = $this->tenantShortname($table, (string) $row->shortname, $tenantId);
+                $values['created_at'] = $now;
+                $values['updated_at'] = $now;
+            DB::table($table)->updateOrInsert(['tenant_id' => $tenantId, 'name' => $row->name], $values);
+            }
+        }
+        $marketplaceMap = [];
+        foreach (DB::table('wms.marketplaces')->where('tenant_id', $template)->whereNull('deleted_at')->get() as $row) {
+            $target = DB::table('wms.marketplaces')->where('tenant_id', $tenantId)->where('name', $row->name)->first('id');
+            if ($target) {
+                $marketplaceMap[(string) $row->id] = $target->id;
+            }
+        }
+        foreach (DB::table('wms.delivery_services')->where('tenant_id', $template)->whereNull('deleted_at')->get() as $row) {
+            $values = (array) $row;
+            unset($values['id']);
+            $values['tenant_id'] = $tenantId;
+            $values['shortname'] = $this->tenantShortname('wms.delivery_services', (string) $row->shortname, $tenantId);
+            $values['marketplace_id'] = $row->marketplace_id ? ($marketplaceMap[(string) $row->marketplace_id] ?? null) : null;
+            $values['created_at'] = $now;
+            $values['updated_at'] = $now;
+            DB::table('wms.delivery_services')->updateOrInsert(['tenant_id' => $tenantId, 'name' => $row->name], $values);
+        }
+        $type = DB::table('wms.type_warehouses')->whereNull('deleted_at')->orderBy('id')->first();
+        DB::table('wms.warehouses')->updateOrInsert(['tenant_id' => $tenantId, 'name' => 'Основной'], ['name' => 'Основной', 'shortname' => $this->tenantShortname('wms.warehouses', 'main', $tenantId), 'type_warehouse_id' => $type?->id, 'status' => 1, 'updated_at' => $now, 'created_at' => $now]);
+        DB::table('wms.zones')->updateOrInsert(['tenant_id' => $tenantId, 'name' => 'Основная'], ['name' => 'Основная', 'shortname' => $this->tenantShortname('wms.zones', 'main', $tenantId), 'status' => 1, 'updated_at' => $now, 'created_at' => $now]);
+    }
+
+    private function tenantShortname(string $table, string $shortname, string $tenantId): string
+    {
+        $candidate = $shortname !== '' ? $shortname : 'item';
+        if (! DB::table($table)->where('shortname', $candidate)->whereNull('deleted_at')->exists()) {
+            return $candidate;
+        }
+        return $candidate.'_'.substr(str_replace('-', '', $tenantId), 0, 8);
+    }
+
+    private function syncSequence(string $table): void
+    {
+        [$schema, $name] = explode('.', $table, 2);
+        $sequence = DB::selectOne('SELECT pg_get_serial_sequence(?, ?) AS sequence', [$schema.'.'.$name, 'id'])->sequence ?? null;
+        if ($sequence) {
+            DB::statement("SELECT setval(?, COALESCE((SELECT MAX(id) FROM {$schema}.{$name}), 1), true)", [$sequence]);
+        }
     }
 }
