@@ -1602,3 +1602,17 @@ td {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(6)::before { content: "Дополнительно"; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(3) { background: #fff !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr { display: flex !important; flex-wrap: wrap !important; align-items: center !important; min-height: 0 !important; height: auto !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) { min-height: 44px !important; }
+    html body .main-panel .table-scroll table tbody tr td.id-column { order: 2 !important; display: inline-flex !important; width: auto !important; min-height: 38px !important; padding: 7px 6px 7px 0 !important; font-size: 11px !important; }
+    html body .main-panel .table-scroll table tbody tr td.id-column + td { order: 1 !important; display: inline-flex !important; width: auto !important; max-width: calc(100% - 90px) !important; min-height: 38px !important; padding: 7px 4px 7px 10px !important; }
+    html body .main-panel .table-scroll table tbody tr td:last-child { order: 3 !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(n + 4):not(:last-child) { display: none !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; align-items: stretch !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column { grid-column: 1 / -1 !important; grid-row: 1 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column + td { grid-column: 1 / -1 !important; grid-row: 2 !important; max-width: none !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { grid-column: auto !important; grid-row: auto !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:last-child { grid-column: 2 !important; grid-row: 1 / span 2 !important; align-self: center !important; }
+}

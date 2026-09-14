@@ -34,6 +34,7 @@ const definition = references[props.entity];
 const columnSettingsOpen = ref(false);
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) { if (event && event.detail > 1) return; const key = String(id); const next = new Set(expandedMobileRows.value); if (next.has(key)) next.delete(key); else next.add(key); expandedMobileRows.value = next; }
+function openName(row: ReferenceRow, event: MouseEvent) { if (window.matchMedia('(max-width: 900px)').matches) { event.stopPropagation(); toggleMobileRow(row.id, event); return; } open(row, true); }
 const columnOrder = ref<string[]>([]);
 const hiddenColumns = ref<string[]>([]);
 const draggedColumn = ref<string | null>(null);
@@ -1290,7 +1291,7 @@ useCardRoute<ReferenceRow>({
                                     />
                                     <button
                                         class="name-button"
-                                        @click="open(row, true)"
+                                        @click="openName(row, $event)"
                                     >
                                         {{ displayName(row) }}
                                     </button>
@@ -1298,7 +1299,7 @@ useCardRoute<ReferenceRow>({
                                 <button
                                     v-else
                                     class="name-button"
-                                    @click="open(row, true)"
+                                    @click="openName(row, $event)"
                                 >
                                     {{ displayName(row) }}
                                 </button>
