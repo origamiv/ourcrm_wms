@@ -16,7 +16,17 @@ final class AccessService
 
     public function isAdmin(User $user): bool
     {
-        return $this->active($user) && $this->adminAssignments($user->tenant_id)->where('ru.user_id', $user->id)->exists();
+        if (! $this->active($user)) {
+            return false;
+        }
+
+        // Владелец организации имеет административный доступ в ней даже если
+        // legacy-таблица role_user не позволяет назначить вторую роль той же паре.
+        if (DB::table('public.tenants')->where('id', $user->tenant_id)->where('owner_user_id', $user->id)->exists()) {
+            return true;
+        }
+
+        return $this->adminAssignments($user->tenant_id)->where('ru.user_id', $user->id)->exists();
     }
 
     public function adminAssignments(string $tenant)
