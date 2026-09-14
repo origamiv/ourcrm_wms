@@ -11,6 +11,7 @@ use App\Console\EmbeddingsCommand;
 use App\Console\ExportTableCommand;
 use App\Console\FreshCommand;
 use App\Console\ImportTableCommand;
+use App\Console\InitializeWmsTenantCommand;
 use App\Console\MessengerChannelsCommand;
 use App\Console\PostingCommand;
 use App\Console\ProjectMenuCommand;
@@ -99,6 +100,7 @@ final class AppServiceProvider extends ServiceProvider
             ProjectMenuCommand::class,
             ProjectSyncPermissionsCommand::class,
             DbConnectionsCommand::class,
+            InitializeWmsTenantCommand::class,
         ]);
     }
 }
