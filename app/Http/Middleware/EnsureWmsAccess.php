@@ -14,6 +14,7 @@ final class EnsureWmsAccess
     public function handle(Request $request, Closure $next, string $mode = 'user')
     {
         $user = $request->user();
+        if ($user && $request->hasSession() && is_string($request->session()->get('wms_tenant'))) $user->tenant_id = $request->session()->get('wms_tenant');
         if ($request->hasSession() && $request->hasHeader('X-WMS-User') && $user
             && ((string) $request->header('X-WMS-User') !== (string) $user->id
                 || rawurldecode((string) $request->header('X-WMS-Tenant')) !== $user->tenant_id)) {
