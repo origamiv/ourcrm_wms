@@ -207,7 +207,7 @@ onUnmounted(() => {
             <p v-if="message" role="alert" class="notice error">
                 {{ message }}
             </p>
-            <div v-if="tenantBlocked" class="tenant-blocked"><div class="tenant-blocked-art">🔒</div><h1>У вас нет доступа</h1><p>Тенант заблокирован. Обратитесь к администратору организации.</p></div>
+            <div v-if="tenantBlocked" class="tenant-blocked"><div class="tenant-blocked-art">🔒</div><h1>У вас нет доступа</h1><p>Ваш аккаунт заблокирован. Обратитесь к администратору организации.</p></div>
             <slot v-else />
         </main>
     </div>
