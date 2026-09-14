@@ -18,6 +18,7 @@ final class HandleInertiaRequests extends Middleware
 
         return [...parent::share($request), 'auth' => $user ? [
             'id' => (string) $user->id, 'name' => $user->name, 'tenant_id' => $user->tenant_id,
+            'tenant_status' => (int) (\Illuminate\Support\Facades\DB::table('public.tenants')->where('id', $user->tenant_id)->value('status') ?? 1),
             'is_admin' => app(AccessService::class)->isAdmin($user),
         ] : null, 'cacheVersion' => config('wms.cache_version'), 'csrfToken' => csrf_token()];
     }

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import { http, endSession } from "../lib/http";
 import WorktimeControls from "./WorktimeControls.vue";
 const page = usePage<any>();
+const tenantBlocked = computed(() => Number(page.props.auth?.tenant_status ?? 1) !== 1 && page.url !== "/");
 const collapsed = ref(false),
     mobileMenuOpen = ref(false),
     leaving = ref(false),
@@ -46,7 +47,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-    <div class="workspace" :class="{ collapsed, mobileMenuOpen }">
+    <div class="workspace" :class="{ collapsed, mobileMenuOpen, tenantBlocked }">
         <aside class="sidebar">
             <a href="/" class="brand" @click.prevent="go('Home', '/')"
                 ><img
@@ -206,7 +207,8 @@ onUnmounted(() => {
             <p v-if="message" role="alert" class="notice error">
                 {{ message }}
             </p>
-            <slot />
+            <div v-if="tenantBlocked" class="tenant-blocked"><div class="tenant-blocked-art">🔒</div><h1>У вас нет доступа</h1><p>Тенант заблокирован. Обратитесь к администратору организации.</p></div>
+            <slot v-else />
         </main>
     </div>
 </template>
