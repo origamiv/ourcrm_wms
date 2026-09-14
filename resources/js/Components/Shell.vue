@@ -13,6 +13,7 @@ function go(
     component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces" | "Worktime",
     url: string,
 ) {
+    mobileMenuOpen.value = false;
     if (navigator.onLine) router.visit(url);
     else
         router.push({
