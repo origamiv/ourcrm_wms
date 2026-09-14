@@ -1659,3 +1659,9 @@ td {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { flex: 1 1 auto !important; width: auto !important; max-width: none !important; min-width: 0 !important; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column { flex: 0 0 30px !important; width: 30px !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded,
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { background: #e1f3e7 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { display: flex !important; width: 100% !important; min-height: 50px !important; border-bottom: 1px solid #a8d4a9 !important; }
+}
