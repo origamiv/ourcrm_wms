@@ -1,7 +1,11 @@
 <div class="login-screen">
     <div class="login-panel {{ count($tenants) > 1 ? 'login-panel-tenants' : '' }}">
         <div class="brand"><img class="brand-logo" src="/design/crm/logo.png" alt=""><span>WMS<span class="brand-caption">Управление складом</span></span></div>
-        <h1>Вход в систему</h1><p class="muted">Введите данные вашей учётной записи</p>
+        @if(count($tenants) > 1)
+            <h1>Выбор компании</h1><p class="muted">Данные подтверждены. Выберите организацию для продолжения.</p>
+        @else
+            <h1>Вход в систему</h1><p class="muted">Введите данные вашей учётной записи</p>
+        @endif
         @if(count($tenants) > 1)
         <div class="tenant-choice">
             <h2>Выберите компанию</h2>
@@ -25,6 +29,8 @@
             <button class="primary" type="submit" disabled x-bind:disabled="!ready" wire:loading.attr="disabled"><span wire:loading.remove>Войти</span><span wire:loading>Входим…</span></button>
         </form>
         @endif
-        <p class="login-note">Для доступа обратитесь к администратору вашей организации.</p>
+        @if(count($tenants) <= 1)
+            <p class="login-note">Для доступа обратитесь к администратору вашей организации.</p>
+        @endif
     </div>
 </div>
