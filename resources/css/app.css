@@ -1650,3 +1650,12 @@ td {
 @media (max-width: 900px) {
     html body .main-panel .table-scroll table tbody tr td:has(.name-button) .name-button::after { display: none !important; content: none !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) { flex-wrap: nowrap !important; align-items: center !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:has(.name-button) { flex: 1 1 auto !important; width: auto !important; max-width: none !important; min-width: 0 !important; }
+    html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column { flex: 0 0 30px !important; width: 30px !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded { flex-wrap: wrap !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button) { flex: 1 1 auto !important; width: auto !important; max-width: none !important; min-width: 0 !important; }
+    html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column { flex: 0 0 30px !important; width: 30px !important; }
+}
