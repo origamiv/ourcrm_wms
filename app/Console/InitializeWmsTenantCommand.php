@@ -90,7 +90,7 @@ final class InitializeWmsTenantCommand extends Command
                 $values['shortname'] = $this->tenantShortname($table, (string) $row->shortname, $tenantId);
                 $values['created_at'] = $now;
                 $values['updated_at'] = $now;
-            DB::table($table)->updateOrInsert(['tenant_id' => $tenantId, 'name' => $row->name], $values);
+                DB::table($table)->updateOrInsert(['tenant_id' => $tenantId, 'shortname' => $values['shortname']], $values);
             }
         }
         $marketplaceMap = [];
@@ -108,7 +108,7 @@ final class InitializeWmsTenantCommand extends Command
             $values['marketplace_id'] = $row->marketplace_id ? ($marketplaceMap[(string) $row->marketplace_id] ?? null) : null;
             $values['created_at'] = $now;
             $values['updated_at'] = $now;
-            DB::table('wms.delivery_services')->updateOrInsert(['tenant_id' => $tenantId, 'name' => $row->name], $values);
+            DB::table('wms.delivery_services')->updateOrInsert(['tenant_id' => $tenantId, 'shortname' => $values['shortname']], $values);
         }
         $type = DB::table('wms.type_warehouses')->whereNull('deleted_at')->orderBy('id')->first();
         DB::table('wms.warehouses')->updateOrInsert(['tenant_id' => $tenantId, 'name' => 'Основной'], ['name' => 'Основной', 'shortname' => $this->tenantShortname('wms.warehouses', 'main', $tenantId), 'type_warehouse_id' => $type?->id, 'status' => 1, 'updated_at' => $now, 'created_at' => $now]);
