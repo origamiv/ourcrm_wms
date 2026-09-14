@@ -36,7 +36,7 @@ final class WorktimeService
                 throw ValidationException::withMessages(['worktime' => 'Действие недоступно в текущем состоянии рабочего дня.']);
             }
             $now = CarbonImmutable::now();
-            Worktime::query()->create(['user_id' => $user->id, 'tenant_id' => $user->tenant_id, 'work_date' => $now->toDateString(), 'event_type' => $type, 'event_at' => $now]);
+            Worktime::query()->forceCreate(['user_id' => $user->id, 'tenant_id' => $user->tenant_id, 'work_date' => $now->toDateString(), 'event_type' => $type, 'event_at' => $now]);
 
             return $this->state($user);
         });
