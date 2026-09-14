@@ -1562,3 +1562,10 @@ td {
     html body .main-panel .table-scroll table tbody tr td.check-column { position: absolute !important; }
     html body .main-panel .table-scroll table tbody tr td:last-child:has(button) { grid-column: 1 / -1 !important; justify-content: flex-end !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody td.check-column { display: none !important; }
+    html body .main-panel .table-scroll table tbody td.id-column { grid-column: 1 !important; grid-row: 1 !important; min-height: 30px !important; padding: 8px 10px 0 !important; }
+    html body .main-panel .table-scroll table tbody td:nth-child(3) { grid-column: 1 !important; grid-row: 2 !important; }
+    html body .main-panel .table-scroll table tbody td:last-child:has(button) { grid-column: 2 !important; grid-row: 1 / span 2 !important; align-self: center !important; }
+}
