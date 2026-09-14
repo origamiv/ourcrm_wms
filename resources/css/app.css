@@ -1579,3 +1579,7 @@ td {
     html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(n + 4):not(:last-child) { display: none !important; }
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:nth-child(n + 4):not(:last-child) { display: flex !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr td:nth-child(3) .name-button { display: block !important; width: 100% !important; min-width: 0 !important; padding: 0 !important; color: #0c1821 !important; background: transparent !important; border: 0 !important; text-align: left !important; font-size: 15px !important; font-weight: 600 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+}
