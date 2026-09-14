@@ -1507,3 +1507,18 @@ td {
     .table-scroll table tbody td:last-child:has(button) { grid-column: 1 / -1; justify-content: flex-end; }
     .table-scroll table tbody tr:has(td.empty) { display: block; }
 }
+
+/* Планшетная компоновка 768 px из макета. */
+@media (min-width: 768px) and (max-width: 900px) {
+    .workspace { grid-template-columns: 181px minmax(0, 1fr); gap: 13px; padding: 10px 30px; }
+    .sidebar { padding-inline: 10px; }
+    .sidebar .nav-label { display: inline; }
+    .sidebar .brand { margin: 0 6px 30px; }
+    .sidebar nav a { justify-content: flex-start; padding: 11px 10px; gap: 10px; }
+    .nav-icon { width: 24px; height: 24px; }
+    .main-panel { min-width: 0; }
+    .topbar { height: 70px; padding: 0 20px; }
+    .section-title { font-size: 16px; }
+    .account strong { display: none; }
+    .page-content { padding: 24px 18px; }
+}
