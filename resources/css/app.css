@@ -1583,3 +1583,12 @@ td {
 @media (max-width: 900px) {
     html body .main-panel .table-scroll table tbody tr td:nth-child(3) .name-button { display: block !important; width: 100% !important; min-width: 0 !important; padding: 0 !important; color: #0c1821 !important; background: transparent !important; border: 0 !important; text-align: left !important; font-size: 15px !important; font-weight: 600 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr { position: relative !important; min-height: 78px !important; }
+    html body .main-panel .table-scroll table tbody tr td.id-column + td { display: inline-flex !important; width: calc(100% - 54px) !important; min-height: 42px !important; padding: 8px 10px !important; border: 0 !important; }
+    html body .main-panel .table-scroll table tbody tr td:last-child { position: absolute !important; top: 0 !important; right: 0 !important; z-index: 5 !important; display: flex !important; width: auto !important; min-height: 42px !important; padding: 8px !important; border: 0 !important; background: transparent !important; }
+    html body .main-panel .table-scroll table tbody tr td:last-child .row-actions { display: flex !important; align-items: center !important; gap: 6px !important; }
+    html body .main-panel .table-scroll table tbody tr td:last-child .row-actions button,
+    html body .main-panel .table-scroll table tbody tr td:last-child .row-actions a { display: inline-grid !important; place-items: center !important; width: 28px !important; height: 28px !important; }
+}
