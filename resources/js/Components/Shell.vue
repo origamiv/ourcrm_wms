@@ -78,13 +78,6 @@ onUnmounted(() => {
                     /><span class="nav-label">Главная</span></a
                 >
                 <a
-                    href="/main/worktime"
-                    aria-label="Рабочий график"
-                    :class="{ active: page.url === '/main/worktime' }"
-                    @click.prevent="go('Worktime', '/main/worktime')"
-                    ><img class="nav-icon" src="/design/crm/view.svg" alt="" /><span class="nav-label">Рабочий график</span></a
-                >
-                <a
                     v-if="page.props.auth.is_admin"
                     href="/main/users"
                     aria-label="Администрирование"
