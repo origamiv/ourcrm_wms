@@ -1554,3 +1554,11 @@ td {
     .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(3) .name-button::after { content: "⌄"; display: inline-block; margin-left: 8px; color: #1e892f; font-size: 18px; }
     .table-scroll table tbody tr.mobile-card-expanded td:nth-child(3) .name-button::after { content: "⌃"; display: inline-block; margin-left: 8px; color: #1e892f; font-size: 18px; }
 }
+
+@media (max-width: 900px) {
+    /* Колонки у справочников различаются, поэтому карточка не скрывает поля по номеру. */
+    html body .main-panel .table-scroll table tbody tr td { display: flex !important; }
+    html body .main-panel .table-scroll table tbody tr td.id-column { grid-column: 1 / -1 !important; }
+    html body .main-panel .table-scroll table tbody tr td.check-column { position: absolute !important; }
+    html body .main-panel .table-scroll table tbody tr td:last-child:has(button) { grid-column: 1 / -1 !important; justify-content: flex-end !important; }
+}
