@@ -33,10 +33,11 @@ class ProjectSyncPermissionsCommand extends Command
     {
         (new Info($this->output))->render("Creating permissions for module \"$this->module\"");
 
-        $adminRole = Role::where('slug', 'service')->first();
+        // В старых базах системная роль называлась service, в WMS используется admin.
+        $adminRole = Role::whereIn('slug', ['service', 'admin'])->where('status', 1)->whereNull('deleted_at')->first();
 
         if (!$adminRole) {
-            (new Error($this->output))->render('Admin role with slug "service" not found.');
+            (new Error($this->output))->render('Не найдена активная системная роль service или admin.');
             return;
         }
 
