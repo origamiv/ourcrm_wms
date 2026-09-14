@@ -1535,3 +1535,14 @@ td {
     .table-scroll table tbody td.check-column { position: absolute; top: 7px; right: 7px; z-index: 2; min-height: 24px; padding: 0; border: 0; }
     .table-scroll table tbody td:last-child:has(button) { grid-column: 1 / -1; justify-content: flex-end; }
 }
+
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table { display: block !important; min-width: 0 !important; }
+    html body .main-panel .table-scroll table thead { display: none !important; }
+    html body .main-panel .table-scroll table tbody { display: grid !important; gap: 10px !important; }
+    html body .main-panel .table-scroll table tbody tr { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; position: relative !important; overflow: hidden !important; border: 1px solid #dcecef !important; border-radius: 10px !important; background: #fff !important; box-shadow: 0 2px 8px rgb(16 24 40 / 5%) !important; }
+    html body .main-panel .table-scroll table tbody td { display: flex !important; align-items: center !important; min-height: 42px !important; padding: 9px 10px !important; text-align: left !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+    html body .main-panel .table-scroll table tbody td.id-column { grid-column: 1 / -1 !important; min-height: 32px !important; }
+    html body .main-panel .table-scroll table tbody td.check-column { position: absolute !important; top: 7px !important; right: 7px !important; z-index: 2 !important; min-height: 24px !important; padding: 0 !important; border: 0 !important; }
+    html body .main-panel .table-scroll table tbody td:last-child:has(button) { grid-column: 1 / -1 !important; justify-content: flex-end !important; }
+}
