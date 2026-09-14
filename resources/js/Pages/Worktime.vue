@@ -7,7 +7,7 @@ import { isoDate, toIsoDate } from "../lib/dates";
 const today = new Date(), from = ref(toIsoDate(new Date(today.getFullYear(), today.getMonth(), 1))), to = ref(toIsoDate(new Date(today.getFullYear(), today.getMonth() + 1, 0))), report = ref<any>({ days: [], rows: [] }), loading = ref(false), error = ref("");
 const weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 const info = (row: any, day: string) => row.days?.[day] || { state: "empty", worked_minutes: 0 };
-const hours = (minutes: number) => minutes ? `${Math.floor(minutes / 60)}ч` : "";
+const hours = (minutes: number) => minutes ? `${Math.ceil(minutes / 60)}ч` : "";
 const label = (day: string) => { const d = isoDate(day)!; return `${String(d.getDate()).padStart(2, "0")} ${weekdays[d.getDay()]}`; };
 const isWeekend = (day: string) => { const index = isoDate(day)!.getDay(); return index === 0 || index === 6; };
 const demoAbsenceState = (day: string) => { const pastWeekdays = report.value.days.filter((item: string) => !isWeekend(item) && item < new Date().toISOString().slice(0, 10)); const index = pastWeekdays.indexOf(day); return index === 0 ? "vacation" : index === 1 ? "sick" : null; };
