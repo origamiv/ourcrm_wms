@@ -46,7 +46,7 @@ onUnmounted(() => { if (timer) window.clearInterval(timer); });
         <span v-if="state === 'working' || state === 'paused'" class="worktimeTimer">{{ elapsedLabel }}</span>
         <button v-if="state === 'not_started'" class="worktimeButton worktimeStart" :disabled="loading" @click="action('start')"><span class="worktimeIcon">▶</span><span>Начать день</span></button>
         <template v-else>
-            <button class="worktimeButton worktimePause" :disabled="loading" @click="action(state === 'paused' ? 'start' : 'pause')"><span class="worktimeIcon">{{ state === 'paused' ? '▶' : 'Ⅱ' }}</span><span>{{ state === 'paused' ? 'Продолжить' : 'Пауза' }}</span></button>
+            <button class="worktimeButton worktimePause" :disabled="loading" @click="action('pause')"><span class="worktimeIcon">{{ state === 'paused' ? '▶' : 'Ⅱ' }}</span><span>{{ state === 'paused' ? 'Продолжить' : 'Пауза' }}</span></button>
             <button v-if="state === 'working' || state === 'paused'" class="worktimeButton worktimeFinish" :disabled="loading" @click="action('finish')"><span class="worktimeIcon">■</span><span>Завершить день</span></button>
         </template>
     </div>
