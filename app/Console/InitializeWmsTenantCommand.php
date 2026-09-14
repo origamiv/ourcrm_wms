@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AppConsole;
+namespace App\Console;
 
-use IlluminateConsoleCommand;
-use IlluminateSupportFacadesDB;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 final class InitializeWmsTenantCommand extends Command
 {
@@ -26,7 +26,9 @@ final class InitializeWmsTenantCommand extends Command
             DB::statement('SELECT wms.initialize_tenant_shares(?)', [$tenantId]);
             if ($tenant->owner_user_id !== null) {
                 $adminRole = DB::table('main.roles')->where('slug', 'admin')->where('status', 1)->whereNull('deleted_at')->first('id');
-                $assigned = $adminRole && DB::table('main.role_user')->where('role_id', $adminRole->id)->where('user_id', $tenant->owner_user_id)->where('tenant_id', $tenantId)->whereNull('deleted_at')->exists();
+                // В legacy-схеме уникальность задана по user_id + role_id, поэтому
+                // не создаём вторую строку, если роль уже назначена владельцу.
+                $assigned = $adminRole && DB::table('main.role_user')->where('role_id', $adminRole->id)->where('user_id', $tenant->owner_user_id)->whereNull('deleted_at')->exists();
                 if ($adminRole && ! $assigned) {
                     DB::table('main.role_user')->insert(['role_id' => $adminRole->id, 'user_id' => $tenant->owner_user_id, 'tenant_id' => $tenantId, 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
                 }
