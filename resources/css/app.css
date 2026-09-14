@@ -1522,3 +1522,16 @@ td {
     .account strong { display: none; }
     .page-content { padding: 24px 18px; }
 }
+
+/* Карточки также включаются на узких планшетах, где макет использует мобильную подачу списка. */
+@media (max-width: 900px) {
+    .table-scroll { overflow: visible; }
+    .table-scroll table { display: block; min-width: 0; }
+    .table-scroll table thead { display: none; }
+    .table-scroll table tbody { display: grid; gap: 10px; }
+    .table-scroll table tbody tr { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid #dcecef; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); }
+    .table-scroll table tbody td { display: flex; align-items: center; min-height: 42px; padding: 9px 10px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+    .table-scroll table tbody td.id-column { grid-column: 1 / -1; min-height: 32px; color: #71828a; font-size: 11px; }
+    .table-scroll table tbody td.check-column { position: absolute; top: 7px; right: 7px; z-index: 2; min-height: 24px; padding: 0; border: 0; }
+    .table-scroll table tbody td:last-child:has(button) { grid-column: 1 / -1; justify-content: flex-end; }
+}
