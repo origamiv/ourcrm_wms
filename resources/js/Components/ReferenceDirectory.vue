@@ -32,6 +32,8 @@ const props = defineProps<{ entity: keyof typeof references; taskView?: "table" 
 const emit = defineEmits<{ toggleTaskView: [] }>();
 const definition = references[props.entity];
 const columnSettingsOpen = ref(false);
+const expandedMobileRows = ref<Set<string>>(new Set());
+function toggleMobileRow(id: string | number) { const key = String(id); const next = new Set(expandedMobileRows.value); if (next.has(key)) next.delete(key); else next.add(key); expandedMobileRows.value = next; }
 const columnOrder = ref<string[]>([]);
 const hiddenColumns = ref<string[]>([]);
 const draggedColumn = ref<string | null>(null);
@@ -1192,6 +1194,7 @@ useCardRoute<ReferenceRow>({
                                     (row.is_category === 1 ||
                                         !!goodsForest.nodes.get(row.id)
                                             ?.children.length),
+                                'mobile-card-expanded': expandedMobileRows.has(String(row.id)),
                             }"
                             :aria-level="
                                 isGood
@@ -1205,6 +1208,7 @@ useCardRoute<ReferenceRow>({
                                     ? goodsFiltered || expandedGoods.has(row.id)
                                     : undefined
                             "
+                            @click="toggleMobileRow(row.id)"
                             @dblclick="isGood ? openGoodDetail(row) : isTask ? openTaskDetail(row) : open(row, true)"
                         >
                             <td class="check-column" @dblclick.stop>
