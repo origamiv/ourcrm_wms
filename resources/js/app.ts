@@ -13,6 +13,7 @@ import TypeStorage from "./Pages/TypeStorage.vue";
 import Zones from "./Pages/Zones.vue";
 import Cells from "./Pages/Cells.vue";
 import CellGoods from "./Pages/CellGoods.vue";
+import GoodsMarketplace from "./Pages/GoodsMarketplace.vue";
 import Acceptances from "./Pages/Acceptances.vue";
 import TypeAcceptances from "./Pages/TypeAcceptances.vue";
 import TypeServices from "./Pages/TypeServices.vue";
@@ -82,6 +83,7 @@ const pages: Record<string, any> = {
     Zones,
     Cells,
     CellGoods,
+    GoodsMarketplace,
     Acceptances,
     TypeAcceptances,
     TypeServices,

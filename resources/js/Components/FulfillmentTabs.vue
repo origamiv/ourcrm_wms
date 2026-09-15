@@ -20,6 +20,12 @@ const tabs = [
         icon: "goods",
     },
     {
+        label: "Каталоги МП",
+        url: "/fulfillment/goods_marketplace",
+        component: "GoodsMarketplace",
+        icon: "goods",
+    },
+    {
         label: "Приемки",
         url: "/fulfillment/acceptances",
         component: "Acceptances",
