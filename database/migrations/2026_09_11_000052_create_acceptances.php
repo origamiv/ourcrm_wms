@@ -12,17 +12,31 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('wms.type_acceptance', function (Blueprint $table): void {
-            $table->id(); $table->string('name'); $table->string('shortname')->nullable();
-            $table->smallInteger('status')->default(1); $table->string('tenant_id')->nullable()->index();
-            $table->timestamps(); $table->softDeletes();
+            $table->id();
+            $table->string('name');
+            $table->string('shortname')->nullable();
+            $table->smallInteger('status')->default(1);
+            $table->string('tenant_id')->nullable()->index();
+            $table->timestamps();
+            $table->softDeletes();
         });
         Schema::create('wms.acceptances', function (Blueprint $table): void {
-            $table->id(); $table->unsignedBigInteger('client_id')->nullable(); $table->unsignedBigInteger('warehouse_id')->nullable();
-            $table->unsignedBigInteger('task_id')->nullable(); $table->integer('plan_count')->nullable(); $table->integer('fact_count')->nullable();
-            $table->integer('progress')->nullable(); $table->unsignedBigInteger('type_acceptance_id')->nullable();
-            $table->timestamps(); $table->dateTime('started_at')->nullable(); $table->dateTime('finished_at')->nullable();
-            $table->smallInteger('status')->default(1); $table->string('tenant_id')->nullable()->index(); $table->softDeletes();
-            $table->index(['tenant_id', 'status']); $table->index(['client_id', 'warehouse_id']);
+            $table->id();
+            $table->unsignedBigInteger('client_id')->nullable();
+            $table->unsignedBigInteger('warehouse_id')->nullable();
+            $table->unsignedBigInteger('task_id')->nullable();
+            $table->integer('plan_count')->nullable();
+            $table->integer('fact_count')->nullable();
+            $table->integer('progress')->nullable();
+            $table->unsignedBigInteger('type_acceptance_id')->nullable();
+            $table->timestamps();
+            $table->dateTime('started_at')->nullable();
+            $table->dateTime('finished_at')->nullable();
+            $table->smallInteger('status')->default(1);
+            $table->string('tenant_id')->nullable()->index();
+            $table->softDeletes();
+            $table->index(['tenant_id', 'status']);
+            $table->index(['client_id', 'warehouse_id']);
         });
         DB::table('wms.type_acceptance')->insert([
             ['id' => 1, 'name' => 'Сканирование', 'shortname' => 'scanning', 'status' => 1],
@@ -38,7 +52,8 @@ SQL);
 
     public function down(): void
     {
-        Schema::dropIfExists('wms.acceptances'); Schema::dropIfExists('wms.type_acceptance');
+        Schema::dropIfExists('wms.acceptances');
+        Schema::dropIfExists('wms.type_acceptance');
         DB::unprepared("DELETE FROM public.entity_changes WHERE entity IN ('App\\Models\\Acceptance','App\\Models\\TypeAcceptance');");
     }
 };
