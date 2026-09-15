@@ -733,6 +733,7 @@ useCardRoute<UserRow>({
                             <label class="roles-form-field">
                                 Роли
                                 <VSelect
+                                    class="roles-tagbox-input"
                                     v-model="roleDraft"
                                     :items="roleOptions"
                                     item-title="name"
