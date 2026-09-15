@@ -6,7 +6,7 @@ import { http } from "../lib/http";
 import ReferenceDirectory from "../Components/ReferenceDirectory.vue";
 import TaskKanban from "../Components/TaskKanban.vue";
 import { createUsers } from "../lib/users";
-const page=usePage<any>(); const viewStorageKey=`tasks-view:${page.props.auth.id}:${page.props.auth.tenant_id}`; const kanban=ref(typeof localStorage !== "undefined" && localStorage.getItem(viewStorageKey)==="kanban"); watch(kanban,(value)=>{ if(typeof localStorage!=="undefined") localStorage.setItem(viewStorageKey,value?"kanban":"table"); }); const store=createEntitySync<any>(`${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,"tasks"); void store.start();
+const page=usePage<any>(); const viewStorageKey=`tasks-view:${page.props.auth.id}:${page.props.auth.tenant_id}`; const kanban=ref(typeof localStorage !== "undefined" && localStorage.getItem(viewStorageKey)==="kanban"); watch(kanban,(value)=>{ if(typeof localStorage!=="undefined") localStorage.setItem(viewStorageKey,value?"kanban":"table"); }); const store=createEntitySync<any>(`${page.props.cacheVersion}:tasks-v5:${page.props.auth.id}:${page.props.auth.tenant_id}`,"tasks"); void store.start();
 const statuses=createEntitySync<any>(`${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,"task_statuses"); void statuses.start();
 const clients=createEntitySync<any>(`${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,"clients"); void clients.start();
 const priorities=createEntitySync<any>(`${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,"priorities"); void priorities.start();

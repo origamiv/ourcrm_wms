@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\DeliveryService;
 use App\Models\Marketplace;
 use App\Models\TypeWarehouse;
+use App\Models\KindWarehouse;
 use App\Models\TypeStorage;
 use App\Models\Zone;
 use App\Models\Cell;
@@ -25,7 +26,7 @@ final class FulfillmentCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'priorities'], true), 404);
+        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'kind_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'task_stages', 'priorities'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
@@ -34,6 +35,7 @@ final class FulfillmentCatalogService
                 'delivery_services' => DeliveryService::class,
                 'warehouses' => Warehouse::class,
                 'type_warehouses' => TypeWarehouse::class,
+                'kind_warehouses' => KindWarehouse::class,
                 'type_storage' => TypeStorage::class,
                 'zones' => Zone::class,
                 'cells' => Cell::class,
@@ -44,6 +46,7 @@ final class FulfillmentCatalogService
                 'services_ff' => ServiceFf::class,
                 'task_types' => \App\Models\TaskType::class,
                 'task_statuses' => \App\Models\TaskStatus::class,
+                'task_stages' => \App\Models\TaskStage::class,
                 'priorities' => \App\Models\Priority::class,
             };
             $sync = app(EntitySyncService::class);
@@ -79,6 +82,10 @@ final class FulfillmentCatalogService
                     $type = array_key_exists('type_warehouse_id', $data) ? $data['type_warehouse_id'] : $row->type_warehouse_id;
                     if ($type !== null && ! TypeWarehouse::visibleTo($tenant)->whereKey($type)->exists()) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['type_warehouse_id' => 'Выберите доступный тип склада.']);
+                    }
+                    $kind = array_key_exists('kind_warehouse_id', $data) ? $data['kind_warehouse_id'] : $row->kind_warehouse_id;
+                    if ($kind !== null && ! KindWarehouse::visibleTo($tenant)->whereKey($kind)->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['kind_warehouse_id' => 'Выберите доступный вид склада.']);
                     }
                 }
                 if ($catalog === 'cells') {
@@ -136,7 +143,7 @@ final class FulfillmentCatalogService
                     }
                 }
                 $row->forceFill(array_intersect_key($data, array_flip(array_diff(config('sync.entities.'.$catalog.'.fields'), ['id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']))));
-                if (! $id && ! in_array($catalog, ['task_types','task_statuses','priorities'], true)) {
+                if (! $id && ! in_array($catalog, ['task_types','task_statuses','task_stages','priorities'], true)) {
                     $row->tenant_id = $tenant;
                 }
                 $row->save();

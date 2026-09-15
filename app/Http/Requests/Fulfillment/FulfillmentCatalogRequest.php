@@ -23,6 +23,7 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                     'cell_goods' => 'pgsql.wms.cell_goods',
                     'zones' => 'pgsql.wms.zones',
                     'type_storage' => 'pgsql.wms.type_storage',
+                    'kind_warehouses' => 'pgsql.wms.kind_warehouses',
                     'type_services' => 'pgsql.wms.type_services',
                     'services_ff' => 'pgsql.wms.services_ff',
                     default => 'pgsql.wms.type_warehouses',
@@ -35,7 +36,19 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
             'tenant_id' => ['prohibited'],
         ];
         if ($this->route('catalog') === 'warehouses') {
-            $rules['type_warehouse_id'] = ['nullable', 'integer', 'min:1'];
+            $rules += [
+                'type_warehouse_id' => ['nullable', 'integer', 'min:1'],
+                'code' => ['nullable', 'string', 'max:255'],
+                'kind_warehouse_id' => ['nullable', 'integer', 'min:1'],
+                'address' => ['nullable', 'string', 'max:255'],
+                'timezone' => ['nullable', 'string', 'max:255'],
+                'contact_name' => ['nullable', 'string', 'max:255'],
+                'contact_phone' => ['nullable', 'string', 'max:255'],
+                'working_hours' => ['nullable', 'string', 'max:255'],
+                'width' => ['required', 'integer', 'min:1'],
+                'height' => ['required', 'integer', 'min:1'],
+                'scheme_json' => ['nullable', 'array'],
+            ];
         }
         if ($this->route('catalog') === 'delivery_services') {
             $rules += [

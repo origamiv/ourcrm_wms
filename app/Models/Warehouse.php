@@ -18,4 +18,9 @@ final class Warehouse extends BaseModel
     {
         return $this->belongsTo(TypeWarehouse::class, 'type_warehouse_id');
     }
+
+    public function kindWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(KindWarehouse::class, 'kind_warehouse_id');
+    }
 }

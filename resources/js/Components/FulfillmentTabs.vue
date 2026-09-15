@@ -44,6 +44,12 @@ const tabs = [
                 icon: "goods",
             },
             {
+                label: "Виды складов",
+                url: "/fulfillment/kind_warehouses",
+                component: "KindWarehouses",
+                icon: "goods",
+            },
+            {
                 label: "Типы хранения",
                 url: "/fulfillment/type_storage",
                 component: "TypeStorage",
@@ -60,6 +66,7 @@ const tabs = [
             { label: "Типы услуг", url: "/fulfillment/type_services", component: "TypeServices", icon: "goods" },
             { label: "Услуги фулфилмента", url: "/fulfillment/services_ff", component: "ServicesFf", icon: "goods" },
             { label: "Статусы задач", url: "/fulfillment/task_statuses", component: "TaskStatuses", icon: "goods" },
+            { label: "Этапы задач", url: "/fulfillment/task_stages", component: "TaskStages", icon: "goods" },
             { label: "Приоритеты", url: "/fulfillment/priorities", component: "Priorities", icon: "goods" },
             {
                 label: "Маркетплейсы",

@@ -41,12 +41,13 @@ const draggedColumn = ref<string | null>(null);
 const isCellGood = props.entity === "cell_goods";
 const isAcceptance = props.entity === "acceptances";
 const isTask = props.entity === "tasks";
+const isClients = props.entity === "clients";
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
 const fixedColumnKeys = new Set(["__id", "__actions"]);
 function isFixedColumn(key: string): boolean {
-    return fixedColumnKeys.has(key) || (["client_services", "client_accounts"].includes(props.entity) && ["__name", "shortname", "status"].includes(key));
+    return fixedColumnKeys.has(key) || (isTask && ["client_id", "task_type_id", "task_stage_id", "__sku_count"].includes(key)) || (["client_services", "client_accounts"].includes(props.entity) && ["__name", "shortname", "status"].includes(key));
 }
 const configurableColumns = computed(() => [
     {
@@ -84,7 +85,7 @@ const allColumns = computed(() => {
     return [...saved, ...fresh].map((key) => known.get(key)!);
 });
 const orderedColumns = computed(() =>
-    allColumns.value.filter((field) => !hiddenColumns.value.includes(field.key)),
+    allColumns.value.filter((field) => isFixedColumn(field.key) || !hiddenColumns.value.includes(field.key)),
 );
 const renderedSpecialColumns = new Set([
     "__id",
@@ -93,6 +94,8 @@ const renderedSpecialColumns = new Set([
     "shortname",
     "code",
     "client_id",
+    "task_type_id",
+    "task_stage_id",
     "doc_type_id",
     "doc_date",
     "amount",
@@ -181,6 +184,14 @@ function columnValue(row: ReferenceRow, field: (typeof definition.fields)[number
     if (Array.isArray(value)) return value.join(", ");
     return String(value);
 }
+function taskLookupValue(row: ReferenceRow, key: string, lookup: string): string {
+    const value = row[key];
+    if (value == null || value === "") return "—";
+    const found = choices(lookup).find((item) => String(item.id) === String(value));
+    if (found?.name) return String(found.name);
+    const src = row.src && typeof row.src === "object" ? row.src as Record<string, any> : {};
+    return String(row[`${key.replace(/_id$/, "")}_name`] ?? src[`${key.replace(/_id$/, "")}_name`] ?? `№${value}`);
+}
 function lookupOption(entity: string, value: unknown): ReferenceRow | undefined {
     return choices(entity).find((item) => String(item.id) === String(value));
 }
@@ -200,7 +211,7 @@ const isIntegration = props.entity.startsWith("integration_");
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "type_services", "services_ff", "tasks", "task_types", "task_statuses", "priorities", "marketplaces", "delivery_services"].includes(
+const isFulfillment = ["warehouses", "type_warehouses", "kind_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "type_services", "services_ff", "tasks", "task_types", "task_statuses", "task_stages", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
 const isKiz = props.entity === "kizes";
@@ -223,6 +234,7 @@ const isGoodsSection =
     isGood ||
     ["type_goods", "unit_goods", "kind_kiz", "kizes"].includes(props.entity);
 const isIndividual = props.entity === "client_individuals";
+const isClientScoped = ["client_individuals", "client_companies", "client_documents", "client_accounts"].includes(props.entity);
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
 const isClientCatalog = ["client_services", "client_accounts"].includes(props.entity);
@@ -243,7 +255,7 @@ const dateFilter = ref("");
 
 const page = usePage<any>();
 const clientScope = computed<{ id: string; name: string } | null>(() =>
-    isIndividual ? (page.props.clientScope ?? null) : null,
+    isClientScoped ? (page.props.clientScope ?? null) : null,
 );
 const warehouseScope = computed<{ id: string; name: string } | null>(() =>
     props.entity === "cells" ? (page.props.warehouseScope ?? null) : null,
@@ -976,7 +988,7 @@ useCardRoute<ReferenceRow>({
                         </button>
                     </div>
                     <div
-                        v-for="field in allColumns.filter((item) => !isFixedColumn(item.key))"
+                        v-for="field in allColumns"
                         :key="field.key"
                         class="column-settings-item"
                         draggable="true"
@@ -1034,6 +1046,7 @@ useCardRoute<ReferenceRow>({
                                         "delivery_services",
                                         "warehouses",
                                         "type_warehouses",
+                                        "kind_warehouses",
                                         "type_storage",
                                         "zones",
                                         "cells",
@@ -1057,6 +1070,8 @@ useCardRoute<ReferenceRow>({
                                 <th v-if="isColumnVisible('amount')">Сумма</th></template
                             >
                             <th v-if="isTask && isColumnVisible('client_id')">Клиент</th>
+                            <th v-if="isTask && isColumnVisible('task_type_id')">Тип задачи</th>
+                            <th v-if="isTask && isColumnVisible('task_stage_id')">Этап задачи</th>
                             <th v-if="isTask && isColumnVisible('__sku_count')">Количество SKU/товара</th>
                             <th v-for="field in extraColumns" :key="field.key">
                                 {{ field.label }}
@@ -1099,6 +1114,7 @@ useCardRoute<ReferenceRow>({
                                             'delivery_services',
                                             'warehouses',
                                             'type_warehouses',
+                                            'kind_warehouses',
                                             'type_storage',
                                             'zones',
                                             'cells',
@@ -1158,6 +1174,8 @@ useCardRoute<ReferenceRow>({
                                 <th v-if="isColumnVisible('amount')"></th>
                             </template>
                             <th v-if="isTask && isColumnVisible('client_id')"></th>
+                            <th v-if="isTask && isColumnVisible('task_type_id')"></th>
+                            <th v-if="isTask && isColumnVisible('task_stage_id')"></th>
                             <th v-if="isTask && isColumnVisible('__sku_count')"></th>
                             <th v-for="field in extraColumns" :key="field.key"></th>
                             <th
@@ -1364,6 +1382,8 @@ useCardRoute<ReferenceRow>({
                             <td v-if="isTask && isColumnVisible('client_id')">
                                 {{ columnValue(row, { key: 'client_id', label: 'Клиент', kind: 'lookup', lookup: 'clients' }) }}
                             </td>
+                            <td v-if="isTask && isColumnVisible('task_type_id')"><div class="lookup-avatar-cell"><span class="lookup-avatar"><img v-if="lookupOption('task_types', row.task_type_id)?.icon" :src="String(lookupOption('task_types', row.task_type_id)?.icon)" alt="" /><span v-else>{{ lookupInitial('task_types', row.task_type_id) }}</span></span><span>{{ taskLookupValue(row, 'task_type_id', 'task_types') }}</span></div></td>
+                            <td v-if="isTask && isColumnVisible('task_stage_id')">{{ taskLookupValue(row, 'task_stage_id', 'task_stages') }}</td>
                             <td v-if="isTask && isColumnVisible('__sku_count')">
                                 {{ taskSkuCount(row) }}
                             </td>
@@ -1395,9 +1415,14 @@ useCardRoute<ReferenceRow>({
                                                 ] ?? String(row.status))
                                     }}</span
                                 >
+                                <span v-if="isTask" class="task-stage-inline">{{ taskLookupValue(row, "task_stage_id", "task_stages") }}</span>
                             </td>
                             <td>
                                 <div class="row-actions">
+                                    <template v-if="isClients">
+                                        <button :aria-label="`Документы клиента: ${displayName(row)}`" title="Документы" @click.stop="router.visit(`/clients/documents?client_id=${row.id}`)"><img src="/design/crm/documents.svg" alt="" /></button>
+                                        <button :aria-label="`Доступы клиента: ${displayName(row)}`" title="Доступы" @click.stop="router.visit(`/clients/accounts?client_id=${row.id}`)"><img src="/design/crm/administration.svg" alt="" /></button>
+                                    </template>
                                     <button
                                         v-if="isAcceptance"
                                         :aria-label="`Провести приемку: ${displayName(row)}`"
@@ -2062,7 +2087,7 @@ useCardRoute<ReferenceRow>({
 }
 .column-settings-panel {
     position: absolute;
-    z-index: 20;
+    z-index: 9999;
     top: 42px;
     right: 8px;
     display: grid;

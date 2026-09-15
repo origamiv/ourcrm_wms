@@ -19,6 +19,7 @@ abstract class ClientCatalogRequest extends BaseRequest
         if ($this->route('client_catalog') === 'accounts') {
             $rules += [
                 'client_id' => ['required', 'integer', 'min:1'],
+                'service_id' => ['nullable', 'integer', 'min:1'],
                 'host' => ['nullable', 'string', 'max:255'],
                 'login' => ['nullable', 'string', 'max:255'],
                 'pass' => ['nullable', 'string', 'max:255'],

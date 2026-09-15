@@ -131,6 +131,11 @@ function openDocuments(row: ClientRow) {
     const url = `/clients/documents?client_id=${encodeURIComponent(row.id)}`;
     router.visit(url);
 }
+function openAccounts(row: ClientRow) {
+    if (saving.value || row.deleted_at) return;
+    const url = `/clients/accounts?client_id=${encodeURIComponent(row.id)}`;
+    router.visit(url);
+}
 function open(row: ClientRow | null, readOnly = false) {
     if (saving.value) return;
     selected.value = row;
@@ -331,7 +336,15 @@ useCardRoute<ClientRow>({
                                         :disabled="saving || !!row.deleted_at"
                                         @click="openDocuments(row)"
                                     >
-                                        <img src="/design/crm/files.svg" alt="" />
+                                        <img src="/design/crm/documents.svg" alt="" />
+                                    </button>
+                                    <button
+                                        :aria-label="`Доступы: ${displayName(row)}`"
+                                        title="Доступы"
+                                        :disabled="saving || !!row.deleted_at"
+                                        @click="openAccounts(row)"
+                                    >
+                                        <img src="/design/crm/key.svg" alt="" />
                                     </button>
                                     <button
                                         :aria-label="`Юрлица: ${displayName(row)}`"

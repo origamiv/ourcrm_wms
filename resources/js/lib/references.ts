@@ -36,6 +36,7 @@ export interface ReferenceField {
         | "unit_goods"
         | "kind_kiz"
         | "type_warehouses"
+        | "kind_warehouses"
         | "type_storage"
         | "zones"
         | "cells"
@@ -49,6 +50,7 @@ export interface ReferenceField {
         | "marketplaces"
         | "task_types"
         | "task_statuses"
+        | "task_stages"
         | "priorities";
 }
 const assets: ReferenceField[] = [
@@ -68,6 +70,7 @@ export const references = {
     integration_webhooks: {
         title: "Вебхуки",
         fields: [
+            { key: "code", label: "Код", detail: true },
             { key: "shortname", label: "Краткое название" },
             {
                 key: "service_id",
@@ -171,11 +174,25 @@ export const references = {
         title: "Склады",
         fields: [
             { key: "shortname", label: "Краткое название" },
+            { key: "code", label: "Код" },
             { key: "type_warehouse_id", label: "Тип склада", kind: "lookup", lookup: "type_warehouses" },
+            { key: "kind_warehouse_id", label: "Вид склада", kind: "lookup", lookup: "kind_warehouses" },
+            { key: "address", label: "Адрес" },
+            { key: "timezone", label: "Часовой пояс" },
+            { key: "contact_name", label: "Контактное лицо" },
+            { key: "contact_phone", label: "Телефон" },
+            { key: "working_hours", label: "Рабочие часы" },
+            { key: "width", label: "Ширина", kind: "number" },
+            { key: "height", label: "Высота", kind: "number" },
+            { key: "scheme_json", label: "Схема", kind: "json", detail: true },
         ] as ReferenceField[],
     },
     type_warehouses: {
         title: "Типы складов",
+        fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
+    },
+    kind_warehouses: {
+        title: "Виды складов",
         fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[],
     },
     type_storage: {
@@ -246,13 +263,16 @@ export const references = {
     },
     task_types: { title: "Типы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
     task_statuses: { title: "Статусы задач", fields: [{ key: "shortname", label: "Краткое название" }] as ReferenceField[] },
+    task_stages: { title: "Этапы задач", fields: [{ key: "shortname", label: "Краткое название" }, { key: "icon", label: "Иконка" }] as ReferenceField[] },
     priorities: { title: "Приоритеты", fields: [{ key: "shortname", label: "Краткое название" }, { key: "icon", label: "Иконка" }] as ReferenceField[] },
     tasks: {
         title: "Задачи",
         fields: [
             { key: "shortname", label: "Краткое название" },
             { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients", required: true },
+            { key: "service_id", label: "Сервис", kind: "lookup", lookup: "client_services" },
             { key: "task_type_id", label: "Тип задачи", kind: "lookup", lookup: "task_types", required: true },
+            { key: "task_stage_id", label: "Этап задачи", kind: "lookup", lookup: "task_stages" },
             { key: "status_id", label: "Статус задачи", kind: "lookup", lookup: "task_statuses", required: true },
             { key: "priority_id", label: "Приоритет", kind: "lookup", lookup: "priorities", required: true },
             { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses", required: true },
@@ -490,6 +510,7 @@ export const references = {
         fields: [
             { key: "shortname", label: "Краткое название" },
             { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients", required: true },
+            { key: "service_id", label: "Сервис", kind: "lookup", lookup: "client_services" },
             { key: "host", label: "Host" },
             { key: "login", label: "Имя пользователя" },
             { key: "pass", label: "Пароль", detail: true },

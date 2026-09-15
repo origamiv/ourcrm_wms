@@ -8,6 +8,7 @@ import Kizes from "./Pages/Kizes.vue";
 import Marketplaces from "./Pages/Marketplaces.vue";
 import Warehouses from "./Pages/Warehouses.vue";
 import TypeWarehouses from "./Pages/TypeWarehouses.vue";
+import KindWarehouses from "./Pages/KindWarehouses.vue";
 import TypeStorage from "./Pages/TypeStorage.vue";
 import Zones from "./Pages/Zones.vue";
 import Cells from "./Pages/Cells.vue";
@@ -19,6 +20,7 @@ import ServicesFf from "./Pages/ServicesFf.vue";
 import Tasks from "./Pages/Tasks.vue";
 import TaskTypes from "./Pages/TaskTypes.vue";
 import TaskStatuses from "./Pages/TaskStatuses.vue";
+import TaskStages from "./Pages/TaskStages.vue";
 import Priorities from "./Pages/Priorities.vue";
 import DeliveryServices from "./Pages/DeliveryServices.vue";
 import KindKiz from "./Pages/KindKiz.vue";
@@ -75,6 +77,7 @@ const pages: Record<string, any> = {
     Marketplaces,
     Warehouses,
     TypeWarehouses,
+    KindWarehouses,
     TypeStorage,
     Zones,
     Cells,
@@ -86,6 +89,7 @@ const pages: Record<string, any> = {
     Tasks,
     TaskTypes,
     TaskStatuses,
+    TaskStages,
     Priorities,
     Kizes,
     GoodUnits,
