@@ -557,13 +557,13 @@ useCardRoute<DirectoryRow>({
                                     {{ row.name }}
                                 </button>
                             </td>
-                            <td v-if="!isCompany && isColumnVisible('company')">
+                            <td v-if="!isCompany && isColumnVisible('company')" data-label="Компания">
                                 {{ companyName(row.company_id) }}
                             </td>
-                            <td v-if="isColumnVisible('detail')">
+                            <td v-if="isColumnVisible('detail')" :data-label="isCompany ? 'ИНН' : 'Контактное значение'">
                                 {{ (isCompany ? row.inn : row.val) || "—" }}
                             </td>
-                            <td v-if="isColumnVisible('status')">
+                            <td v-if="isColumnVisible('status')" data-label="Статус">
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"

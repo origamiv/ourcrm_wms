@@ -351,16 +351,16 @@ useCardRoute<CatalogRow>({
                                     {{ row.name || "—" }}
                                 </button>
                             </td>
-                            <td>{{ row.slug || "—" }}</td>
-                            <td>
+                            <td data-label="Код">{{ row.slug || "—" }}</td>
+                            <td :data-label="entity === 'roles' ? 'Описание' : 'Ресурс'">
                                 {{
                                     (entity === "roles"
                                         ? row.description
                                         : row.resource) || "—"
                                 }}
                             </td>
-                            <td>{{ row.system ? "Да" : "Нет" }}</td>
-                            <td>
+                            <td data-label="Системная запись">{{ row.system ? "Да" : "Нет" }}</td>
+                            <td data-label="Статус">
                                 <span class="badge">{{
                                     row.deleted_at
                                         ? "Удалена"

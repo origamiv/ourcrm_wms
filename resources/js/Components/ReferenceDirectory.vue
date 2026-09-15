@@ -1306,10 +1306,10 @@ useCardRoute<ReferenceRow>({
                                     {{ displayName(row) }}
                                 </button>
                             </td>
-                            <td v-if="!isKiz && isColumnVisible('shortname')">
+                            <td v-if="!isKiz && isColumnVisible('shortname')" data-label="Краткое название">
                                 {{ row.shortname || "—" }}
                             </td>
-                            <td v-for="field in kizColumns" :key="field.key">
+                            <td v-for="field in kizColumns" :key="field.key" :data-label="field.label">
                                 {{
                                     field.lookup
                                         ? (choices(field.lookup).find(
@@ -1325,7 +1325,7 @@ useCardRoute<ReferenceRow>({
                                           : (row[field.key] ?? "—")
                                 }}
                             </td>
-                            <td v-if="isGood && isColumnVisible('code')">
+                            <td v-if="isGood && isColumnVisible('code')" data-label="Код">
                                 {{ row.code || "—" }}
                             </td>
                             <template v-if="isDocument">

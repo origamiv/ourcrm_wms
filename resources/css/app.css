@@ -2071,6 +2071,8 @@ td {
     }
 
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:not(.check-column):not(.id-column):not(:has(.name-button)):not(:last-child)::before {
+        content: attr(data-label) !important;
+        display: block !important;
         grid-column: 1 !important;
         min-width: 0 !important;
         max-width: 100% !important;
