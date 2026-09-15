@@ -326,7 +326,7 @@ useCardRoute<CatalogRow>({
                             <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
-                                    class="text-button"
+                                    class="text-button name-button"
                                     :disabled="saving || !!row.deleted_at"
                                     @click="open(row)"
                                 >
