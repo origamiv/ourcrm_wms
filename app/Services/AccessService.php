@@ -6,12 +6,27 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class AccessService
 {
     public function active(User $user): bool
     {
         return ! $user->trashed() && $user->status === 1 && trim((string) $user->tenant_id) !== '';
+    }
+
+    public function loginable(User $user): bool
+    {
+        if ($user->trashed() || $user->status !== 1) {
+            return false;
+        }
+        if (trim((string) $user->tenant_id) !== '') {
+            return true;
+        }
+
+        return (Schema::hasTable('public.tenants') && DB::table('public.tenants')->where('owner_user_id', $user->id)->exists())
+            || DB::table('main.role_user')->where('user_id', $user->id)->where('status', 1)->whereNull('deleted_at')->whereNotNull('tenant_id')->exists()
+            || (Schema::hasTable('main.tenant_entity') && DB::table('main.tenant_entity')->where('entity_type', $user->getMorphClass())->where('entity_id', $user->id)->exists());
     }
 
     public function isAdmin(User $user): bool

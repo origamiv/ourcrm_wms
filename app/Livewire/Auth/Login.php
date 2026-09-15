@@ -7,6 +7,7 @@ namespace App\Livewire\Auth;
 use App\Services\AuthenticationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 final class Login extends Component
@@ -53,10 +54,14 @@ final class Login extends Component
     /** @return array<int, array{id:string,name:string,status:int}> */
     private function availableTenants($user): array
     {
-        $owned = DB::table('public.tenants')->where('owner_user_id', $user->id)->pluck('id');
+        $owned = Schema::hasTable('public.tenants') ? DB::table('public.tenants')->where('owner_user_id', $user->id)->pluck('id') : collect();
         $member = DB::table('main.role_user')->where('user_id', $user->id)->where('status', 1)
             ->whereNull('deleted_at')->whereNotNull('tenant_id')->pluck('tenant_id');
-        $ids = $owned->merge($member)->push($user->tenant_id)->filter()->map(fn ($id) => (string) $id)->unique()->values();
+        $assigned = Schema::hasTable('main.tenant_entity') ? DB::table('main.tenant_entity')->where('entity_type', $user->getMorphClass())->where('entity_id', $user->id)->pluck('tenant_id') : collect();
+        $ids = $owned->merge($member)->merge($assigned)->push($user->tenant_id)->filter()->map(fn ($id) => (string) $id)->unique()->values();
+        if (! Schema::hasTable('public.tenants')) {
+            return $ids->map(fn ($id) => ['id' => $id, 'name' => $id, 'status' => 1])->all();
+        }
 
         return DB::table('public.tenants')->whereIn('id', $ids)->orderBy('name')->get(['id', 'name', 'status'])
             ->map(fn ($tenant) => ['id' => (string) $tenant->id, 'name' => (string) $tenant->name, 'status' => (int) $tenant->status])->all();

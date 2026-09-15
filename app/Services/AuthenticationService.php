@@ -29,7 +29,7 @@ final class AuthenticationService
                 $valid = false;
             }
         }
-        if (! $valid || ! app(AccessService::class)->active($user)) {
+        if (! $valid || ! $user || ! app(AccessService::class)->loginable($user)) {
             throw ValidationException::withMessages(['email' => 'Вход недоступен. Проверьте данные и состояние учётной записи.']);
         }
         RateLimiter::clear($key);
