@@ -493,14 +493,21 @@ final class ImportTswmsCommand extends Command
             ->whereNull('leaving-date')
             ->get(['id', 'place-id', 'good-id', 'count-in-instance', 'entrance-date']);
         $placements = $this->aggregateCellGoods($rows);
+        $cellMappings = $this->sourceMappings('tswms-places', 'App\\Models\\Cell');
+        $goodMappings = $this->sourceMappings('tswms-goods', 'App\\Models\\Good');
         $seen = [];
+        $missing = 0;
+        $missingExamples = [];
 
         foreach ($placements as $placement) {
             $sourceId = $placement['source_id'];
-            $cellId = $this->mapped('tswms-places', (string) $placement['place_id'], 'App\\Models\\Cell');
-            $goodId = $this->mapped('tswms-goods', (string) $placement['good_id'], 'App\\Models\\Good');
+            $cellId = $cellMappings[(string) $placement['place_id']] ?? null;
+            $goodId = $goodMappings[(string) $placement['good_id']] ?? null;
             if (! $cellId || ! $goodId) {
-                $this->warn("Пропущено размещение {$sourceId}: не найден mapping ячейки или товара.");
+                $missing++;
+                if (count($missingExamples) < 5) {
+                    $missingExamples[] = $sourceId;
+                }
 
                 continue;
             }
@@ -533,6 +540,9 @@ final class ImportTswmsCommand extends Command
                 'updated_at' => now(),
             ], 'tswms-goods-instances', $sourceId, 'App\\Models\\CellGood');
         }
+        if ($missing > 0) {
+            $this->warn('Пропущено размещений без mapping: '.$missing.'. Примеры: '.implode(', ', $missingExamples).'.');
+        }
 
         $mappings = DB::table('wms.tswms_import_mappings')
             ->where('source_system', 'tswms')
@@ -551,6 +561,18 @@ final class ImportTswmsCommand extends Command
                 ->update(['cnt' => 0, 'leave_at' => now(), 'deleted_at' => now(), 'updated_at' => now()]);
             $this->updated++;
         }
+    }
+
+    private function sourceMappings(string $sourceTable, string $entity): array
+    {
+        return DB::table('wms.tswms_import_mappings')
+            ->where('source_system', 'tswms')
+            ->where('source_client_id', $this->sourceClientId)
+            ->where('source_table', $sourceTable)
+            ->where('target_entity', $entity)
+            ->pluck('target_id', 'source_id')
+            ->map(fn ($value): string => (string) $value)
+            ->all();
     }
 
     private function aggregateCellGoods(iterable $rows): array
