@@ -25,7 +25,7 @@ onMounted(load); watch([from, to], load);
 <template>
     <div class="users-workspace worktime-page">
         <section class="users-list">
-            <div class="content-breadcrumb">Администрирование › Рабочий график</div>
+            <div class="content-breadcrumb">Администрирование › График</div>
             <AdminTabs />
             <div class="page-heading worktime-heading">
                 <div>

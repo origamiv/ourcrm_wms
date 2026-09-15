@@ -2,12 +2,6 @@
 import RibbonTabs from "./RibbonTabs.vue";
 const tabs = [
     {
-        label: "Рабочий график",
-        url: "/main/worktime",
-        component: "Worktime",
-        icon: "view",
-    },
-    {
         label: "Пользователи",
         url: "/main/users",
         component: "Users",
@@ -30,6 +24,12 @@ const tabs = [
         url: "/main/company_contacts",
         component: "CompanyContacts",
         icon: "company_contacts",
+    },
+    {
+        label: "График",
+        url: "/main/worktime",
+        component: "Worktime",
+        icon: "view",
     },
     {
         label: "Справочники",
