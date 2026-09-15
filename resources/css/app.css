@@ -2011,6 +2011,16 @@ td {
         white-space: nowrap !important;
     }
 
+    html body .main-panel .table-scroll.calendar table tbody tr:not(.mobile-card-expanded) td:not(.check-column):not(.id-column):not(:has(.name-button)):not(:last-child),
+    html body .main-panel .table-scroll.calendar table tbody tr.mobile-card-expanded td:not(.check-column):not(.id-column):not(:has(.name-button)):not(:last-child) {
+        display: table-cell !important;
+        width: auto !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        padding: 10px 8px !important;
+        white-space: nowrap !important;
+    }
+
     html body .main-panel .table-scroll.calendar table .employee {
         min-width: 180px !important;
         position: sticky !important;
