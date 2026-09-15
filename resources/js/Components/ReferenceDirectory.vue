@@ -102,7 +102,9 @@ const renderedSpecialColumns = new Set([
 const extraColumns = computed(() =>
     !isKiz && !isIntegration
         ? orderedColumns.value.filter(
-              (field) => !renderedSpecialColumns.has(field.key),
+              (field) =>
+                  !renderedSpecialColumns.has(field.key) &&
+                  field.kind !== "json",
           )
         : [],
 );
