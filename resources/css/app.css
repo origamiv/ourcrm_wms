@@ -1127,6 +1127,7 @@ fieldset > small {
     border-radius: 50%;
     width: 40px;
     height: 40px;
+    flex: 0 0 40px;
     display: grid;
     place-items: center;
     overflow: hidden;
@@ -1420,6 +1421,9 @@ td {
     .header-avatar img {
         width: 30px;
         height: 30px;
+    }
+    .header-avatar {
+        flex-basis: 30px;
     }
     .account .text-button {
         margin-left: 0;
