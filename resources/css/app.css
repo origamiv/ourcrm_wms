@@ -1991,20 +1991,30 @@ td {
     }
 
     html body .main-panel .users-workspace .table-scroll table tbody tr.mobile-card-expanded td[data-label] {
-        flex-direction: column !important;
-        align-items: flex-start !important;
+        flex-direction: row !important;
+        align-items: center !important;
         justify-content: center !important;
-        gap: 3px !important;
+        gap: 10px !important;
         min-height: 50px !important;
     }
 
     html body .main-panel .users-workspace .table-scroll table tbody tr.mobile-card-expanded td[data-label]::before {
         content: attr(data-label) !important;
         display: block !important;
+        flex: 0 0 78px !important;
         color: #1e892f !important;
         font-size: 11px !important;
         font-weight: 600 !important;
         line-height: 1.3 !important;
+    }
+
+    html body .main-panel .users-workspace .table-scroll table tbody tr.mobile-card-expanded td[data-label] .role-tags {
+        width: auto !important;
+        flex: 1 1 auto !important;
+    }
+
+    html body .main-panel .users-workspace .table-scroll table tbody tr.mobile-card-expanded td[data-label] .badge {
+        flex: 0 1 auto !important;
     }
 
     html body .main-panel .users-workspace .roles-form-field .v-input,
