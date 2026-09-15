@@ -28,6 +28,9 @@ final class UserService
             app(EntitySyncService::class)->prepareWrite($tenant, User::class, $id);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
             $actor = User::findOrFail($actor->id);
+            // В общей записи tenant_id хранится в tenant_entity, но для
+            // текущего запроса сохраняем выбранный в сессии контекст.
+            $actor->tenant_id = $tenant;
             abort_unless($actor->tenant_id === $tenant && $this->access->isAdmin($actor), 403);
             $user = $id ? $this->find($actor, $id) : new User;
             if ($id) {
