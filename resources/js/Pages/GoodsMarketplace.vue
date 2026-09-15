@@ -59,7 +59,8 @@ onUnmounted(() => { marketplaceStore.stop(); goodStore.stop(); });
 <template>
     <Head title="Фулфилмент — Каталоги МП" />
     <FulfillmentTabs />
-    <section class="marketplace-catalog page-card">
+    <section class="marketplace-catalog users-workspace">
+        <div class="users-list">
         <div class="catalog-heading">
             <div><h1>Каталоги маркетплейсов</h1><p>Товары из WB и OZON и их сопоставление с мастер-каталогом WMS.</p></div>
             <div class="catalog-stats"><span>Всего: <b>{{ filtered.length }}</b></span><span>Сопоставлено: <b>{{ matchedCount }}</b></span></div>
@@ -70,10 +71,9 @@ onUnmounted(() => { marketplaceStore.stop(); goodStore.stop(); });
             <select v-model="matchFilter"><option value="all">Все сопоставления</option><option value="matched">Сопоставлены</option><option value="unmatched">Не сопоставлены</option></select>
         </div>
         <div v-if="marketplaceStore.error.value" class="catalog-message">{{ marketplaceStore.error.value }}</div>
-        <div v-else-if="!marketplaceStore.ready.value" class="catalog-message">Загрузка каталога…</div>
-        <div v-else-if="!visible.length" class="catalog-message">По выбранным условиям товары не найдены.</div>
-        <div v-else class="catalog-table-wrap"><table><thead><tr><th>#</th><th>МП</th><th>Товар маркетплейса</th><th>Внешний SKU</th><th>Штрихкоды</th><th>Мастер-каталог WMS</th><th>Сопоставление</th><th>Синхронизация</th></tr></thead><tbody><tr v-for="row in visible" :key="row.id"><td>{{ row.id }}</td><td><span class="marketplace-badge" :class="`mp-${row.marketplace}`">{{ label(row) }}</span></td><td><div class="product-name">{{ row.name || "Без названия" }}</div><small>ID: {{ row.external_id || "—" }}</small></td><td>{{ row.offer_id || row.external_sku || "—" }}</td><td>{{ (row.barcodes ?? []).join(", ") || "—" }}</td><td><span v-if="row.good_id" class="good-link">#{{ row.good_id }} · {{ goodName(row) }}</span><span v-else class="muted">Не сопоставлен</span></td><td><span v-if="row.match_type" class="match-badge">{{ matchLabels[row.match_type] ?? row.match_type }}</span><span v-else class="muted">Ожидает сопоставления</span></td><td>{{ formatDate(row.synced_at) }}</td></tr></tbody></table></div>
+        <div class="catalog-table-wrap table-scroll"><table><thead><tr><th>#</th><th>МП</th><th>Товар маркетплейса</th><th>Внешний SKU</th><th>Штрихкоды</th><th>Мастер-каталог WMS</th><th>Сопоставление</th><th>Синхронизация</th></tr></thead><tbody><tr v-for="row in visible" :key="row.id"><td class="id-column">{{ row.id }}</td><td><span class="marketplace-badge" :class="`mp-${row.marketplace}`">{{ label(row) }}</span></td><td><div class="product-name">{{ row.name || "Без названия" }}</div><small>ID: {{ row.external_id || "—" }}</small></td><td>{{ row.offer_id || row.external_sku || "—" }}</td><td>{{ (row.barcodes ?? []).join(", ") || "—" }}</td><td><span v-if="row.good_id" class="good-link">#{{ row.good_id }} · {{ goodName(row) }}</span><span v-else class="muted">Не сопоставлен</span></td><td><span v-if="row.match_type" class="match-badge">{{ matchLabels[row.match_type] ?? row.match_type }}</span><span v-else class="muted">Ожидает сопоставления</span></td><td>{{ formatDate(row.synced_at) }}</td></tr><tr v-if="!visible.length"><td colspan="8" class="catalog-message">{{ marketplaceStore.ready.value ? "По выбранным условиям товары не найдены." : "Загрузка каталога…" }}</td></tr></tbody></table></div>
         <div v-if="pages > 1" class="catalog-pagination"><button :disabled="currentPage <= 1" @click="currentPage--">Назад</button><span>Страница {{ currentPage }} из {{ pages }}</span><button :disabled="currentPage >= pages" @click="currentPage++">Вперёд</button></div>
+        </div>
     </section>
 </template>
 
