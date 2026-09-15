@@ -98,16 +98,38 @@ final class MarketplaceCatalogSyncService
                 $payload['last_id'] = $lastId;
             }
             $response = $this->request($account, true)->post('https://api-seller.ozon.ru/v4/product/info/attributes', $payload)->throw()->json();
-            foreach ((array) ($response['items'] ?? []) as $item) {
-                $offer = (string) ($item['offer_id'] ?? '');
-                $id = (string) ($item['id'] ?? $item['sku'] ?? $offer);
-                if ($id === '') {
-                    continue;
-                }
-                $items[] = ['external_id' => $id, 'external_sku' => (string) ($item['sku'] ?? $id), 'offer_id' => $offer, 'name' => (string) ($item['name'] ?? $offer), 'barcodes' => array_values(array_filter([(string) ($item['barcode'] ?? '')])), 'status' => 1, 'raw_data' => $item];
-            }
+            $pageItems = $this->normalizeOzonPage((array) $response);
+            array_push($items, ...$pageItems);
             $lastId = $response['last_id'] ?? null;
-        } while ($lastId && ! empty($response['items']));
+        } while ($lastId && $pageItems !== []);
+
+        return $items;
+    }
+
+    private function normalizeOzonPage(array $response): array
+    {
+        $items = [];
+        $sourceItems = (array) ($response['result'] ?? $response['items'] ?? []);
+        foreach ($sourceItems as $item) {
+            $offer = (string) ($item['offer_id'] ?? '');
+            $id = (string) ($item['id'] ?? $item['sku'] ?? $offer);
+            if ($id === '') {
+                continue;
+            }
+            $barcodes = array_values(array_unique(array_filter(array_map('strval', array_merge(
+                (array) ($item['barcodes'] ?? []),
+                [(string) ($item['barcode'] ?? '')],
+            )))));
+            $items[] = [
+                'external_id' => $id,
+                'external_sku' => (string) ($item['sku'] ?? $id),
+                'offer_id' => $offer,
+                'name' => (string) ($item['name'] ?? $offer),
+                'barcodes' => $barcodes,
+                'status' => ! empty($item['is_archived']) ? 0 : 1,
+                'raw_data' => $item,
+            ];
+        }
 
         return $items;
     }
