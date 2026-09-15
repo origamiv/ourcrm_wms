@@ -730,8 +730,8 @@ useCardRoute<UserRow>({
                                     <option :value="2">Отключен</option>
                                 </select></label
                             >
-                            <label class="roles-form-field">
-                                Роли
+                            <div class="roles-form-field">
+                                <span class="roles-form-label">Роли</span>
                                 <VSelect
                                     class="roles-tagbox-input"
                                     v-model="roleDraft"
@@ -746,7 +746,7 @@ useCardRoute<UserRow>({
                                     hide-details
                                     placeholder="Выберите роли"
                                 />
-                            </label>
+                            </div>
                         </div>
                         <template v-if="creating || passwordMode"
                             ><label
@@ -850,6 +850,12 @@ useCardRoute<UserRow>({
 }
 .roles-form-field {
     min-width: 240px;
+}
+.roles-form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 500;
 }
 .roles-form-field .roles-tagbox-input {
     width: 100%;
