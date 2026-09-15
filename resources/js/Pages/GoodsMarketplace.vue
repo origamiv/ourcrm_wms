@@ -7,6 +7,7 @@ import { createEntitySync } from "../lib/entitySync";
 import type { EntityRow } from "../lib/cache";
 
 interface MarketplaceRow extends EntityRow {
+    webhook_id: string | number | null;
     marketplace: string | null;
     external_id: string | null;
     external_sku: string | null;
@@ -20,11 +21,13 @@ interface MarketplaceRow extends EntityRow {
     deleted_at: string | null;
 }
 interface GoodRow extends EntityRow { name: string | null; code: string | null; deleted_at: string | null; }
+interface IntegrationWebhookRow extends EntityRow { name: string | null; deleted_at: string | null; }
 
 const page = usePage<any>();
 const scope = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`;
 const marketplaceStore = createEntitySync<MarketplaceRow>(scope, "goods_marketplace");
 const goodStore = createEntitySync<GoodRow>(scope, "goods");
+const webhookStore = createEntitySync<IntegrationWebhookRow>(scope, "integration_webhooks");
 const query = ref("");
 const marketplaceFilter = ref("all");
 const matchFilter = ref("all");
@@ -32,15 +35,16 @@ const currentPage = ref(1);
 const pageSize = 25;
 
 const marketplaceLabels: Record<string, string> = { wildberries: "WB", wb: "WB", ozon: "OZON" };
-const matchLabels: Record<string, string> = { auto: "Автоматически", created: "Создан автоматически", manual: "Вручную" };
+const matchLabels: Record<string, string> = { auto: "Автоматически", created: "Создан автоматически", manual: "Вручную", failed: "Неуспешно", error: "Ошибка сопоставления", unmatched: "Не сопоставлено" };
 const goodsById = computed(() => new Map(goodStore.rows.value.filter((row) => !row.deleted_at).map((row) => [String(row.id), row])));
+const webhooksById = computed(() => new Map(webhookStore.rows.value.filter((row) => !row.deleted_at).map((row) => [String(row.id), row])));
 const marketplaces = computed(() => [...new Set(marketplaceStore.rows.value.filter((row) => !row.deleted_at).map((row) => row.marketplace).filter(Boolean))]);
 const filtered = computed(() => marketplaceStore.rows.value.filter((row) => {
     if (row.deleted_at) return false;
     if (marketplaceFilter.value !== "all" && row.marketplace !== marketplaceFilter.value) return false;
     if (matchFilter.value === "matched" && !row.good_id) return false;
     if (matchFilter.value === "unmatched" && row.good_id) return false;
-    const text = [row.name, row.external_id, row.external_sku, row.offer_id, ...(row.barcodes ?? [])].join(" ").toLocaleLowerCase("ru");
+    const text = [row.name, row.external_id, row.external_sku, row.offer_id, webhookName(row), ...(row.barcodes ?? [])].join(" ").toLocaleLowerCase("ru");
     return text.includes(query.value.toLocaleLowerCase("ru"));
 }).sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? ""), "ru")));
 const pages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)));
@@ -51,9 +55,11 @@ watch(pages, (value) => { currentPage.value = Math.min(currentPage.value, value)
 
 function label(row: MarketplaceRow) { return marketplaceLabels[String(row.marketplace ?? "").toLowerCase()] ?? row.marketplace ?? "—"; }
 function goodName(row: MarketplaceRow) { const good = row.good_id ? goodsById.value.get(String(row.good_id)) : null; return good?.name ?? (row.good_id ? `Товар #${row.good_id}` : "Не сопоставлен"); }
+function webhookName(row: MarketplaceRow) { const webhook = webhooksById.value.get(String(row.webhook_id)); return webhook?.name ? `${webhook.name} (${row.webhook_id})` : `Интеграция #${row.webhook_id}`; }
+function matchClass(row: MarketplaceRow) { return ["failed", "error", "unmatched"].includes(String(row.match_type ?? "")) ? "match-failed" : ""; }
 function formatDate(value: string | null) { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.valueOf()) ? value : date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-onMounted(() => { void marketplaceStore.start(); void goodStore.start(); });
-onUnmounted(() => { marketplaceStore.stop(); goodStore.stop(); });
+onMounted(() => { void marketplaceStore.start(); void goodStore.start(); void webhookStore.start(); });
+onUnmounted(() => { marketplaceStore.stop(); goodStore.stop(); webhookStore.stop(); });
 </script>
 
 <template>
@@ -71,7 +77,7 @@ onUnmounted(() => { marketplaceStore.stop(); goodStore.stop(); });
             <select v-model="matchFilter"><option value="all">Все сопоставления</option><option value="matched">Сопоставлены</option><option value="unmatched">Не сопоставлены</option></select>
         </div>
         <div v-if="marketplaceStore.error.value" class="catalog-message">{{ marketplaceStore.error.value }}</div>
-        <div class="catalog-table-wrap table-scroll"><table><thead><tr><th>#</th><th>МП</th><th>Товар маркетплейса</th><th>Внешний SKU</th><th>Штрихкоды</th><th>Мастер-каталог WMS</th><th>Сопоставление</th><th>Синхронизация</th></tr></thead><tbody><tr v-for="row in visible" :key="row.id"><td class="id-column">{{ row.id }}</td><td><span class="marketplace-badge" :class="`mp-${row.marketplace}`">{{ label(row) }}</span></td><td><div class="product-name">{{ row.name || "Без названия" }}</div><small>ID: {{ row.external_id || "—" }}</small></td><td>{{ row.offer_id || row.external_sku || "—" }}</td><td>{{ (row.barcodes ?? []).join(", ") || "—" }}</td><td><span v-if="row.good_id" class="good-link">#{{ row.good_id }} · {{ goodName(row) }}</span><span v-else class="muted">Не сопоставлен</span></td><td><span v-if="row.match_type" class="match-badge">{{ matchLabels[row.match_type] ?? row.match_type }}</span><span v-else class="muted">Ожидает сопоставления</span></td><td>{{ formatDate(row.synced_at) }}</td></tr><tr v-if="!visible.length"><td colspan="8" class="catalog-message">{{ marketplaceStore.ready.value ? "По выбранным условиям товары не найдены." : "Загрузка каталога…" }}</td></tr></tbody></table></div>
+        <div class="catalog-table-wrap table-scroll"><table><thead><tr><th>#</th><th>МП</th><th>Интеграция</th><th>Товар маркетплейса</th><th>Внешний SKU</th><th>Штрихкоды</th><th>Мастер-каталог WMS</th><th>Сопоставление</th><th>Синхронизация</th></tr></thead><tbody><tr v-for="row in visible" :key="row.id"><td class="id-column">{{ row.id }}</td><td><span class="marketplace-badge" :class="`mp-${row.marketplace}`">{{ label(row) }}</span></td><td>{{ webhookName(row) }}</td><td><div class="product-name">{{ row.name || "Без названия" }}</div><small>ID: {{ row.external_id || "—" }}</small></td><td>{{ row.offer_id || row.external_sku || "—" }}</td><td>{{ (row.barcodes ?? []).join(", ") || "—" }}</td><td><span v-if="row.good_id" class="good-link">#{{ row.good_id }} · {{ goodName(row) }}</span><span v-else class="muted">Не сопоставлен</span></td><td><span v-if="row.match_type" class="match-badge" :class="matchClass(row)">{{ matchLabels[row.match_type] ?? row.match_type }}</span><span v-else class="match-badge match-pending">Ожидает сопоставления</span></td><td>{{ formatDate(row.synced_at) }}</td></tr><tr v-if="!visible.length"><td colspan="9" class="catalog-message">{{ marketplaceStore.ready.value ? "По выбранным условиям товары не найдены." : "Загрузка каталога…" }}</td></tr></tbody></table></div>
         <div v-if="pages > 1" class="catalog-pagination"><button :disabled="currentPage <= 1" @click="currentPage--">Назад</button><span>Страница {{ currentPage }} из {{ pages }}</span><button :disabled="currentPage >= pages" @click="currentPage++">Вперёд</button></div>
         </div>
     </section>
@@ -87,8 +93,8 @@ p { margin: 0; color: #687a70; }
 .catalog-filters { margin-bottom: 18px; } .catalog-filters input { flex: 1; min-width: 240px; }
 .catalog-filters input, .catalog-filters select { border: 1px solid #d5e3d8; border-radius: 7px; padding: 10px 12px; background: #fff; color: #1c3024; }
 .catalog-table-wrap { overflow-x: auto; border: 1px solid #e1ebe3; border-radius: 8px; } table { width: 100%; border-collapse: collapse; min-width: 1080px; } th, td { padding: 12px 10px; border-bottom: 1px solid #edf2ee; text-align: left; vertical-align: top; font-size: 13px; } th { background: #f4faf5; color: #53675a; font-weight: 600; white-space: nowrap; } tbody tr:last-child td { border-bottom: 0; }
-.marketplace-badge, .match-badge { display: inline-block; border-radius: 5px; padding: 4px 7px; font-size: 12px; font-weight: 700; } .mp-wildberries { background: #f8e4f5; color: #a20c8b; } .mp-wb { background: #f8e4f5; color: #a20c8b; } .mp-ozon { background: #e3edff; color: #005bff; } .match-badge { background: #e4f4e7; color: #247435; }
-.product-name { max-width: 260px; color: #1d3025; font-weight: 600; } small, .muted { color: #7d8a81; } .good-link { color: #1e892f; font-weight: 600; }
+.marketplace-badge, .match-badge { display: inline-block; border-radius: 5px; padding: 4px 7px; font-size: 12px; font-weight: 700; } .mp-wildberries { background: #f8e4f5; color: #a20c8b; } .mp-wb { background: #f8e4f5; color: #a20c8b; } .mp-ozon { background: #e3edff; color: #005bff; } .match-badge { background: #e4f4e7; color: #247435; } .match-pending { background: #fff4cc; color: #966c00; } .match-failed { background: #fde2e1; color: #b42318; }
+.product-name { max-width: 260px; color: #1d3025; font-weight: 600; overflow-wrap: break-word; word-break: normal; } small, .muted { color: #7d8a81; } .good-link { color: #1e892f; font-weight: 600; }
 .catalog-message { padding: 35px; text-align: center; color: #687a70; } .catalog-pagination { justify-content: center; margin-top: 18px; } .catalog-pagination button { border: 1px solid #cfe0d2; border-radius: 6px; padding: 8px 14px; background: #fff; color: #1e892f; cursor: pointer; } .catalog-pagination button:disabled { cursor: default; opacity: .45; }
 @media (max-width: 760px) { .marketplace-catalog { padding: 16px; } .catalog-heading, .catalog-filters { align-items: stretch; flex-direction: column; } .catalog-filters input, .catalog-filters select { width: 100%; } .catalog-stats { align-self: flex-start; } }
 </style>
