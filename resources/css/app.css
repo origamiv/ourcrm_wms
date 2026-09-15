@@ -1973,6 +1973,43 @@ td {
 .tenant-blocked h1 { margin:0; color:#0c1821; font-size:26px; }
 .tenant-blocked p { max-width:360px; margin:0; color:#71828a; font-size:14px; line-height:1.5; }
 @media (max-width: 900px) {
+    html body .main-panel .users-workspace .editor-content {
+        padding: 16px !important;
+    }
+
+    html body .main-panel .users-workspace .roles-form-field {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    html body .main-panel .users-workspace .roles-form-field .v-input,
+    html body .main-panel .users-workspace .roles-form-field .v-input__control,
+    html body .main-panel .users-workspace .roles-form-field .v-field {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    html body .main-panel .users-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.user-roles-cell,
+    html body .main-panel .users-workspace .table-scroll table tbody tr.mobile-card-expanded td.user-roles-cell {
+        display: flex !important;
+        order: 4 !important;
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        min-height: 34px !important;
+        padding: 6px 10px !important;
+        border-bottom: 0 !important;
+    }
+
+    html body .main-panel .users-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.user-roles-cell .role-tags,
+    html body .main-panel .users-workspace .table-scroll table tbody tr.mobile-card-expanded td.user-roles-cell .role-tags {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
     html body .main-panel .table-scroll.calendar {
         max-width: 100% !important;
         overflow-x: auto !important;
