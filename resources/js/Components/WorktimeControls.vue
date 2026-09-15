@@ -12,8 +12,7 @@ const elapsedLabel = computed(() => {
     const total = Math.max(0, elapsed.value);
     const hours = Math.floor(total / 3600);
     const minutes = Math.floor((total % 3600) / 60);
-    const seconds = total % 60;
-    return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+    return [hours, minutes].map((value) => String(value).padStart(2, "0")).join(":");
 });
 
 function updateElapsed() {
