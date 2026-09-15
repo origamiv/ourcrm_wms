@@ -228,7 +228,12 @@ function open(tab: RibbonTab) {
     border: 4px solid #a8d4a9;
     border-radius: 10px;
     overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     background: #e1f3e7;
+}
+.module-tabs::-webkit-scrollbar {
+    display: none;
 }
 .module-tab {
     flex: 0 0 auto;
