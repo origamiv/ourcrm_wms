@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from "vue";
+import { computed, ref, nextTick, onMounted, onUnmounted } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 const page = usePage<any>();
 interface RibbonTab {
@@ -12,8 +12,14 @@ interface RibbonTab {
 const props = defineProps<{ tabs: RibbonTab[]; label: string }>();
 const expanded = ref<string | null>(null);
 const submenu = ref<HTMLElement | null>(null);
+const tabsNav = ref<HTMLElement | null>(null);
 const menuStyle = ref({ left: "0px", top: "0px", maxHeight: "320px" });
 let anchor: HTMLElement | null = null;
+const scrollStorageKey = computed(() => `ribbon-tabs-scroll:${props.label}`);
+function saveTabsScroll() {
+    if (!tabsNav.value) return;
+    sessionStorage.setItem(scrollStorageKey.value, String(tabsNav.value.scrollLeft));
+}
 function closeMenu(focus = false) {
     expanded.value = null;
     if (focus) anchor?.focus();
@@ -74,6 +80,10 @@ function keydown(event: KeyboardEvent) {
     links[index]?.focus();
 }
 onMounted(() => {
+    nextTick(() => {
+        const saved = Number(sessionStorage.getItem(scrollStorageKey.value));
+        if (tabsNav.value && Number.isFinite(saved)) tabsNav.value.scrollLeft = saved;
+    });
     document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", keydown);
     window.addEventListener("resize", positionMenu);
@@ -105,7 +115,7 @@ function open(tab: RibbonTab) {
 </script>
 <template>
     <div class="ribbon-group">
-        <nav class="module-tabs" :aria-label="props.label">
+        <nav ref="tabsNav" class="module-tabs" :aria-label="props.label" @scroll="saveTabsScroll">
             <template v-for="tab in props.tabs" :key="tab.url">
                 <button
                     v-if="tab.children"
