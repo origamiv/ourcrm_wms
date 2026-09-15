@@ -487,10 +487,11 @@ useCardRoute<UserRow>({
                                     }}
                                 </button>
                             </td>
-                            <td>{{ row.email || "—" }}</td>
-                            <td>{{ row.phone || "—" }}</td>
+                            <td data-label="Почта">{{ row.email || "—" }}</td>
+                            <td data-label="Телефон">{{ row.phone || "—" }}</td>
                             <td
                                 class="user-roles-cell"
+                                data-label="Роли"
                                 @click.stop
                             >
                                 <div class="role-tags">
@@ -512,7 +513,7 @@ useCardRoute<UserRow>({
                                     >
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="Статус">
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
