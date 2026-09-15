@@ -43,6 +43,29 @@ const selected = ref<UserRow | null>(null),
     conflict = ref<UserRow | null>(null),
     passwordMode = ref(false);
 const viewing = ref(false);
+const expandedMobileRows = ref<Set<string>>(new Set());
+function toggleMobileRow(id: string | number, event?: MouseEvent) {
+    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    const key = String(id);
+    const next = new Set(expandedMobileRows.value);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    expandedMobileRows.value = next;
+}
+function handleRowClick(row: UserRow, event: MouseEvent) {
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        toggleMobileRow(row.id, event);
+        return;
+    }
+    open(row);
+}
+function handleNameClick(row: UserRow, event: MouseEvent) {
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        event.stopPropagation();
+        toggleMobileRow(row.id, event);
+        return;
+    }
+    open(row);
+}
 const deleting = ref<UserRow | null>(null);
 const deleteMessage = computed(() => {
     const row = deleting.value;
@@ -442,15 +465,16 @@ useCardRoute<UserRow>({
                             v-for="row in visible"
                             :key="row.id"
                             :class="{
+                                'mobile-card-expanded': expandedMobileRows.has(String(row.id)),
                                 selected: selected?.id === row.id && editing,
                             }"
-                            @click="open(row)"
+                            @click="handleRowClick(row, $event)"
                         >
                             <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="user-cell name-button"
-                                    @click.stop="open(row)"
+                                    @click.stop="handleNameClick(row, $event)"
                                 >
                                     {{
                                         [

@@ -94,6 +94,22 @@ watch(
 function displayName(row: ClientRow) {
     return row.name || row.shortname || `Клиент №${row.id}`;
 }
+const expandedMobileRows = ref<Set<string>>(new Set());
+function toggleMobileRow(id: string | number, event?: MouseEvent) {
+    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    const key = String(id);
+    const next = new Set(expandedMobileRows.value);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    expandedMobileRows.value = next;
+}
+function openName(row: ClientRow, event: MouseEvent) {
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        event.stopPropagation();
+        toggleMobileRow(row.id, event);
+        return;
+    }
+    open(row, true);
+}
 function openParties(row: ClientRow, party: "companies" | "individuals") {
     if (saving.value || row.deleted_at) return;
     const url = `/clients/${party}?client_id=${encodeURIComponent(row.id)}`;
@@ -280,13 +296,15 @@ useCardRoute<ClientRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            :class="{ 'mobile-card-expanded': expandedMobileRows.has(String(row.id)) }"
+                            @click="toggleMobileRow(row.id, $event)"
                             @dblclick="open(row)"
                         >
                             <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="name-button"
-                                    @click="open(row, true)"
+                                    @click="openName(row, $event)"
                                 >
                                     {{ displayName(row) }}
                                 </button>

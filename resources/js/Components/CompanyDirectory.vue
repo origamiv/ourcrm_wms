@@ -111,6 +111,22 @@ const editing = ref(false),
 const selected = ref<DirectoryRow | null>(null),
     deleting = ref<DirectoryRow | null>(null),
     conflict = ref<DirectoryRow | null>(null);
+const expandedMobileRows = ref<Set<string>>(new Set());
+function toggleMobileRow(id: string | number, event?: MouseEvent) {
+    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    const key = String(id);
+    const next = new Set(expandedMobileRows.value);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    expandedMobileRows.value = next;
+}
+function openName(row: DirectoryRow, event: MouseEvent) {
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        event.stopPropagation();
+        toggleMobileRow(row.id, event);
+        return;
+    }
+    open(row, true);
+}
 const form = ref<Record<string, any>>({});
 const notice = ref("");
 const companyOptions = computed(() =>
@@ -528,13 +544,15 @@ useCardRoute<DirectoryRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            :class="{ 'mobile-card-expanded': expandedMobileRows.has(String(row.id)) }"
+                            @click="toggleMobileRow(row.id, $event)"
                             @dblclick="open(row)"
                         >
                             <td class="id-column">{{ row.id }}</td>
                             <td v-if="isColumnVisible('name')">
                                 <button
                                     class="name-button"
-                                    @click="open(row, true)"
+                                    @click="openName(row, $event)"
                                 >
                                     {{ row.name }}
                                 </button>

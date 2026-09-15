@@ -21,6 +21,22 @@ interface CatalogRow extends EntityRow {
 const props = defineProps<{ entity: "roles" | "permissions"; title: string }>();
 const page = usePage<any>();
 const columnSettingsOpen = ref(false);
+const expandedMobileRows = ref<Set<string>>(new Set());
+function toggleMobileRow(id: string | number, event?: MouseEvent) {
+    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    const key = String(id);
+    const next = new Set(expandedMobileRows.value);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    expandedMobileRows.value = next;
+}
+function openName(row: CatalogRow, event: MouseEvent) {
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        event.stopPropagation();
+        toggleMobileRow(row.id, event);
+        return;
+    }
+    open(row);
+}
 const columnFields = computed(() => [
     { key: "name", label: "Название" },
     { key: "slug", label: "Код" },
@@ -322,13 +338,15 @@ useCardRoute<CatalogRow>({
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in visible" :key="row.id">
+                        <tr v-for="row in visible" :key="row.id"
+                            :class="{ 'mobile-card-expanded': expandedMobileRows.has(String(row.id)) }"
+                            @click="toggleMobileRow(row.id, $event)">
                             <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
                                     class="text-button name-button"
                                     :disabled="saving || !!row.deleted_at"
-                                    @click="open(row)"
+                                    @click="openName(row, $event)"
                                 >
                                     {{ row.name || "—" }}
                                 </button>
