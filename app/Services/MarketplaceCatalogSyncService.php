@@ -11,6 +11,7 @@ use App\Models\GoodMarketplace;
 use App\Models\IntegrationData;
 use App\Models\IntegrationWebhook;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -97,7 +98,15 @@ final class MarketplaceCatalogSyncService
             if ($lastId) {
                 $payload['last_id'] = $lastId;
             }
-            $response = $this->request($account, true)->post('https://api-seller.ozon.ru/v4/product/info/attributes', $payload)->throw()->json();
+            try {
+                $response = $this->request($account, true)->post('https://api-seller.ozon.ru/v4/product/info/attributes', $payload)->throw()->json();
+            } catch (RequestException $exception) {
+                if ($lastId !== null && $exception->response->status() === 404) {
+                    break;
+                }
+
+                throw $exception;
+            }
             $pageItems = $this->normalizeOzonPage((array) $response);
             array_push($items, ...$pageItems);
             $lastId = $response['last_id'] ?? null;
