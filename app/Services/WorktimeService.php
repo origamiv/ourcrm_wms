@@ -50,7 +50,7 @@ final class WorktimeService
     {
         $start = CarbonImmutable::parse($from)->startOfDay();
         $end = CarbonImmutable::parse($to)->endOfDay();
-        $users = app(AccessService::class)->isAdmin($user) ? User::query()->where('tenant_id', $user->tenant_id)->where('status', 1)->whereNull('deleted_at')->orderBy('last_name')->orderBy('name')->get() : collect([$user]);
+        $users = app(AccessService::class)->isAdmin($user) ? User::query()->visibleTo($user->tenant_id)->where('status', 1)->whereNull('deleted_at')->orderBy('last_name')->orderBy('name')->get() : collect([$user]);
         $events = Worktime::query()->whereIn('user_id', $users->pluck('id'))->whereBetween('event_at', [$start, $end])->orderBy('user_id')->orderBy('event_at')->get()->groupBy('user_id');
         $days = [];
         for ($date = $start; $date->lte($end); $date = $date->addDay()) $days[] = $date->toDateString();
