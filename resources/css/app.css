@@ -2037,4 +2037,9 @@ td {
         min-width: 48px !important;
         max-width: 48px !important;
     }
+
+    html body .main-panel .table-scroll.calendar table thead th.employee {
+        font-size: 0 !important;
+        line-height: 0 !important;
+    }
 }
