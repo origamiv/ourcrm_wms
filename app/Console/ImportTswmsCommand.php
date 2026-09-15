@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console;
 
+use App\Jobs\TswmsImportCoordinatorJob;
+use App\Models\TswmsImport;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PDO;
@@ -12,7 +14,7 @@ use Throwable;
 
 final class ImportTswmsCommand extends Command
 {
-    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*}';
+    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--inline : Выполнить этап непосредственно внутри job}';
 
     protected $description = 'Импортирует данные выбранного клиента TSWMS в тенант WMS';
 
@@ -45,6 +47,36 @@ final class ImportTswmsCommand extends Command
             $this->components->error('Тенант WMS не найден.');
 
             return self::FAILURE;
+        }
+        if (! $this->option('inline')) {
+            $only = array_values(array_filter($this->option('only')));
+            $activeQuery = TswmsImport::query()
+                ->where('tenant_id', $this->tenant)
+                ->whereIn('status', ['queued', 'running']);
+            $sourceClientId = (int) ($this->option('tswms-client-id') ?: 0);
+            if ($sourceClientId > 0) {
+                $activeQuery->where('source_client_id', $sourceClientId);
+            }
+            $active = $activeQuery->exists();
+            if ($active) {
+                $this->components->error('Для этого тенанта уже выполняется импорт TSWMS.');
+
+                return self::FAILURE;
+            }
+            $import = TswmsImport::query()->create([
+                'tenant_id' => $this->tenant,
+                'source_client_id' => (int) ($this->option('tswms-client-id') ?: 0) ?: null,
+                'status' => 'queued',
+                'total_stages' => $only === [] ? 13 : count($only),
+                'options' => [
+                    'only' => $only,
+                    'dry_run' => (bool) $this->option('dry-run'),
+                ],
+            ]);
+            TswmsImportCoordinatorJob::dispatch($import->id)->onConnection('redis')->onQueue('tswms-import');
+            $this->components->info("Импорт TSWMS #{$import->id} поставлен в очередь tswms-import.");
+
+            return self::SUCCESS;
         }
         try {
             [$billing, $clientConfig] = $this->configureSource();
