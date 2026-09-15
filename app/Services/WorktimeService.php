@@ -16,12 +16,9 @@ final class WorktimeService
     {
         $last = Worktime::query()->where('user_id', $user->id)->latest('event_at')->first();
         $state = $this->stateFrom($last?->event_type);
-        $startedAt = null;
-        if (in_array($state, ['working', 'paused'], true)) {
-            $startedAt = Worktime::query()->where('user_id', $user->id)->where('event_type', 'start')->latest('event_at')->first()?->event_at;
-        }
+        $summary = $this->todaySummary($user);
 
-        return ['state' => $state, 'started_at' => $startedAt?->toIso8601String(), 'can_start' => $state === 'not_started', 'can_pause' => in_array($state, ['working', 'paused'], true), 'can_finish' => in_array($state, ['working', 'paused'], true)];
+        return ['state' => $state, 'started_at' => $summary['active_started_at']?->toIso8601String(), 'worked_seconds' => $summary['worked_seconds'], 'can_start' => $state === 'not_started', 'can_pause' => in_array($state, ['working', 'paused'], true), 'can_finish' => in_array($state, ['working', 'paused'], true)];
     }
 
     public function event(User $user, string $action): array
@@ -78,4 +75,31 @@ final class WorktimeService
 
     private function stateFrom(?string $type): string
     { return match ($type) { 'start', 'pause_end' => 'working', 'pause_start' => 'paused', 'finish', null => 'not_started', default => 'not_started' }; }
+
+    /** @return array{worked_seconds:int, active_started_at: ?CarbonImmutable} */
+    private function todaySummary(User $user): array
+    {
+        $now = CarbonImmutable::now();
+        $events = Worktime::query()->where('user_id', $user->id)->whereBetween('event_at', [$now->startOfDay(), $now->endOfDay()])->orderBy('event_at')->get();
+        $worked = 0;
+        $activeStartedAt = null;
+        $pauseStartedAt = null;
+        foreach ($events as $event) {
+            if ($event->event_type === 'start') {
+                $activeStartedAt = $event->event_at;
+            } elseif ($event->event_type === 'pause_start' && $activeStartedAt) {
+                $worked += $activeStartedAt->diffInSeconds($event->event_at);
+                $activeStartedAt = null;
+                $pauseStartedAt = $event->event_at;
+            } elseif ($event->event_type === 'pause_end' && $pauseStartedAt) {
+                $pauseStartedAt = null;
+                $activeStartedAt = $event->event_at;
+            } elseif ($event->event_type === 'finish' && $activeStartedAt) {
+                $worked += $activeStartedAt->diffInSeconds($event->event_at);
+                $activeStartedAt = null;
+            }
+        }
+
+        return ['worked_seconds' => $worked, 'active_started_at' => $activeStartedAt];
+    }
 }

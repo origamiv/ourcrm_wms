@@ -5,14 +5,15 @@ import { http } from "../lib/http";
 const state = ref("not_started");
 const loading = ref(false);
 const startedAt = ref<number | null>(null);
+const workedToday = ref(0);
 const elapsed = ref(0);
 let timer: number | undefined;
 
 const elapsedLabel = computed(() => {
-    const total = Math.max(0, elapsed.value);
-    const hours = Math.floor(total / 3600);
-    const minutes = Math.floor((total % 3600) / 60);
-    return [hours, minutes].map((value) => String(value).padStart(2, "0")).join(":");
+    const total = Math.max(0, workedToday.value + (state.value === "working" ? elapsed.value : 0));
+    const totalHours = Math.floor(total / 3600);
+    const totalMinutes = Math.floor((total % 3600) / 60);
+    return [totalHours, totalMinutes].map((value) => String(value).padStart(2, "0")).join(":");
 });
 
 function updateElapsed() {
@@ -22,7 +23,8 @@ async function refresh() {
     try {
         const response = await http("/web/worktime/state");
         state.value = response.state || "not_started";
-        startedAt.value = response.started_at ? new Date(response.started_at).getTime() : startedAt.value;
+        workedToday.value = Number(response.worked_seconds || 0);
+        startedAt.value = response.started_at ? new Date(response.started_at).getTime() : null;
         updateElapsed();
     } catch {}
 }
@@ -31,8 +33,8 @@ async function action(name: "start" | "pause" | "finish") {
     try {
         const response = await http(`/web/worktime/${name}`, "POST");
         state.value = response.state || state.value;
-        if (name === "start") startedAt.value = Date.now();
-        if (name === "finish") startedAt.value = null;
+        workedToday.value = Number(response.worked_seconds || workedToday.value);
+        startedAt.value = response.started_at ? new Date(response.started_at).getTime() : null;
         updateElapsed();
     } finally { loading.value = false; }
 }
@@ -42,7 +44,7 @@ onUnmounted(() => { if (timer) window.clearInterval(timer); });
 
 <template>
     <div class="worktimeControls" aria-label="Рабочий график">
-        <span v-if="state === 'working' || state === 'paused'" class="worktimeTimer">{{ elapsedLabel }}</span>
+        <span class="worktimeTimer" title="Общее рабочее время за сегодня">{{ elapsedLabel }}</span>
         <button v-if="state === 'not_started'" class="worktimeButton worktimeStart" aria-label="Начать день" title="Начать день" :disabled="loading" @click="action('start')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5 19 12 8 18.5V5.5Z" fill="currentColor"/></svg></button>
         <template v-else>
             <button class="worktimeButton worktimePause" :aria-label="state === 'paused' ? 'Продолжить' : 'Пауза'" :title="state === 'paused' ? 'Продолжить' : 'Пауза'" :disabled="loading" @click="action('pause')"><svg v-if="state !== 'paused'" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7V5Zm7 0h3v14h-3V5Z" fill="currentColor"/></svg><svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5 19 12 8 18.5V5.5Z" fill="currentColor"/></svg></button>
