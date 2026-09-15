@@ -487,14 +487,14 @@ useCardRoute<UserRow>({
                                     }}
                                 </button>
                             </td>
-                            <td data-label="Почта">{{ row.email || "—" }}</td>
-                            <td data-label="Телефон">{{ row.phone || "—" }}</td>
+                            <td data-label="Почта"><span class="mobile-field-value">{{ row.email || "—" }}</span></td>
+                            <td data-label="Телефон"><span class="mobile-field-value">{{ row.phone || "—" }}</span></td>
                             <td
                                 class="user-roles-cell"
                                 data-label="Роли"
                                 @click.stop
                             >
-                                <div class="role-tags">
+                                <div class="mobile-field-value role-tags">
                                     <span
                                         v-for="role in row.roles ?? []"
                                         :key="role.id"
@@ -514,6 +514,7 @@ useCardRoute<UserRow>({
                                 </div>
                             </td>
                             <td data-label="Статус">
+                                <span class="mobile-field-value">
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
@@ -524,6 +525,7 @@ useCardRoute<UserRow>({
                                               "Неизвестен")
                                     }}</span
                                 >
+                                </span>
                             </td>
                             <td>
                                 <div class="row-actions">
