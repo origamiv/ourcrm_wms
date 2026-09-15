@@ -1819,6 +1819,12 @@ td {
 }
 
 @media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr td.id-column {
+        padding-left: 10px !important;
+    }
+}
+
+@media (max-width: 900px) {
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td.id-column,
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:has(.name-button),
     html body .main-panel .table-scroll table tbody tr.mobile-card-expanded td:last-child { background: #fff !important; position: relative !important; z-index: 6 !important; }

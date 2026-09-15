@@ -449,7 +449,7 @@ useCardRoute<UserRow>({
                             <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
-                                    class="user-cell"
+                                    class="user-cell name-button"
                                     @click.stop="open(row)"
                                 >
                                     {{
