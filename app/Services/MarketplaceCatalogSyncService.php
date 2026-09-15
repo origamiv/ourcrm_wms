@@ -30,6 +30,7 @@ final class MarketplaceCatalogSyncService
         foreach ($items as $item) {
             DB::transaction(function () use ($webhook, $tenant, $marketplace, $item, $autoCreate, &$maps): void {
                 $row = GoodMarketplace::query()->where('tenant_id', $tenant)->where('webhook_id', $webhook->id)->where('external_id', $item['external_id'])->lockForUpdate()->first();
+                $wasExisting = $row !== null;
                 if (! $row) {
                     $row = new GoodMarketplace;
                     $row->forceFill(['tenant_id' => $tenant, 'webhook_id' => $webhook->id, 'integration_id' => $webhook->id, 'marketplace' => $marketplace, 'external_id' => $item['external_id']]);
@@ -48,6 +49,9 @@ final class MarketplaceCatalogSyncService
                         $row->match_type = $created ? 'created' : 'auto';
                         $row->matched_at = now();
                     }
+                }
+                if ($wasExisting && $row->good_id && $row->match_type === 'created') {
+                    $row->match_type = 'auto';
                 }
                 $row->save();
             }, 3);
