@@ -177,7 +177,7 @@ final class MarketplaceCatalogSyncService
         $card->forceFill(['name' => $item['name'], 'status' => 1, 'tenant_id' => $tenant])->save();
         $good = new Good;
         $good->forceFill(['name' => $item['name'], 'shortname' => 'mp_'.Str::lower(Str::random(20)), 'code' => (string) $item['external_id'], 'barcodes' => $item['barcodes'], 'articul' => array_values(array_filter([(string) $item['offer_id']])), 'is_from_external' => 1, 'is_category' => 2, 'status' => 1, 'level' => 0, 'goodcard_id' => $card->id, 'tenant_id' => $tenant])->save();
-        $card->update(['good_id' => $good->id]);
+        $card->forceFill(['good_id' => $good->id])->save();
 
         return (int) $good->id;
     }
