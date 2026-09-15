@@ -24,3 +24,21 @@ it('преобразует тип приемки TSWMS', function (): void {
     expect(invokeAcceptanceImportHelper('acceptanceType', 'manual'))->toBe(2)
         ->and(invokeAcceptanceImportHelper('acceptanceType', 'scan'))->toBe(1);
 });
+
+it('агрегирует активные размещения по ячейке и товару', function (): void {
+    $rows = [
+        (object) ['id' => 10, 'place-id' => 7, 'good-id' => 11, 'count-in-instance' => 3, 'entrance-date' => '2026-01-02 10:00:00'],
+        (object) ['id' => 11, 'place-id' => 7, 'good-id' => 11, 'count-in-instance' => 5, 'entrance-date' => '2026-01-01 10:00:00'],
+        (object) ['id' => 12, 'place-id' => 8, 'good-id' => 11, 'count-in-instance' => 2, 'entrance-date' => null],
+    ];
+
+    $placements = invokeAcceptanceImportHelper('aggregateCellGoods', $rows);
+
+    expect($placements)->toHaveCount(2)
+        ->and($placements[0]['source_id'])->toBe('7:11')
+        ->and($placements[0]['cnt'])->toBe(8)
+        ->and($placements[0]['put_at'])->toBe('2026-01-01 10:00:00')
+        ->and($placements[0]['source_instance_ids'])->toBe(['10', '11'])
+        ->and($placements[1]['source_id'])->toBe('8:11')
+        ->and($placements[1]['cnt'])->toBe(2);
+});

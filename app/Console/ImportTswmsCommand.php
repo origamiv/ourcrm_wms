@@ -86,6 +86,7 @@ final class ImportTswmsCommand extends Command
         $this->runStep('tasks', fn () => $this->importTasks(), $only);
         $this->runStep('task_goods', fn () => $this->importTaskGoods(), $only);
         $this->runStep('acceptances', fn () => $this->importAcceptances(), $only);
+        $this->runStep('cell_goods', fn () => $this->importCellGoods(), $only);
         $this->info("Импорт завершён: создано {$this->created}, обновлено {$this->updated}.");
 
         return self::SUCCESS;
@@ -480,6 +481,107 @@ final class ImportTswmsCommand extends Command
     private function acceptanceType(mixed $type): int
     {
         return str_contains(mb_strtolower((string) $type), 'manual') ? 2 : 1;
+    }
+
+    private function importCellGoods(): void
+    {
+        if (! $this->source->getSchemaBuilder()->hasTable('tswms-goods-instances')) {
+            return;
+        }
+
+        $rows = $this->source->table('tswms-goods-instances')
+            ->whereNull('leaving-date')
+            ->get(['id', 'place-id', 'good-id', 'count-in-instance', 'entrance-date']);
+        $placements = $this->aggregateCellGoods($rows);
+        $seen = [];
+
+        foreach ($placements as $placement) {
+            $sourceId = $placement['source_id'];
+            $cellId = $this->mapped('tswms-places', (string) $placement['place_id'], 'App\\Models\\Cell');
+            $goodId = $this->mapped('tswms-goods', (string) $placement['good_id'], 'App\\Models\\Good');
+            if (! $cellId || ! $goodId) {
+                $this->warn("Пропущено размещение {$sourceId}: не найден mapping ячейки или товара.");
+
+                continue;
+            }
+            $warehouseId = DB::table('wms.cells')->where('id', $cellId)->value('warehouse_id');
+            if (! $warehouseId) {
+                $this->warn("Пропущено размещение {$sourceId}: у ячейки не найден склад.");
+
+                continue;
+            }
+
+            $seen[$sourceId] = true;
+            $this->upsert('wms.cell_goods', [
+                'warehouse_id' => $warehouseId,
+                'cell_id' => $cellId,
+                'good_id' => $goodId,
+                'cnt' => $placement['cnt'],
+                'put_at' => $placement['put_at'],
+                'leave_at' => null,
+                'deleted_at' => null,
+                'tenant_id' => $this->tenant,
+                'src' => json_encode([
+                    'source_system' => 'tswms',
+                    'source_table' => 'tswms-goods-instances',
+                    'source_id' => $sourceId,
+                    'place_id' => $placement['place_id'],
+                    'good_id' => $placement['good_id'],
+                    'source_instance_ids' => $placement['source_instance_ids'],
+                ], JSON_UNESCAPED_UNICODE),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], 'tswms-goods-instances', $sourceId, 'App\\Models\\CellGood');
+        }
+
+        $mappings = DB::table('wms.tswms_import_mappings')
+            ->where('source_system', 'tswms')
+            ->where('source_client_id', $this->sourceClientId)
+            ->where('source_table', 'tswms-goods-instances')
+            ->where('target_entity', 'App\\Models\\CellGood')
+            ->get(['target_id', 'source_id']);
+        foreach ($mappings as $mapping) {
+            if (isset($seen[(string) $mapping->source_id])) {
+                continue;
+            }
+            DB::table('wms.cell_goods')
+                ->where('id', $mapping->target_id)
+                ->where('tenant_id', $this->tenant)
+                ->whereNull('deleted_at')
+                ->update(['cnt' => 0, 'leave_at' => now(), 'deleted_at' => now(), 'updated_at' => now()]);
+            $this->updated++;
+        }
+    }
+
+    private function aggregateCellGoods(iterable $rows): array
+    {
+        $placements = [];
+        foreach ($rows as $row) {
+            $placeId = (string) ($row->{'place-id'} ?? $row->place_id ?? '');
+            $goodId = (string) ($row->{'good-id'} ?? $row->good_id ?? '');
+            if ($placeId === '' || $goodId === '') {
+                continue;
+            }
+            $sourceId = $placeId.':'.$goodId;
+            $placements[$sourceId] ??= [
+                'source_id' => $sourceId,
+                'place_id' => $placeId,
+                'good_id' => $goodId,
+                'cnt' => 0,
+                'put_at' => null,
+                'source_instance_ids' => [],
+            ];
+            $placements[$sourceId]['cnt'] += (int) ($row->{'count-in-instance'} ?? $row->count_in_instance ?? 0);
+            $entranceDate = $row->{'entrance-date'} ?? $row->entrance_date ?? null;
+            if ($entranceDate !== null && ($placements[$sourceId]['put_at'] === null || (string) $entranceDate < (string) $placements[$sourceId]['put_at'])) {
+                $placements[$sourceId]['put_at'] = $entranceDate;
+            }
+            if (isset($row->id)) {
+                $placements[$sourceId]['source_instance_ids'][] = (string) $row->id;
+            }
+        }
+
+        return array_values($placements);
     }
 
     private function sourceValue(object $row, array $keys): mixed
