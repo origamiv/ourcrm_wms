@@ -107,7 +107,8 @@ const extraColumns = computed(() =>
     !isKiz && !isIntegration
         ? orderedColumns.value.filter(
               (field) =>
-                  !renderedSpecialColumns.has(field.key) &&
+                  (!renderedSpecialColumns.has(field.key) ||
+                      (field.key === "client_id" && !isDocument && !isTask)) &&
                   field.kind !== "json",
           )
         : [],
@@ -1353,7 +1354,7 @@ useCardRoute<ReferenceRow>({
                                 {{ row.code || "—" }}
                             </td>
                             <template v-if="isDocument">
-                                <td v-if="isColumnVisible('client_id')">
+                                <td v-if="isColumnVisible('client_id')" data-label="Клиент">
                                     {{
                                         lookupStores.clients?.rows.value.find(
                                             (item) =>
@@ -1362,7 +1363,7 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Клиент №${row.client_id}`
                                     }}
                                 </td>
-                                <td v-if="isColumnVisible('doc_type_id')">
+                                <td v-if="isColumnVisible('doc_type_id')" data-label="Тип документа">
                                     {{
                                         lookupStores.client_doc_types?.rows.value.find(
                                             (item) =>
@@ -1371,10 +1372,10 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Тип №${row.doc_type_id}`
                                     }}
                                 </td>
-                                <td v-if="isColumnVisible('doc_date')">
+                                <td v-if="isColumnVisible('doc_date')" data-label="Дата документа">
                                     {{ formatDate(row.doc_date) }}
                                 </td>
-                                <td v-if="isColumnVisible('amount')">
+                                <td v-if="isColumnVisible('amount')" data-label="Сумма">
                                     {{
                                         row.amount == null
                                             ? "—"
@@ -1385,15 +1386,15 @@ useCardRoute<ReferenceRow>({
                                     }}
                                 </td>
                             </template>
-                            <td v-if="isTask && isColumnVisible('client_id')">
+                            <td v-if="isTask && isColumnVisible('client_id')" data-label="Клиент">
                                 {{ columnValue(row, { key: 'client_id', label: 'Клиент', kind: 'lookup', lookup: 'clients' }) }}
                             </td>
-                            <td v-if="isTask && isColumnVisible('task_type_id')"><div class="lookup-avatar-cell"><span class="lookup-avatar"><img v-if="lookupOption('task_types', row.task_type_id)?.icon" :src="String(lookupOption('task_types', row.task_type_id)?.icon)" alt="" /><span v-else>{{ lookupInitial('task_types', row.task_type_id) }}</span></span><span>{{ taskLookupValue(row, 'task_type_id', 'task_types') }}</span></div></td>
-                            <td v-if="isTask && isColumnVisible('task_stage_id')">{{ taskLookupValue(row, 'task_stage_id', 'task_stages') }}</td>
-                            <td v-if="isTask && isColumnVisible('__sku_count')">
+                            <td v-if="isTask && isColumnVisible('task_type_id')" data-label="Тип задачи"><div class="lookup-avatar-cell"><span class="lookup-avatar"><img v-if="lookupOption('task_types', row.task_type_id)?.icon" :src="String(lookupOption('task_types', row.task_type_id)?.icon)" alt="" /><span v-else>{{ lookupInitial('task_types', row.task_type_id) }}</span></span><span>{{ taskLookupValue(row, 'task_type_id', 'task_types') }}</span></div></td>
+                            <td v-if="isTask && isColumnVisible('task_stage_id')" data-label="Этап задачи">{{ taskLookupValue(row, 'task_stage_id', 'task_stages') }}</td>
+                            <td v-if="isTask && isColumnVisible('__sku_count')" data-label="Количество SKU/товара">
                                 {{ taskSkuCount(row) }}
                             </td>
-                            <td v-for="field in extraColumns" :key="field.key">
+                            <td v-for="field in extraColumns" :key="field.key" :data-label="field.label">
                                 <div v-if="isTask && (field.key === 'task_type_id' || field.key === 'priority_id')" class="lookup-avatar-cell">
                                     <span class="lookup-avatar" :title="lookupOption(field.lookup!, row[field.key])?.name || field.label">
                                         <img v-if="lookupOption(field.lookup!, row[field.key])?.icon" :src="String(lookupOption(field.lookup!, row[field.key])?.icon)" alt="" />
@@ -1407,7 +1408,7 @@ useCardRoute<ReferenceRow>({
                                 </div>
                                 <template v-else>{{ columnValue(row, field) }}</template>
                             </td>
-                            <td v-if="isColumnVisible('status')">
+                            <td v-if="isColumnVisible('status')" data-label="Статус">
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
