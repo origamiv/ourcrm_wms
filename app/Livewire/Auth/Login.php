@@ -15,6 +15,7 @@ final class Login extends Component
     public string $email = '';
 
     public string $password = '';
+
     public array $tenants = [];
 
     public function login(AuthenticationService $auth): void
@@ -45,10 +46,14 @@ final class Login extends Component
         abort_unless(in_array($tenantId, array_map('strval', $allowed), true), 403);
         $user = Auth::user();
         abort_unless($user, 403);
-        session()->regenerate();
         $this->activateTenant($user, $tenantId);
         session()->forget('wms_pending_tenants');
         $this->redirect('/');
+    }
+
+    public function render()
+    {
+        return view('auth.login')->layout('auth.layout');
     }
 
     /** @return array<int, array{id:string,name:string,status:int}> */
@@ -72,10 +77,5 @@ final class Login extends Component
         $user->tenant_id = $tenantId;
         session()->put('wms_tenant', $tenantId);
         session()->put('wms_credential', $user->credentialFingerprint());
-    }
-
-    public function render()
-    {
-        return view('auth.login')->layout('auth.layout');
     }
 }

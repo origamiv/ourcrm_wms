@@ -22,6 +22,30 @@ it('authenticates using Livewire and clears the password from component state', 
     $this->postJson('/logout')->assertOk();
     $this->assertGuest();
 });
+
+it('selects a tenant without replacing the Livewire session', function () {
+    $user = $this->makeUser(['email' => 'multi-tenant@example.test']);
+    DB::table('public.tenants')->insert([
+        ['id' => 'tenant_a', 'name' => 'Компания A', 'status' => 1, 'owner_user_id' => $user->id],
+        ['id' => 'tenant_b', 'name' => 'Компания B', 'status' => 1, 'owner_user_id' => $user->id],
+    ]);
+
+    Livewire::test(Login::class)
+        ->set('email', $user->email)
+        ->set('password', 'Test_password_123')
+        ->call('login')
+        ->assertSet('password', '');
+
+    Livewire::test(Login::class)
+        ->call('selectTenant', 'tenant_b')
+        ->assertRedirect('/');
+
+    $this->assertAuthenticatedAs($user);
+    $this->assertSame('tenant_b', session('wms_tenant'));
+    $this->assertSame(hash_hmac('sha256', $user->getAuthPassword().'|tenant_b', config('app.key')), session('wms_credential'));
+    $this->assertNull(session('wms_pending_tenants'));
+});
+
 it('rejects pending blocked busy deleted tenantless and ambiguous accounts', function () {
     foreach ([0, 2, 3] as $status) {
         $u = $this->makeUser(['status' => $status]);
