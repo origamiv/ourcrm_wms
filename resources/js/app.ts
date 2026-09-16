@@ -59,6 +59,13 @@ import Imports from "./Pages/Imports.vue";
 import Instructions from "./Pages/Instructions.vue";
 import InstructionView from "./Pages/InstructionView.vue";
 import Permissions from "./Pages/Permissions.vue";
+import Orders from "./Pages/Orders.vue";
+import LogisticsReferences from "./Pages/LogisticsReferences.vue";
+import OrderStatuses from "./Pages/OrderStatuses.vue";
+import OrderSources from "./Pages/OrderSources.vue";
+import OrderCancelStatuses from "./Pages/OrderCancelStatuses.vue";
+import LogisticCompanies from "./Pages/LogisticCompanies.vue";
+import ShipmentStatuses from "./Pages/ShipmentStatuses.vue";
 import "./lib/http";
 
 const vuetify = createVuetify({ components: { VSelect } });
@@ -115,6 +122,13 @@ const pages: Record<string, any> = {
     Roles,
     Permissions,
     RolesRights,
+    Orders,
+    LogisticsReferences,
+    OrderStatuses,
+    OrderSources,
+    OrderCancelStatuses,
+    LogisticCompanies,
+    ShipmentStatuses,
     Worktime,
     Imports,
     Instructions,
