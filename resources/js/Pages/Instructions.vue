@@ -109,9 +109,8 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
                     <article v-for="row in rows" v-else :key="row.id" class="instructions-mobile-card" role="link" tabindex="0" @click="openInstruction(row)" @keydown.enter="openInstruction(row)">
                         <span class="instructions-mobile-card__id">{{ row.id }}</span>
                         <strong class="instructions-mobile-card__name">{{ row.name }}</strong>
-                        <div class="instructions-mobile-card__actions">
-                            <a :href="section ? `/${section}/help/${row.id}` : `/instructions/${row.id}`" aria-label="Открыть инструкцию" title="Открыть инструкцию" @click.stop>→</a>
-                            <template v-if="isAdminPage">
+                        <div v-if="isAdminPage" class="instructions-mobile-card__actions">
+                            <template>
                                 <button type="button" aria-label="Изменить инструкцию" title="Изменить" @click.stop="edit(row)">✎</button>
                                 <button type="button" aria-label="Удалить инструкцию" title="Удалить" @click.stop="remove(row)">×</button>
                             </template>
@@ -156,6 +155,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
     .instructions-table-wrap { display: none !important; }
     .instructions-mobile-cards { display: grid; gap: 10px; }
     .instructions-mobile-card { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; align-items: center; min-width: 0; min-height: 48px; padding: 0; overflow: hidden; border: 1px solid #dcecef; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); cursor: pointer; }
+    .instructions-mobile-card:not(:has(.instructions-mobile-card__actions)) { grid-template-columns: max-content minmax(0, 1fr); }
     .instructions-mobile-card:focus-visible { outline: 2px solid #2274a5; outline-offset: 2px; }
     .instructions-mobile-card__id { padding: 10px; color: #71828a; font-size: 11px; }
     .instructions-mobile-card__name { min-width: 0; padding: 10px 4px; overflow: hidden; color: #0c1821; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
