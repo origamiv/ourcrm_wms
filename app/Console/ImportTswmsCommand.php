@@ -15,7 +15,7 @@ use Throwable;
 
 final class ImportTswmsCommand extends Command
 {
-    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
+    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограничение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
 
     protected $description = 'Импортирует данные выбранного клиента TSWMS в тенант WMS';
 
@@ -119,6 +119,14 @@ final class ImportTswmsCommand extends Command
         config(['database.connections.tswms_client' => $this->mysqlConfig($clientConfig)]);
         DB::purge('tswms_client');
         $this->source = DB::connection('tswms_client');
+        if ($this->option('goods-count-only')) {
+            $count = $this->source->getSchemaBuilder()->hasTable('tswms-goods')
+                ? $this->source->table('tswms-goods')->count()
+                : 0;
+            $this->line('TSWMS_GOODS_COUNT:'.$count);
+
+            return self::SUCCESS;
+        }
         if ($this->option('count-only')) {
             $count = $this->source->getSchemaBuilder()->hasTable('tswms-tasks-goods')
                 ? $this->source->table('tswms-tasks-goods')->count()
@@ -279,7 +287,12 @@ final class ImportTswmsCommand extends Command
                 $labels[$goodId][$type === 'article' ? 'articles' : 'barcodes'][] = $value;
             }
         }
-        foreach ($this->source->table('tswms-goods')->get() as $row) {
+        $query = $this->source->table('tswms-goods')->orderBy('id');
+        $limit = max(0, (int) $this->option('goods-limit'));
+        if ($limit > 0) {
+            $query->offset(max(0, (int) $this->option('goods-offset')))->limit($limit);
+        }
+        foreach ($query->get() as $row) {
             $id = (string) $row->id;
             $barcodes = array_values(array_unique(array_filter(array_merge([(string) ($row->{'barcode-good'} ?? '')], $labels[$id]['barcodes'] ?? []))));
             $articles = array_values(array_unique(array_filter(array_merge([(string) ($row->article ?? '')], $labels[$id]['articles'] ?? []))));

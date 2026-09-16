@@ -23,7 +23,8 @@ final class ImportRunGroupJob implements ShouldQueue
         ['clients'],
         ['accounts'],
         ['webhooks'],
-        ['goods', 'warehouses', 'services', 'task_stages', 'users', 'documents'],
+        ['goods'],
+        ['warehouses', 'services', 'task_stages', 'users', 'documents'],
         ['tasks'],
         ['task_goods'],
         ['acceptances'],
@@ -50,9 +51,16 @@ final class ImportRunGroupJob implements ShouldQueue
             return;
         }
 
-        if ($this->group === 5 && $stages === ['task_goods']) {
+        if ($this->group === 6 && $stages === ['task_goods']) {
             $import->forceFill(['current_stage' => 'task_goods'])->save();
             ImportRunTaskGoodsCoordinatorJob::dispatch($this->importId, $this->group + 1)
+                ->onConnection('redis')->onQueue('imports');
+
+            return;
+        }
+        if ($this->group === 3 && $stages === ['goods']) {
+            $import->forceFill(['current_stage' => 'goods'])->save();
+            ImportRunGoodsCoordinatorJob::dispatch($this->importId, $this->group + 1)
                 ->onConnection('redis')->onQueue('imports');
 
             return;
