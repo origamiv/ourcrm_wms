@@ -34,7 +34,8 @@ function progress(row: ImportRun): number {
     if (row.row_type === "run") {
         return row.total_stages > 0 ? Math.min(100, Math.round(row.completed_stages / row.total_stages * 100)) : 0;
     }
-    return row.total_records > 0 ? Math.min(100, Math.round(row.processed_records / row.total_records * 100)) : 0;
+    if (row.total_records === 0) return row.status === "completed" ? 100 : 0;
+    return Math.min(100, Math.round(row.processed_records / row.total_records * 100));
 }
 
 function statusLabel(status: string): string {

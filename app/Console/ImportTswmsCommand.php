@@ -35,6 +35,8 @@ final class ImportTswmsCommand extends Command
 
     private int $updated = 0;
 
+    private int $sourceRecords = 0;
+
     public function handle(): int
     {
         $this->tenant = (string) ($this->option('tenant') ?: '');
@@ -242,11 +244,13 @@ final class ImportTswmsCommand extends Command
         if ($only !== [] && ! in_array($name, $only, true)) {
             return;
         }
+        $this->sourceRecords = 0;
         $this->components->task($name, function () use ($callback): void {
             if (! $this->option('dry-run')) {
                 $callback();
             }
         });
+        $this->line('IMPORT_SOURCE_RECORDS:'.$this->sourceRecords);
     }
 
     private function importPartners(): void
@@ -293,6 +297,7 @@ final class ImportTswmsCommand extends Command
             $query->offset(max(0, (int) $this->option('goods-offset')))->limit($limit);
         }
         $rows = $query->get();
+        $this->sourceRecords = $rows->count();
         $sourceIds = $rows->map(fn (object $row): string => (string) $row->id)->all();
         $mappings = DB::table('wms.tswms_import_mappings')
             ->where('source_system', 'tswms')
@@ -793,6 +798,7 @@ final class ImportTswmsCommand extends Command
 
     private function upsert(string $table, array $data, string $sourceTable, string $sourceId, string $entity, string $lookup = ''): void
     {
+        $this->sourceRecords++;
         DB::transaction(function () use ($table, $data, $sourceTable, $sourceId, $entity): void {
             $key = implode('|', ['tswms', $this->sourceClientId, $sourceTable, $sourceId, $entity]);
             DB::selectOne('select pg_advisory_xact_lock(hashtextextended(?, 0))', [$key]);

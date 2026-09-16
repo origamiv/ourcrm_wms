@@ -58,8 +58,11 @@ final class ImportRunStageJob implements ShouldQueue
             throw new RuntimeException(trim(Artisan::output()) ?: "Этап {$this->stage} завершился с ошибкой.");
         }
 
+        $output = Artisan::output();
         $records = 0;
-        if (preg_match('/IMPORT_RECORDS:(\d+)/', Artisan::output(), $match)) {
+        if (preg_match('/IMPORT_SOURCE_RECORDS:(\d+)/', $output, $match)) {
+            $records = (int) $match[1];
+        } elseif (preg_match('/IMPORT_RECORDS:(\d+)/', $output, $match)) {
             $records = (int) $match[1];
         }
         $import->increment('total_records', $records);
