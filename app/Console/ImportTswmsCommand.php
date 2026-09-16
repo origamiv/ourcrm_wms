@@ -566,7 +566,8 @@ final class ImportTswmsCommand extends Command
             $client = $this->mapped('tswms-partners', (string) ($row->{'partner-id'} ?? $row->partner_id ?? ''), 'App\\Models\\Client');
             $warehouse = $this->mapped('warehouses', (string) ($row->warehouse_id ?? ''), 'App\\Models\\Warehouse');
             $status = $this->localOrderReference('wms.shipment_statuses', 'tswms-shipments-statuses', $row->{'status-id'} ?? $row->status_id ?? null, 'App\\Models\\ShipmentStatus');
-            $order = $row->order_id ? $this->mapped('tswms-orders', (string) $row->order_id, 'App\\Models\\Order') : null;
+            $sourceOrderId = $row->order_id ?? null;
+            $order = $sourceOrderId ? $this->mapped('tswms-orders', (string) $sourceOrderId, 'App\\Models\\Order') : null;
             $this->upsert('wms.shipments', ['code' => $id, 'order_id' => $order, 'client_id' => $client, 'warehouse_id' => $warehouse, 'shipment_status_id' => $status, 'created_date' => $row->{'date-created'} ?? null, 'checked_at' => $row->{'date-checked'} ?? null, 'sent_at' => $row->{'date-send'} ?? null, 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now()], 'tswms-shipments', $id, 'App\\Models\\Shipment');
         }
     }
