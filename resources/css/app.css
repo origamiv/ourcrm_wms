@@ -2299,7 +2299,7 @@ td {
 }
 
 /* Компактная мобильная карточка инструкции: подробности открываются на отдельной странице. */
-@media (max-width: 700px) {
+@media (max-width: 900px) {
     html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card {
         display: grid !important;
         grid-template-columns: max-content minmax(0, 1fr) max-content !important;
