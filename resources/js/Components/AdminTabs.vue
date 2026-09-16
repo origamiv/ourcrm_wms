@@ -32,6 +32,12 @@ const tabs = [
         icon: "view",
     },
     {
+        label: "Инструкции",
+        url: "/main/instructions",
+        component: "Instructions",
+        icon: "documents",
+    },
+    {
         label: "Справочники",
         url: "/main/references",
         component: "",

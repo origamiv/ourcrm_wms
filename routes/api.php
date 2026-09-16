@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/token', [WmsAuthController::class, 'token'])->middleware('throttle:20,1');
 Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
+    Route::get('/instructions', [App\Http\Controllers\InstructionController::class, 'index']);
+    Route::get('/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'show'])->whereNumber('id');
+    Route::get('/instructions/{id}/content', [App\Http\Controllers\InstructionController::class, 'content'])->whereNumber('id');
+    Route::get('/instructions/{id}/download', [App\Http\Controllers\InstructionController::class, 'download'])->whereNumber('id');
     Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/worktime/state', [App\Http\Controllers\WorktimeController::class, 'state']);
     Route::get('/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
@@ -15,6 +19,9 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
     Route::post('/auth/logout', [WmsAuthController::class, 'revoke']);
     Route::post('/acceptances/{id}/pick', [App\Http\Controllers\AcceptanceController::class, 'pick'])->whereNumber('id');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
+        Route::post('/instructions', [App\Http\Controllers\InstructionController::class, 'store']);
+        Route::post('/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'update'])->whereNumber('id');
+        Route::delete('/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'destroy'])->whereNumber('id');
         Route::get('/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'show'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::post('/integration/{integration_catalog}', [App\Http\Controllers\IntegrationController::class, 'store'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing']);
         Route::put('/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'update'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');

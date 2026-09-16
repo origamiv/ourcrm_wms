@@ -17,6 +17,12 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
     Route::post('/web/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);
     Route::get('/main/worktime', [App\Http\Controllers\WorktimeController::class, 'page']);
+    Route::get('/instructions', fn () => Inertia::render('Instructions'));
+    Route::get('/instructions/{id}', fn (string $id) => Inertia::render('InstructionView', ['instructionId' => $id]))->whereNumber('id');
+    Route::get('/web/instructions', [App\Http\Controllers\InstructionController::class, 'index']);
+    Route::get('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'show'])->whereNumber('id');
+    Route::get('/web/instructions/{id}/content', [App\Http\Controllers\InstructionController::class, 'content'])->whereNumber('id');
+    Route::get('/web/instructions/{id}/download', [App\Http\Controllers\InstructionController::class, 'download'])->whereNumber('id');
     Route::get('/', fn () => Inertia::render('Home'))->name('home');
     Route::middleware(EnsureWmsAccess::class.':admin')->group(function () {
         Route::post('/web/export/pdf', [App\Http\Controllers\DataExportController::class, 'pdf']);
@@ -92,6 +98,9 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::put('/web/{catalog}/{id}', [App\Http\Controllers\AccessCatalogController::class, 'update'])->whereIn('catalog', ['roles', 'permissions'])->whereNumber('id');
         Route::get('/web/users/sync', [WmsUserController::class, 'index']);
         Route::get('/web/imports', [App\Http\Controllers\ImportRunController::class, 'index']);
+        Route::post('/web/instructions', [App\Http\Controllers\InstructionController::class, 'store']);
+        Route::post('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'update'])->whereNumber('id');
+        Route::delete('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'destroy'])->whereNumber('id');
         Route::get('/web/users/{id}', [WmsUserController::class, 'show'])->whereNumber('id');
         Route::post('/web/users', [WmsUserController::class, 'store']);
         Route::put('/web/users/{id}', [WmsUserController::class, 'update'])->whereNumber('id');

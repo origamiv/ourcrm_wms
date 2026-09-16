@@ -4,6 +4,12 @@ import { usePage, router } from "@inertiajs/vue3";
 import { http, endSession } from "../lib/http";
 import WorktimeControls from "./WorktimeControls.vue";
 const page = usePage<any>();
+const currentSection = computed(() => {
+    const section = page.url.split("/")[1] || "";
+    return ["main", "clients", "goods", "integration", "fulfillment", "maintenance"].includes(section) && !page.url.startsWith("/main/instructions")
+        ? section
+        : "";
+});
 const tenantBlocked = computed(() => Number(page.props.auth?.tenant_status ?? 1) !== 1 && page.url !== "/");
 const collapsed = ref(false),
     mobileMenuOpen = ref(false),
@@ -11,7 +17,7 @@ const collapsed = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
 function go(
-    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces" | "Imports" | "Worktime",
+    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces" | "Imports" | "Instructions" | "Worktime",
     url: string,
 ) {
     mobileMenuOpen.value = false;
@@ -187,6 +193,16 @@ onUnmounted(() => {
                                 ? "Обслуживание"
                               : "Рабочий стол"
                 }}</span>
+                <button
+                    v-if="currentSection"
+                    class="instructions-button"
+                    type="button"
+                    aria-label="Инструкции"
+                    title="Инструкции"
+                    @click="go('Instructions', `/instructions?section=${currentSection}`)"
+                >
+                    <img src="/design/crm/documents.svg" alt="" />
+                </button>
                 <WorktimeControls />
                 <div class="account">
                     <span class="header-avatar"
@@ -226,6 +242,9 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.instructions-button { display: inline-grid; place-items: center; width: 34px; height: 34px; margin-left: auto; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+.instructions-button:hover { background: #e1f3e7; }
+.instructions-button img { width: 21px; height: 21px; }
 .sidebar nav a .clients-icon {
     filter: brightness(0) saturate(100%) invert(36%) sepia(43%) saturate(1113%)
         hue-rotate(161deg);
