@@ -6,13 +6,16 @@ namespace App\Jobs;
 
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
+use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Bus;
 use RuntimeException;
+use Throwable;
 
 final class ImportRunGoodsCoordinatorJob implements ShouldQueue
 {
@@ -58,8 +61,39 @@ final class ImportRunGoodsCoordinatorJob implements ShouldQueue
 
             return;
         }
-        $import->increment('total_jobs', $chunks);
-        ImportRunGoodsChunkJob::dispatch($this->importId, 0, $this->limit, $this->nextGroup)
-            ->onConnection('redis')->onQueue('imports');
+        $jobs = [];
+        for ($offset = 0; $offset < $count; $offset += $this->limit) {
+            $jobs[] = new ImportRunGoodsChunkJob($this->importId, $offset, $this->limit);
+        }
+
+        $import->increment('total_jobs', count($jobs));
+        $importId = $this->importId;
+        $nextGroup = $this->nextGroup;
+        Bus::batch($jobs)
+            ->name('Import #'.$importId.' goods')
+            ->onConnection('redis')
+            ->onQueue('imports')
+            ->then(function (Batch $batch) use ($importId, $nextGroup): void {
+                ImportRun::query()->whereKey($importId)->increment('completed_stages');
+                ImportRunStage::query()->where('import_run_id', $importId)->where('stage_key', 'goods')->update([
+                    'status' => 'completed',
+                    'finished_at' => now(),
+                ]);
+                ImportRunGroupJob::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('imports');
+            })
+            ->catch(function (Batch $batch, Throwable $exception) use ($importId): void {
+                ImportRunStage::query()->where('import_run_id', $importId)->where('stage_key', 'goods')->update([
+                    'status' => 'failed',
+                    'error_message' => $exception->getMessage(),
+                    'finished_at' => now(),
+                ]);
+                ImportRun::query()->whereKey($importId)->update([
+                    'status' => 'failed',
+                    'error_class' => $exception::class,
+                    'error_message' => $exception->getMessage(),
+                    'finished_at' => now(),
+                ]);
+            })
+            ->dispatch();
     }
 }
