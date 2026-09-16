@@ -22,7 +22,7 @@ final class ImportRunGoodsCoordinatorJob implements ShouldQueue
 
     public int $timeout = 120;
 
-    public function __construct(public int $importId, public int $nextGroup, public int $limit = 500) {}
+    public function __construct(public int $importId, public int $nextGroup, public int $limit = 5000) {}
 
     public function handle(): void
     {

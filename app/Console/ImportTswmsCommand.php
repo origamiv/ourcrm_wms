@@ -292,14 +292,61 @@ final class ImportTswmsCommand extends Command
         if ($limit > 0) {
             $query->offset(max(0, (int) $this->option('goods-offset')))->limit($limit);
         }
-        foreach ($query->get() as $row) {
+        $rows = $query->get();
+        $sourceIds = $rows->map(fn (object $row): string => (string) $row->id)->all();
+        $mappings = DB::table('wms.tswms_import_mappings')
+            ->where('source_system', 'tswms')
+            ->where('source_client_id', $this->sourceClientId)
+            ->where('source_table', 'tswms-goods')
+            ->where('target_entity', 'App\\Models\\Good')
+            ->whereIn('source_id', $sourceIds)
+            ->get()
+            ->keyBy('source_id');
+        $inserts = [];
+        $updates = [];
+        $mappingRows = [];
+        foreach ($rows as $row) {
             $id = (string) $row->id;
             $barcodes = array_values(array_unique(array_filter(array_merge([(string) ($row->{'barcode-good'} ?? '')], $labels[$id]['barcodes'] ?? []))));
             $articles = array_values(array_unique(array_filter(array_merge([(string) ($row->article ?? '')], $labels[$id]['articles'] ?? []))));
             $sourceData = (array) $row;
             $data = ['code' => $id, 'name' => (string) ($row->name ?? 'Товар #'.$id), 'shortname' => 'tswms_good_'.$id, 'barcodes' => json_encode($barcodes), 'articul' => json_encode($articles), 'status' => (int) ($row->active ?? 1), 'tenant_id' => $this->tenant, 'is_from_external' => 1, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'partner_id' => $row->partner ?? null, 'source_fields' => $sourceData], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now()];
-            $this->upsert('goods.goods', $data, 'tswms-goods', $id, 'App\\Models\\Good');
+            $mapping = $mappings->get($id);
+            $hash = $this->sourceHash((object) $data);
+            if ($mapping && (string) $mapping->source_hash === $hash) {
+                continue;
+            }
+            if ($mapping?->target_id) {
+                $updates[] = ['id' => (int) $mapping->target_id, ...$data];
+            } else {
+                $inserts[] = $data;
+            }
+            $mappingRows[$id] = ['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_table' => 'tswms-goods', 'source_id' => $id, 'target_entity' => 'App\\Models\\Good', 'target_id' => $mapping?->target_id, 'source_database' => $this->sourceDatabase, 'source_hash' => $hash, 'created_at' => now(), 'updated_at' => now()];
         }
+        if ($inserts === [] && $updates === []) {
+            return;
+        }
+        DB::transaction(function () use (&$inserts, $updates, &$mappingRows): void {
+            if ($inserts !== []) {
+                DB::table('goods.goods')->insert($inserts);
+                $goods = DB::table('goods.goods')->where('tenant_id', $this->tenant)->whereIn('shortname', array_column($inserts, 'shortname'))->pluck('id', 'shortname');
+                foreach ($inserts as $data) {
+                    $sourceId = (string) preg_replace('/^tswms_good_/', '', (string) $data['shortname']);
+                    $targetId = $goods[$data['shortname']] ?? null;
+                    if ($targetId === null) {
+                        throw new RuntimeException('Не удалось определить ID созданного товара '.$sourceId.'.');
+                    }
+                    $mappingRows[$sourceId]['target_id'] = $targetId;
+                }
+            }
+            if ($updates !== []) {
+                $columns = array_values(array_diff(array_keys($updates[0]), ['id']));
+                DB::table('goods.goods')->upsert($updates, ['id'], $columns);
+            }
+            DB::table('wms.tswms_import_mappings')->upsert(array_values($mappingRows), ['source_system', 'source_client_id', 'source_table', 'source_id', 'target_entity'], ['target_id', 'source_database', 'source_hash', 'updated_at']);
+        });
+        $this->created += count($inserts);
+        $this->updated += count($updates);
     }
 
     private function importWarehouses(): void
