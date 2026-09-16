@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import { http, HttpError } from "../lib/http";
 import AdminTabs from "../Components/AdminTabs.vue";
@@ -18,6 +18,7 @@ const props = defineProps<{ instructionId?: string; sectionKey?: string }>();
 const page = usePage<any>();
 const rows = ref<Instruction[]>([]), loading = ref(true), error = ref(""), saving = ref(false), editingId = ref<string | null>(null);
 const selectedInstruction = ref<Instruction | null>(null), selectedContent = ref("");
+const openedImage = ref("");
 const isAdminPage = computed(() => page.url.startsWith("/main/instructions"));
 const section = computed(() => {
     const pathSection = page.url.split("?")[0].split("/")[1] || "";
@@ -57,7 +58,15 @@ function edit(row: Instruction) { editingId.value = row.id; form.value = { name:
 async function remove(row: Instruction) { if (!window.confirm(`Удалить инструкцию «${row.name}»?`)) return; try { await http(`/web/instructions/${row.id}`, "DELETE"); await load(); } catch (e) { error.value = e instanceof HttpError ? e.message : "Не удалось удалить инструкцию."; } }
 function download(row: Instruction) { window.location.href = row.download_url; }
 function backToList() { window.location.href = section.value ? `/${section.value}/help` : "/instructions"; }
+function openImage(event: MouseEvent) {
+    const image = (event.target as HTMLElement).closest("img");
+    if (image instanceof HTMLImageElement) openedImage.value = image.currentSrc || image.src;
+}
+function closeImage() { openedImage.value = ""; }
+function handleEscape(event: KeyboardEvent) { if (event.key === "Escape") closeImage(); }
 onMounted(load);
+onMounted(() => window.addEventListener("keydown", handleEscape));
+onUnmounted(() => window.removeEventListener("keydown", handleEscape));
 </script>
 
 <template>
@@ -80,7 +89,7 @@ onMounted(load);
                     <button type="button" class="instruction-back" @click="backToList">← Инструкции</button>
                     <a class="instruction-download" :href="selectedInstruction.download_url" aria-label="Скачать инструкцию" title="Скачать инструкцию">↓</a>
                 </div>
-                <article v-if="selectedInstruction.content_type === 'markdown'" class="instruction-markdown" v-html="renderedMarkdown"></article>
+                <article v-if="selectedInstruction.content_type === 'markdown'" class="instruction-markdown" v-html="renderedMarkdown" @click="openImage"></article>
                 <iframe v-else-if="selectedInstruction.content_type === 'html'" class="instruction-frame" :src="selectedInstruction.content_url" sandbox=""></iframe>
                 <iframe v-else-if="selectedInstruction.content_type === 'pdf'" class="instruction-frame" :src="selectedInstruction.content_url"></iframe>
                 <video v-else-if="selectedInstruction.content_type === 'video'" class="instruction-video" controls :src="selectedInstruction.content_url"></video>
@@ -97,6 +106,10 @@ onMounted(load);
                 <div class="instruction-form-grid"><label>Название<input v-model="form.name" type="text" /></label><label>Краткое имя<input v-model="form.shortname" type="text" /></label><label>Раздел<select v-model="form.section_key"><option v-for="item in sections" :key="item.key" :value="item.key">{{ item.name }}</option></select></label><label>Порядок<input v-model="form.sort_order" type="number" min="0" /></label><label class="instruction-file">Файл<FileDropzone v-model="form.file" accept=".pdf,.md,.markdown,.html,.htm,.mp4" hint="PDF, Markdown, HTML или видео" /></label><div class="instruction-form-actions"><button class="primary" type="button" :disabled="saving" @click="save">{{ saving ? "Сохраняем…" : (editingId ? "Сохранить" : "Добавить") }}</button><button v-if="editingId" class="secondary" type="button" @click="resetForm">Отмена</button></div></div>
             </aside>
         </div>
+        <div v-if="openedImage" class="image-modal" role="dialog" aria-modal="true" aria-label="Полноразмерное изображение" @click.self="closeImage">
+            <button type="button" class="image-modal-close" aria-label="Закрыть изображение" title="Закрыть" @click="closeImage">×</button>
+            <img :src="openedImage" alt="Полноразмерная иллюстрация инструкции" @click.stop />
+        </div>
     </section>
 </template>
 
@@ -109,7 +122,8 @@ onMounted(load);
 .instruction-download:hover { background:#cdebd7; }
 .instruction-frame { display:block; width:100%; min-height:70vh; border:1px solid #dcecef; border-radius:10px; background:#fff; }
 .instruction-markdown { display:flow-root; max-width:960px; box-sizing:border-box; margin:0; padding:48px 64px 56px; overflow-wrap:anywhere; border:1px solid #e3e9e5; border-radius:3px; background:#fffdf8; box-shadow:0 10px 28px rgb(35 67 48 / 8%); color:#253237; font:16px/1.8 Manrope, sans-serif; }
-.instruction-markdown :deep(h1) { margin:0 0 22px; color:#172126; font-size:32px; line-height:1.2; }.instruction-markdown :deep(h2) { margin:30px 0 10px; padding-bottom:6px; border-bottom:1px solid #dce9df; color:#1e6d35; font-size:21px; line-height:1.3; }.instruction-markdown :deep(h3) { margin:24px 0 8px; color:#26547c; font-size:17px; }.instruction-markdown :deep(h2:first-child),.instruction-markdown :deep(h3:first-child) { margin-top:0; }.instruction-markdown :deep(p) { margin:0 0 17px; text-wrap:pretty; }.instruction-markdown :deep(strong) { color:#173e27; font-weight:750; }.instruction-markdown :deep(ol),.instruction-markdown :deep(ul) { margin:10px 0 20px; padding:14px 22px 14px 42px; border-left:3px solid #a8d4a9; background:#f4faf5; }.instruction-markdown :deep(li) { margin:5px 0; padding-left:4px; }.instruction-markdown :deep(code) { padding:2px 6px; border-radius:4px; background:#e8f3eb; color:#176b2a; font-size:.9em; }.instruction-markdown :deep(pre) { clear:both; overflow-x:auto; margin:18px 0; padding:16px; border-radius:7px; background:#172126; color:#fff; }.instruction-markdown :deep(img) { float:right; display:block; width:min(42%, 360px); height:auto; max-height:240px; margin:4px 0 22px 30px; border:1px solid #cfe0d3; border-radius:8px; box-shadow:0 5px 14px rgb(35 67 48 / 10%); object-fit:cover; object-position:top; }.instruction-markdown :deep(img + img) { clear:right; }.instruction-markdown :deep(a) { color:#2274a5; text-decoration:underline; text-underline-offset:2px; }
+.instruction-markdown :deep(h1) { margin:0 0 22px; color:#172126; font-size:32px; line-height:1.2; }.instruction-markdown :deep(h2) { margin:30px 0 10px; padding-bottom:6px; border-bottom:1px solid #dce9df; color:#1e6d35; font-size:21px; line-height:1.3; }.instruction-markdown :deep(h3) { margin:24px 0 8px; color:#26547c; font-size:17px; }.instruction-markdown :deep(h2:first-child),.instruction-markdown :deep(h3:first-child) { margin-top:0; }.instruction-markdown :deep(p) { margin:0 0 17px; text-wrap:pretty; }.instruction-markdown :deep(strong) { color:#173e27; font-weight:750; }.instruction-markdown :deep(ol),.instruction-markdown :deep(ul) { margin:10px 0 20px; padding:14px 22px 14px 42px; border-left:3px solid #a8d4a9; background:#f4faf5; }.instruction-markdown :deep(li) { margin:5px 0; padding-left:4px; }.instruction-markdown :deep(code) { padding:2px 6px; border-radius:4px; background:#e8f3eb; color:#176b2a; font-size:.9em; }.instruction-markdown :deep(pre) { clear:both; overflow-x:auto; margin:18px 0; padding:16px; border-radius:7px; background:#172126; color:#fff; }.instruction-markdown :deep(img) { float:right; display:block; width:min(55%, 520px); height:auto; max-height:360px; margin:4px 0 22px 30px; border:1px solid #cfe0d3; border-radius:8px; box-shadow:0 5px 14px rgb(35 67 48 / 10%); object-fit:cover; object-position:top; cursor:zoom-in; }.instruction-markdown :deep(img + img) { clear:right; }.instruction-markdown :deep(a) { color:#2274a5; text-decoration:underline; text-underline-offset:2px; }
+.image-modal { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:32px; background:rgb(12 24 33 / 78%); cursor:zoom-out; }.image-modal img { max-width:92vw; max-height:92vh; width:auto; height:auto; border-radius:8px; background:#fff; box-shadow:0 16px 48px rgb(0 0 0 / 35%); cursor:default; }.image-modal-close { position:absolute; top:18px; right:24px; width:42px; height:42px; border:0; border-radius:50%; background:#fff; color:#172126; font-size:30px; line-height:1; cursor:pointer; }
 .instruction-video { display:block; width:min(100%, 1000px); max-height:75vh; border-radius:10px; background:#111; }
 .instructions-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; align-items:start; gap:24px; }
 .instructions-list { min-width:0; }
