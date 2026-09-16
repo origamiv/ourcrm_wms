@@ -211,24 +211,30 @@ function openInstructions() {
 .instructions-link {
     display: inline-flex;
     flex: 0 0 auto;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    min-height: 42px;
+    justify-content: center;
+    min-width: 63px;
+    min-height: 61px;
     margin-left: auto;
-    padding: 0 16px;
-    border: 1px solid #a8d4a9;
-    border-radius: 8px;
+    padding: 6px;
+    gap: 6px;
+    border: 4px solid #a8d4a9;
+    border-radius: 10px;
     background: #e1f3e7;
-    color: #26547c;
+    color: #0c1821;
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.3;
+    white-space: nowrap;
     cursor: pointer;
 }
 .instructions-link:hover {
     background: #cdebd7;
-    color: #1e892f;
 }
 .instructions-link img {
+    width: 20px;
+    height: 20px;
     object-fit: contain;
     filter: brightness(0) saturate(100%) invert(38%) sepia(69%) saturate(636%)
         hue-rotate(79deg) brightness(94%) contrast(91%);
@@ -327,8 +333,11 @@ function openInstructions() {
         gap: 8px;
     }
     .instructions-link {
-        gap: 0;
-        padding: 0 9px;
+        min-width: 50px;
+        min-height: 54px;
+        gap: 4px;
+        border-width: 3px;
+        font-size: 10px;
     }
     .instructions-link span {
         display: none;
