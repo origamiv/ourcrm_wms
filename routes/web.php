@@ -19,7 +19,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/main/worktime', [App\Http\Controllers\WorktimeController::class, 'page']);
     Route::get('/{section}/help', fn (string $section) => Inertia::render('Instructions'))
         ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance']);
-    Route::get('/{section}/help/{id}', fn (string $section, string $id) => Inertia::render('InstructionView', ['instructionId' => $id, 'section' => $section]))
+    Route::get('/{section}/help/{id}', fn (string $section, string $id) => Inertia::render('Instructions', ['instructionId' => $id, 'sectionKey' => $section]))
         ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance'])
         ->whereNumber('id');
     Route::get('/instructions', fn () => Inertia::render('Instructions'));
