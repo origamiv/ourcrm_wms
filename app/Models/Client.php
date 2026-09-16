@@ -10,5 +10,5 @@ final class Client extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['status' => 'integer'];
+    protected $casts = ['status' => 'integer', 'src' => 'array'];
 }

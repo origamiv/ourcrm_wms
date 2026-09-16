@@ -29,6 +29,9 @@ final class ImportRunGroupJob implements ShouldQueue
         ['task_goods'],
         ['acceptances'],
         ['cell_goods'],
+        ['order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'],
+        ['orders'],
+        ['order_goods', 'order_histories', 'shipments'],
     ];
 
     public int $tries = 2;

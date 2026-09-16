@@ -22,11 +22,11 @@ const openedImage = ref("");
 const isAdminPage = computed(() => page.url.startsWith("/main/instructions"));
 const section = computed(() => {
     const pathSection = page.url.split("?")[0].split("/")[1] || "";
-    if (["main", "clients", "goods", "integration", "fulfillment", "maintenance"].includes(pathSection) && page.url.split("?")[0].split("/")[2] === "help") return pathSection;
+    if (["main", "clients", "goods", "integration", "fulfillment", "maintenance", "logistics"].includes(pathSection) && page.url.split("?")[0].split("/")[2] === "help") return pathSection;
     return new URLSearchParams(page.url.split("?")[1] || "").get("section") || "";
 });
 const form = ref({ name: "", shortname: "", section_key: "main", sort_order: "0", status: "1", file: null as File | null });
-const sections = [{ key: "main", name: "Администрирование" }, { key: "clients", name: "Клиенты" }, { key: "goods", name: "Товары" }, { key: "integration", name: "Интеграции" }, { key: "fulfillment", name: "Фулфилмент" }, { key: "maintenance", name: "Обслуживание" }];
+const sections = [{ key: "main", name: "Администрирование" }, { key: "clients", name: "Клиенты" }, { key: "goods", name: "Товары" }, { key: "integration", name: "Интеграции" }, { key: "fulfillment", name: "Фулфилмент" }, { key: "maintenance", name: "Обслуживание" }, { key: "logistics", name: "Логистика" }];
 const types: Record<string, string> = { pdf: "PDF", markdown: "Markdown", html: "HTML", video: "Видео" };
 const isViewing = computed(() => Boolean(props.instructionId));
 const renderedMarkdown = computed(() => DOMPurify.sanitize(marked.parse(selectedContent.value) as string, { ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|#|\/))/i }));

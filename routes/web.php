@@ -18,9 +18,9 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::post('/web/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);
     Route::get('/main/worktime', [App\Http\Controllers\WorktimeController::class, 'page']);
     Route::get('/{section}/help', fn (string $section) => Inertia::render('Instructions'))
-        ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance']);
+        ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance', 'logistics']);
     Route::get('/{section}/help/{id}', fn (string $section, string $id) => Inertia::render('Instructions', ['instructionId' => $id, 'sectionKey' => $section]))
-        ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance'])
+        ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance', 'logistics'])
         ->whereNumber('id');
     Route::get('/instructions', fn () => Inertia::render('Instructions'));
     Route::get('/instructions/{id}', fn (string $id) => Inertia::render('InstructionView', ['instructionId' => $id]))->whereNumber('id');
@@ -37,6 +37,9 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::put('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'update'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::delete('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'destroy'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::post('/web/fulfillment/{catalog}', [App\Http\Controllers\FulfillmentCatalogController::class, 'store'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'kind_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'task_stages', 'priorities']);
+        Route::post('/web/logistics/{catalog}', [App\Http\Controllers\FulfillmentCatalogController::class, 'store'])->whereIn('catalog', ['orders', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses']);
+        Route::put('/web/logistics/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'update'])->whereIn('catalog', ['orders', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'])->whereNumber('id');
+        Route::delete('/web/logistics/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'destroy'])->whereIn('catalog', ['orders', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'])->whereNumber('id');
         Route::put('/web/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'update'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'kind_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'task_stages', 'priorities'])->whereNumber('id');
         Route::delete('/web/fulfillment/{catalog}/{id}', [App\Http\Controllers\FulfillmentCatalogController::class, 'destroy'])->whereIn('catalog', ['warehouses', 'marketplaces', 'delivery_services', 'type_warehouses', 'kind_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'task_stages', 'priorities'])->whereNumber('id');
         Route::post('/web/fulfillment/tasks', [App\Http\Controllers\TaskController::class, 'store']);
@@ -84,7 +87,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
             })->name($section);
         }
         Route::get('/{left}/{top}/{id?}/{action?}', App\Http\Controllers\SectionPageController::class)
-            ->whereIn('left', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance'])->whereNumber('id')
+            ->whereIn('left', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance', 'logistics'])->whereNumber('id')
             ->whereIn('action', ['view', 'edit', 'create', 'delete', 'password']);
 
         Route::post('/web/clients', [App\Http\Controllers\ClientController::class, 'store']);

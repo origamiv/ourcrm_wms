@@ -18,7 +18,7 @@ let anchor: HTMLElement | null = null;
 const scrollStorageKey = computed(() => `ribbon-tabs-scroll:${props.label}`);
 const instructionSection = computed(() => {
     const section = page.url.split("/")[1] || "";
-    return ["main", "clients", "goods", "integration", "fulfillment", "maintenance"].includes(section) && !page.url.startsWith("/main/instructions")
+    return ["main", "clients", "goods", "integration", "fulfillment", "maintenance", "logistics"].includes(section) && !page.url.startsWith("/main/instructions")
         ? section
         : "";
 });

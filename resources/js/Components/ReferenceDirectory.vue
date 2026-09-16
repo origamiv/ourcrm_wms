@@ -15,6 +15,7 @@ import GoodsTabs from "./GoodsTabs.vue";
 import AdminTabs from "./AdminTabs.vue";
 import DataTransferMenu from "./DataTransferMenu.vue";
 import ClientTabs from "./ClientTabs.vue";
+import LogisticsTabs from "./LogisticsTabs.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -214,6 +215,7 @@ let detailRequest = 0;
 const isFulfillment = ["warehouses", "type_warehouses", "kind_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "type_services", "services_ff", "tasks", "task_types", "task_statuses", "task_stages", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
+const isLogistics = ["orders", "order_statuses", "order_sources", "order_cancel_statuses", "logistic_companies", "shipment_statuses"].includes(props.entity);
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz
@@ -243,6 +245,8 @@ const basePath = isIntegration
     ? `/integration/${props.entity.replace("integration_", "")}`
     : isFulfillment
       ? `/fulfillment/${props.entity}`
+    : isLogistics
+      ? `/logistics/${props.entity}`
     : isGoodsSection
       ? `/goods/${props.entity}`
       : isClientSection
@@ -911,6 +915,8 @@ useCardRoute<ReferenceRow>({
                         ? "Интеграции"
                         : isFulfillment
                         ? "Фулфилмент › Справочники"
+                        : isLogistics
+                          ? (props.entity === "orders" ? "Логистика" : "Логистика › Справочники")
                         : isGoodsSection
                           ? "Товары"
                           : isClientSection
@@ -921,7 +927,7 @@ useCardRoute<ReferenceRow>({
             </div>
             <IntegrationTabs v-if="isIntegration" /><FulfillmentTabs
                 v-else-if="isFulfillment"
-            /><GoodsTabs
+            /><LogisticsTabs v-else-if="isLogistics" /><GoodsTabs
                 v-else-if="isGoodsSection"
             /><ClientTabs v-else-if="isClientSection" /><AdminTabs v-else />
             <p v-if="clientScope || warehouseScope" class="notice">

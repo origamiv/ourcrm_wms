@@ -51,7 +51,12 @@ export interface ReferenceField {
         | "task_types"
         | "task_statuses"
         | "task_stages"
-        | "priorities";
+        | "priorities"
+        | "order_statuses"
+        | "order_sources"
+        | "order_cancel_statuses"
+        | "logistic_companies"
+        | "shipment_statuses";
 }
 const assets: ReferenceField[] = [
     { key: "path", label: "Путь" },
@@ -67,6 +72,26 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    orders: {
+        title: "Заказы",
+        fields: [
+            { key: "code", label: "Внешний код" }, { key: "number", label: "Номер" },
+            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients" },
+            { key: "warehouse_id", label: "Склад", kind: "lookup", lookup: "warehouses" },
+            { key: "order_status_id", label: "Статус заказа", kind: "lookup", lookup: "order_statuses" },
+            { key: "order_source_id", label: "Источник", kind: "lookup", lookup: "order_sources" },
+            { key: "delivery_service_id", label: "Служба доставки", kind: "lookup", lookup: "delivery_services" },
+            { key: "delivery_track", label: "Трек-номер" }, { key: "delivery_date", label: "Дата доставки", kind: "date" },
+            { key: "created_date", label: "Дата создания", kind: "datetime" }, { key: "goods_total_price", label: "Сумма", kind: "money" },
+            { key: "goods_count", label: "Количество", kind: "number" }, { key: "comment_partner", label: "Комментарий клиента", kind: "textarea", detail: true },
+            { key: "comment_internal", label: "Внутренний комментарий", kind: "textarea", detail: true }, { key: "src", label: "Источник", kind: "json", detail: true },
+        ] as ReferenceField[],
+    },
+    order_statuses: { title: "Статусы заказов", fields: [{ key: "shortname", label: "Краткое название" }, { key: "code", label: "Внешний код" }] as ReferenceField[] },
+    order_sources: { title: "Источники заказов", fields: [{ key: "shortname", label: "Краткое название" }, { key: "code", label: "Внешний код" }] as ReferenceField[] },
+    order_cancel_statuses: { title: "Статусы отмены заказов", fields: [{ key: "shortname", label: "Краткое название" }, { key: "code", label: "Внешний код" }] as ReferenceField[] },
+    logistic_companies: { title: "Логистические компании", fields: [{ key: "shortname", label: "Краткое название" }, { key: "code", label: "Внешний код" }] as ReferenceField[] },
+    shipment_statuses: { title: "Статусы отправлений", fields: [{ key: "shortname", label: "Краткое название" }, { key: "code", label: "Внешний код" }] as ReferenceField[] },
     integration_webhooks: {
         title: "Вебхуки",
         fields: [

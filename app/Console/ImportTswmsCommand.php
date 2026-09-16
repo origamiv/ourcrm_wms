@@ -72,7 +72,7 @@ final class ImportTswmsCommand extends Command
                 'name' => $only === [] ? 'Полный импорт' : implode(', ', $only),
                 'source_client_id' => (int) ($this->option('tswms-client-id') ?: 0) ?: null,
                 'status' => 'queued',
-                'total_stages' => $only === [] ? 13 : count($only),
+                'total_stages' => $only === [] ? count(ImportRun::STAGE_NAMES) : count($only),
                 'total_chunks' => 0,
                 'options' => [
                     'only' => $only,
@@ -151,6 +151,15 @@ final class ImportTswmsCommand extends Command
         $this->runStep('task_goods', fn () => $this->importTaskGoods(), $only);
         $this->runStep('acceptances', fn () => $this->importAcceptances(), $only);
         $this->runStep('cell_goods', fn () => $this->importCellGoods(), $only);
+        $this->runStep('order_statuses', fn () => $this->importOrderReference('tswms-orders-status', 'wms.order_statuses'), $only);
+        $this->runStep('order_sources', fn () => $this->importOrderReference('tswms-orders-source', 'wms.order_sources'), $only);
+        $this->runStep('order_cancel_statuses', fn () => $this->importOrderReference('directories_order_cancel_statuses', 'wms.order_cancel_statuses'), $only);
+        $this->runStep('logistic_companies', fn () => $this->importOrderReference('logistic_companies', 'wms.logistic_companies'), $only);
+        $this->runStep('shipment_statuses', fn () => $this->importOrderReference('tswms-shipments-statuses', 'wms.shipment_statuses'), $only);
+        $this->runStep('orders', fn () => $this->importOrders(), $only);
+        $this->runStep('order_goods', fn () => $this->importOrderGoods(), $only);
+        $this->runStep('order_histories', fn () => $this->importOrderHistories(), $only);
+        $this->runStep('shipments', fn () => $this->importShipments(), $only);
         $this->info("Импорт завершён: создано {$this->created}, обновлено {$this->updated}.");
         $this->line('IMPORT_RECORDS:'.($this->created + $this->updated));
 
@@ -258,7 +267,7 @@ final class ImportTswmsCommand extends Command
         foreach ($this->source->table('tswms-partners')->get() as $row) {
             $partnerId = (string) $row->id;
             $clientId = $this->mapped('tswms-partners', $partnerId, 'App\\Models\\Client');
-            $data = ['name' => (string) ($row->name ?? 'Партнёр #'.$row->id), 'shortname' => 'tswms_partner_'.$row->id, 'status' => (int) ($row->active ?? 1), 'tenant_id' => $this->tenant, 'updated_at' => now(), 'created_at' => now()];
+            $data = ['name' => (string) ($row->name ?? 'Партнёр #'.$row->id), 'shortname' => 'tswms_partner_'.$row->id, 'code' => $partnerId, 'status' => (int) ($row->active ?? 1), 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $partnerId, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'updated_at' => now(), 'created_at' => now()];
             if ($clientId) {
                 DB::table('clients.clients')->where('id', $clientId)->update($data);
                 $this->updated++;
@@ -467,6 +476,97 @@ final class ImportTswmsCommand extends Command
         if (! $this->source->getSchemaBuilder()->hasTable('tswms-documents')) {
             return;
         } $this->warn('Документы обнаружены; перенос строк и сторон будет добавлен после проверки структуры исходных таблиц.');
+    }
+
+    private function importOrderReference(string $sourceTable, string $targetTable): void
+    {
+        if (! $this->source->getSchemaBuilder()->hasTable($sourceTable)) return;
+        foreach ($this->source->table($sourceTable)->get() as $row) {
+            $id = (string) $row->id;
+            $name = trim((string) ($row->name ?? $row->title ?? 'Запись #'.$id));
+            $this->upsert($targetTable, [
+                'name' => $name ?: 'Запись #'.$id,
+                'shortname' => $this->latinShortname($name.'_'.$id),
+                'code' => $id,
+                'status' => (int) ($row->active ?? 1),
+                'tenant_id' => $this->tenant,
+                'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE),
+                'created_at' => now(), 'updated_at' => now(),
+            ], $sourceTable, $id, 'App\\Models\\'.match ($targetTable) {
+                'wms.order_statuses' => 'OrderStatus', 'wms.order_sources' => 'OrderSource', 'wms.order_cancel_statuses' => 'OrderCancelStatus', 'wms.logistic_companies' => 'LogisticCompany', default => 'ShipmentStatus',
+            });
+        }
+    }
+
+    private function importOrders(): void
+    {
+        if (! $this->source->getSchemaBuilder()->hasTable('tswms-orders')) return;
+        foreach ($this->source->table('tswms-orders')->orderBy('id')->get() as $row) {
+            $id = (string) $row->id;
+            $client = $this->mapped('tswms-partners', (string) ($row->{'partner-id'} ?? $row->partner_id ?? ''), 'App\\Models\\Client');
+            $warehouse = $this->mapped('warehouses', (string) ($row->warehouse_id ?? ''), 'App\\Models\\Warehouse');
+            $status = $this->localOrderReference('wms.order_statuses', 'tswms-orders-status', $row->{'status-id'} ?? null, 'App\\Models\\OrderStatus');
+            $source = $this->localOrderReference('wms.order_sources', 'tswms-orders-source', $row->{'source-id'} ?? null, 'App\\Models\\OrderSource');
+            $cancel = $this->localOrderReference('wms.order_cancel_statuses', 'directories_order_cancel_statuses', $row->cancel_status_id ?? null, 'App\\Models\\OrderCancelStatus');
+            $service = $this->localDeliveryService($row->delivery_id ?? null);
+            $integration = $this->mapped('tswms-integrations', (string) ($row->{'integration-id'} ?? $row->integration_id ?? ''), 'App\\Models\\IntegrationWebhook');
+            $this->upsert('wms.orders', [
+                'code' => $id, 'number' => $row->number ?? null, 'client_id' => $client, 'warehouse_id' => $warehouse,
+                'delivery_service_id' => $service, 'order_status_id' => $status, 'order_source_id' => $source, 'order_cancel_status_id' => $cancel, 'integration_id' => $integration,
+                'delivery_track' => $row->{'delivery-track'} ?? $row->delivery_track ?? null, 'delivery_date' => $row->{'delivery-date'} ?? $row->delivery_date ?? null, 'created_date' => $row->{'created-date'} ?? $row->created_date ?? null,
+                'currency' => $row->currency ?? null, 'goods_total_price' => $row->{'goods-total-price'} ?? $row->goods_total_price ?? null, 'goods_count' => $row->{'goods-count'} ?? $row->goods_count ?? null,
+                'comment_partner' => $row->{'comment-partner'} ?? $row->comment_partner ?? null, 'comment_internal' => $row->{'comment-internal'} ?? $row->comment_internal ?? null, 'custom' => json_encode($row->custom ?? null, JSON_UNESCAPED_UNICODE),
+                'need_imei' => (bool) ($row->{'need-imei'} ?? $row->need_imei ?? false), 'need_uin' => (bool) ($row->{'need-uin'} ?? $row->need_uin ?? false), 'need_gtin' => (bool) ($row->{'need-gtin'} ?? $row->need_gtin ?? false), 'need_sgtin' => (bool) ($row->{'need-sgtin'} ?? $row->need_sgtin ?? false), 'need_expiration' => (bool) ($row->need_expiration ?? false), 'need_gtd' => (bool) ($row->{'need-gtd'} ?? false), 'is_b2b' => (bool) ($row->{'is-b2b'} ?? false), 'is_crossborder' => (bool) ($row->is_crossborder ?? false), 'wb_supply_id' => $row->{'wb-supply-id'} ?? null,
+                'crm_party_id' => $row->crm_party_id ?? null, 'crm_party_address_id' => $row->crm_party_address_id ?? null, 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now(),
+            ], 'tswms-orders', $id, 'App\\Models\\Order');
+        }
+    }
+
+    private function importOrderGoods(): void
+    {
+        if (! $this->source->getSchemaBuilder()->hasTable('tswms-orders-goods')) return;
+        foreach ($this->source->table('tswms-orders-goods')->orderBy('id')->get() as $row) {
+            $order = $this->mapped('tswms-orders', (string) ($row->{'order-id'} ?? $row->order_id ?? ''), 'App\\Models\\Order');
+            if (! $order) continue;
+            $good = $this->mapped('tswms-goods', (string) ($row->{'good-id'} ?? $row->good_id ?? ''), 'App\\Models\\Good');
+            $id = (string) $row->id;
+            $this->upsert('wms.order_goods', ['order_id' => $order, 'good_id' => $good, 'code' => $id, 'count' => (int) ($row->count ?? 0), 'price' => $row->price ?? null, 'barcode_from_integration' => $row->{'barcode-from-integration'} ?? null, 'need_marking' => (bool) ($row->{'need-marking'} ?? false), 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now()], 'tswms-orders-goods', $id, 'App\\Models\\OrderGood');
+        }
+    }
+
+    private function importOrderHistories(): void
+    {
+        if (! $this->source->getSchemaBuilder()->hasTable('tswms-orders-history')) return;
+        foreach ($this->source->table('tswms-orders-history')->orderBy('id')->get() as $row) {
+            $order = $this->mapped('tswms-orders', (string) ($row->{'order-id'} ?? $row->order_id ?? ''), 'App\\Models\\Order'); if (! $order) continue;
+            $id = (string) $row->id;
+            $this->upsert('wms.order_histories', ['order_id' => $order, 'code' => $id, 'action' => $row->action ?? null, 'good_code' => $row->{'good-id'} ?? null, 'value_old' => $row->{'value-old'} ?? null, 'value_new' => $row->{'value-new'} ?? null, 'event_date' => $row->date ?? null, 'user_id' => $this->mappedUser($row->{'user-id'} ?? null), 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now()], 'tswms-orders-history', $id, 'App\\Models\\OrderHistory');
+        }
+    }
+
+    private function importShipments(): void
+    {
+        if (! $this->source->getSchemaBuilder()->hasTable('tswms-shipments')) return;
+        foreach ($this->source->table('tswms-shipments')->orderBy('id')->get() as $row) {
+            $id = (string) $row->id;
+            $client = $this->mapped('tswms-partners', (string) ($row->{'partner-id'} ?? $row->partner_id ?? ''), 'App\\Models\\Client');
+            $warehouse = $this->mapped('warehouses', (string) ($row->warehouse_id ?? ''), 'App\\Models\\Warehouse');
+            $status = $this->localOrderReference('wms.shipment_statuses', 'tswms-shipments-statuses', $row->{'status-id'} ?? $row->status_id ?? null, 'App\\Models\\ShipmentStatus');
+            $order = $row->order_id ? $this->mapped('tswms-orders', (string) $row->order_id, 'App\\Models\\Order') : null;
+            $this->upsert('wms.shipments', ['code' => $id, 'order_id' => $order, 'client_id' => $client, 'warehouse_id' => $warehouse, 'shipment_status_id' => $status, 'created_date' => $row->{'date-created'} ?? null, 'checked_at' => $row->{'date-checked'} ?? null, 'sent_at' => $row->{'date-send'} ?? null, 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now()], 'tswms-shipments', $id, 'App\\Models\\Shipment');
+        }
+    }
+
+    private function localOrderReference(string $targetTable, string $sourceTable, mixed $sourceId, string $entity): ?int
+    {
+        if ($sourceId === null || $sourceId === '') return null;
+        return ($this->mapped($sourceTable, (string) $sourceId, $entity) ?: DB::table($targetTable)->where('tenant_id', $this->tenant)->where('code', (string) $sourceId)->value('id')) ? (int) ($this->mapped($sourceTable, (string) $sourceId, $entity) ?: DB::table($targetTable)->where('tenant_id', $this->tenant)->where('code', (string) $sourceId)->value('id')) : null;
+    }
+
+    private function localDeliveryService(mixed $sourceId): ?int
+    {
+        if ($sourceId === null || $sourceId === '') return null;
+        return DB::table('wms.delivery_services')->where('tenant_id', $this->tenant)->where('code', (string) $sourceId)->value('id') ?: DB::table('wms.delivery_services')->where('tenant_id', $this->tenant)->where('shortname', 'tswms_service_'.$sourceId)->value('id');
     }
 
     private function importTaskStages(): void

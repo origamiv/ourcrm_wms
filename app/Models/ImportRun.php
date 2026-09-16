@@ -22,6 +22,15 @@ final class ImportRun extends BaseModel
         'task_goods' => 'Товары задач',
         'acceptances' => 'Приемки',
         'cell_goods' => 'Размещения',
+        'order_statuses' => 'Статусы заказов',
+        'order_sources' => 'Источники заказов',
+        'order_cancel_statuses' => 'Статусы отмены заказов',
+        'logistic_companies' => 'Логистические компании',
+        'shipment_statuses' => 'Статусы отправлений',
+        'orders' => 'Заказы',
+        'order_goods' => 'Позиции заказов',
+        'order_histories' => 'История заказов',
+        'shipments' => 'Отправления',
     ];
 
     protected $table = 'wms.import_runs';

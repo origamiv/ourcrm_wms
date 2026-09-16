@@ -25,7 +25,12 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                     'type_storage' => 'pgsql.wms.type_storage',
                     'kind_warehouses' => 'pgsql.wms.kind_warehouses',
                     'type_services' => 'pgsql.wms.type_services',
-                    'services_ff' => 'pgsql.wms.services_ff',
+                'services_ff' => 'pgsql.wms.services_ff',
+                    'order_statuses' => 'pgsql.wms.order_statuses',
+                    'order_sources' => 'pgsql.wms.order_sources',
+                    'order_cancel_statuses' => 'pgsql.wms.order_cancel_statuses',
+                    'logistic_companies' => 'pgsql.wms.logistic_companies',
+                    'shipment_statuses' => 'pgsql.wms.shipment_statuses',
                     default => 'pgsql.wms.type_warehouses',
                 }, 'shortname')
                     ->ignore($this->route('id'))
@@ -109,6 +114,15 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'type_service_ff' => ['nullable', 'integer', 'min:1'],
                 'is_visible' => ['nullable', 'integer', 'in:0,1'],
                 'tenant_id' => ['prohibited'],
+            ];
+        }
+        if (in_array($this->route('catalog'), ['order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'], true)) {
+            $rules['code'] = ['nullable', 'string', 'max:255'];
+        }
+        if ($this->route('catalog') === 'orders') {
+            $rules += [
+                'code' => ['required', 'string', 'max:255'], 'number' => ['nullable', 'string', 'max:64'], 'client_id' => ['nullable', 'integer', 'min:1'], 'warehouse_id' => ['nullable', 'integer', 'min:1'],
+                'delivery_service_id' => ['nullable', 'integer', 'min:1'], 'order_status_id' => ['nullable', 'integer', 'min:1'], 'order_source_id' => ['nullable', 'integer', 'min:1'], 'order_cancel_status_id' => ['nullable', 'integer', 'min:1'], 'delivery_track' => ['nullable', 'string', 'max:128'], 'delivery_date' => ['nullable', 'date'], 'created_date' => ['nullable', 'date'], 'goods_total_price' => ['nullable', 'numeric'], 'goods_count' => ['nullable', 'integer', 'min:0'], 'comment_partner' => ['nullable', 'string'], 'comment_internal' => ['nullable', 'string'], 'custom' => ['nullable', 'array'], 'src' => ['nullable', 'array'],
             ];
         }
 
