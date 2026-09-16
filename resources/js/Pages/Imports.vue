@@ -73,7 +73,6 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
         <MaintenanceTabs />
         <div class="page-heading">
             <div><h1>Импорты</h1><p class="muted">Запуски импорта данных и состояние обработки очередей</p></div>
-            <button type="button" class="secondary" @click="load" :disabled="loading">Обновить</button>
         </div>
         <p v-if="error" class="notice error" role="alert">{{ error }}</p>
         <div class="table-scroll imports-table-wrap">
@@ -130,7 +129,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 </template>
 
 <style scoped>
-.imports-page { min-width: 0; }
+.imports-page { min-width: 0; min-height: 0; overflow-y: auto; }
 .imports-table-wrap { overflow-x: auto; }
 .imports-table { width: 100%; min-width: 980px; border-collapse: collapse; }
 .imports-table th, .imports-table td { padding: 12px 10px; text-align: left; vertical-align: middle; }
