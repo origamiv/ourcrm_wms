@@ -48,6 +48,7 @@ final class TswmsImportTaskGoodsCoordinatorJob implements ShouldQueue
             $jobs[] = new TswmsImportTaskGoodsChunkJob($this->importId, $offset, $this->limit);
         }
         if ($jobs === []) {
+            $import->increment('completed_stages');
             TswmsImportGroupJob::dispatch($this->importId, $this->nextGroup)->onConnection('redis')->onQueue('tswms-import');
 
             return;
@@ -60,6 +61,7 @@ final class TswmsImportTaskGoodsCoordinatorJob implements ShouldQueue
             ->onConnection('redis')
             ->onQueue('tswms-import')
             ->then(function (Batch $batch) use ($importId, $nextGroup): void {
+                TswmsImport::query()->whereKey($importId)->increment('completed_stages');
                 TswmsImportGroupJob::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('tswms-import');
             })
             ->catch(function (Batch $batch, Throwable $exception) use ($importId): void {
