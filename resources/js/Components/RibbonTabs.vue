@@ -119,7 +119,7 @@ function open(tab: RibbonTab) {
         });
 }
 function openInstructions() {
-    if (instructionSection.value) router.visit(`/instructions?section=${instructionSection.value}`);
+    if (instructionSection.value) router.visit(`/${instructionSection.value}/help`);
 }
 </script>
 <template>
@@ -204,9 +204,13 @@ function openInstructions() {
 .ribbon-group {
     display: flex;
     align-items: center;
+    align-self: flex-start;
     width: 100%;
     min-width: 0;
     gap: 16px;
+}
+.ribbon-group .module-tabs {
+    margin-bottom: 0;
 }
 .instructions-link {
     display: inline-flex;

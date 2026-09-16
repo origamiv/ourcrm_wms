@@ -17,6 +17,11 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::get('/web/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
     Route::post('/web/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);
     Route::get('/main/worktime', [App\Http\Controllers\WorktimeController::class, 'page']);
+    Route::get('/{section}/help', fn (string $section) => Inertia::render('Instructions'))
+        ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance']);
+    Route::get('/{section}/help/{id}', fn (string $section, string $id) => Inertia::render('InstructionView', ['instructionId' => $id, 'section' => $section]))
+        ->whereIn('section', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance'])
+        ->whereNumber('id');
     Route::get('/instructions', fn () => Inertia::render('Instructions'));
     Route::get('/instructions/{id}', fn (string $id) => Inertia::render('InstructionView', ['instructionId' => $id]))->whereNumber('id');
     Route::get('/web/instructions', [App\Http\Controllers\InstructionController::class, 'index']);

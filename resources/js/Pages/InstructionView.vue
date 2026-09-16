@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { Head, usePage } from "@inertiajs/vue3";
 import { http, HttpError } from "../lib/http";
 
-const props = defineProps<{ instructionId: string }>();
+const props = defineProps<{ instructionId: string; section?: string }>();
 const page = usePage<any>();
 const row = ref<any>(null), error = ref(""), content = ref("");
 const isText = computed(() => row.value?.content_type === "markdown");
@@ -13,7 +13,7 @@ onMounted(load);
 <template>
     <Head :title="row?.name || 'Инструкция'" />
     <section class="page-content instruction-view-page">
-        <div class="content-breadcrumb"><a href="/instructions">Инструкции</a> › {{ row?.name || "Просмотр" }}</div>
+        <div class="content-breadcrumb"><a :href="props.section ? `/${props.section}/help` : '/instructions'">Инструкции</a> › {{ row?.name || "Просмотр" }}</div>
         <div v-if="error" class="notice error">{{ error }}</div>
         <div v-else-if="!row" class="instruction-loading">Загрузка…</div>
         <template v-else><div class="instruction-view-heading"><div><h1>{{ row.name }}</h1><p>{{ row.original_filename }}</p></div><a class="secondary" :href="row.download_url">Скачать</a></div><pre v-if="row.content_type === 'markdown'" class="instruction-markdown">{{ content }}</pre><iframe v-else-if="row.content_type === 'html'" class="instruction-frame" :src="row.content_url" sandbox=""></iframe><iframe v-else-if="row.content_type === 'pdf'" class="instruction-frame" :src="row.content_url"></iframe><video v-else-if="row.content_type === 'video'" class="instruction-video" controls :src="row.content_url"></video></template>
