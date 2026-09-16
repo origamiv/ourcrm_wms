@@ -6,7 +6,7 @@ namespace App\Models;
 
 final class Instruction extends BaseModel
 {
-    public const SECTIONS = ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance'];
+    public const SECTIONS = ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance', 'logistics'];
 
     public const CONTENT_TYPES = ['pdf', 'markdown', 'html', 'video'];
 

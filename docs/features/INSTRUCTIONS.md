@@ -15,6 +15,6 @@
 файлы и существующие записи по `shortname`, не создавая дубликаты.
 
 Разделы помощи доступны по адресам `/main/help`, `/clients/help`,
-`/goods/help`, `/integration/help`, `/fulfillment/help` и
-`/maintenance/help`. Markdown отображается безопасным HTML-рендерером,
+`/goods/help`, `/integration/help`, `/fulfillment/help`,
+`/maintenance/help` и `/logistics/help`. Markdown отображается безопасным HTML-рендерером,
 включая локальные обезличенные скриншоты из `public/help-assets`.
