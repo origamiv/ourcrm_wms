@@ -85,7 +85,10 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => [
+        'web',
+        \App\Http\Middleware\EnsureWmsAccess::class,
+    ],
 
     /*
     |--------------------------------------------------------------------------
