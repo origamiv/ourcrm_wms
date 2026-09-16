@@ -14,8 +14,11 @@ interface ImportRun {
     total_chunks: number;
     processed_records: number;
     processed_chunks: number;
+    total_stages: number;
     status: string;
     current_stage: string | null;
+    current_stage_number: number | null;
+    current_stage_name: string | null;
     error_message: string | null;
 }
 
@@ -25,9 +28,10 @@ const error = ref("");
 let timer: number | undefined;
 
 function progress(row: ImportRun): number {
-    const records = row.total_records > 0 ? row.processed_records / row.total_records : 0;
-    const chunks = row.total_chunks > 0 ? row.processed_chunks / row.total_chunks : 0;
-    return Math.min(100, Math.round(Math.max(records, chunks) * 100));
+    if (row.total_chunks > 0) {
+        return Math.min(100, Math.round(row.processed_chunks / row.total_chunks * 100));
+    }
+    return row.total_records > 0 ? Math.min(100, Math.round(row.processed_records / row.total_records * 100)) : 0;
 }
 
 function statusLabel(status: string): string {
@@ -71,15 +75,17 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
         <p v-if="error" class="notice error" role="alert">{{ error }}</p>
         <div class="table-scroll imports-table-wrap">
             <table class="imports-table">
-                <thead><tr><th>#</th><th>Название импорта</th><th>Проект</th><th>Дата и время старта</th><th>Прогресс</th><th>Число записей</th><th>Число чанков</th><th>Обработано записей / чанков</th><th>Статус</th></tr></thead>
+                <thead><tr><th>#</th><th>Название импорта</th><th>Проект</th><th>Дата и время старта</th><th>Текущий этап</th><th>Число этапов</th><th>Прогресс</th><th>Число записей</th><th>Число чанков</th><th>Обработано записей / чанков</th><th>Статус</th></tr></thead>
                 <tbody>
-                    <tr v-if="loading"><td colspan="9" class="empty-cell">Загрузка…</td></tr>
-                    <tr v-else-if="rows.length === 0"><td colspan="9" class="empty-cell">Импорты ещё не запускались</td></tr>
+                    <tr v-if="loading"><td colspan="11" class="empty-cell">Загрузка…</td></tr>
+                    <tr v-else-if="rows.length === 0"><td colspan="11" class="empty-cell">Импорты ещё не запускались</td></tr>
                     <tr v-for="row in rows" :key="row.id">
                         <td data-label="#"><span class="row-id">{{ row.id }}</span></td>
                         <td data-label="Название импорта" class="wrap-cell"><strong>{{ row.name }}</strong><small v-if="row.current_stage">{{ row.current_stage }}</small></td>
                         <td data-label="Проект">{{ row.project }}</td>
                         <td data-label="Дата и время старта">{{ formatDate(row.started_at, true) }}</td>
+                        <td data-label="Текущий этап" class="wrap-cell">{{ row.current_stage_number ? row.current_stage_number + ". " + row.current_stage_name : "—" }}</td>
+                        <td data-label="Число этапов">{{ row.total_stages }}</td>
                         <td data-label="Прогресс"><div class="import-progress" :aria-label="'Прогресс: ' + progress(row) + '%'"><span class="import-progress-track"><i :style="{ width: progress(row) + '%' }"></i></span><b>{{ progress(row) }}%</b></div></td>
                         <td data-label="Число записей">{{ row.total_records }}</td>
                         <td data-label="Число чанков">{{ row.total_chunks }}</td>

@@ -11,6 +11,22 @@ use Illuminate\Http\Request;
 
 final class ImportRunController extends BaseApiController
 {
+    private const STAGES = [
+        'clients' => 'Клиенты',
+        'accounts' => 'Аккаунты',
+        'webhooks' => 'Вебхуки',
+        'goods' => 'Товары',
+        'warehouses' => 'Склады',
+        'services' => 'Сервисы',
+        'documents' => 'Документы',
+        'task_stages' => 'Этапы задач',
+        'users' => 'Пользователи',
+        'tasks' => 'Задачи',
+        'task_goods' => 'Товары задач',
+        'acceptances' => 'Приемки',
+        'cell_goods' => 'Размещения',
+    ];
+
     /** Возвращает историю запусков импортов текущего tenant с прогрессом обработки. */
     public function index(Request $request): JsonResponse
     {
@@ -30,8 +46,11 @@ final class ImportRunController extends BaseApiController
                 'total_chunks' => (int) $run->total_chunks,
                 'processed_records' => (int) $run->processed_records,
                 'processed_chunks' => (int) $run->processed_chunks,
+                'total_stages' => (int) $run->total_stages,
                 'status' => (string) $run->status,
                 'current_stage' => $run->current_stage,
+                'current_stage_number' => $run->current_stage ? array_search($run->current_stage, array_keys(self::STAGES), true) + 1 : null,
+                'current_stage_name' => $run->current_stage ? (self::STAGES[$run->current_stage] ?? $run->current_stage) : null,
                 'error_message' => $run->error_message,
             ])->values(),
             'current_page' => $runs->currentPage(),
