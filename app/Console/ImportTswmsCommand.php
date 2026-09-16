@@ -14,7 +14,7 @@ use Throwable;
 
 final class ImportTswmsCommand extends Command
 {
-    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--inline : Выполнить этап непосредственно внутри job}';
+    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
 
     protected $description = 'Импортирует данные выбранного клиента TSWMS в тенант WMS';
 
@@ -105,6 +105,14 @@ final class ImportTswmsCommand extends Command
         config(['database.connections.tswms_client' => $this->mysqlConfig($clientConfig)]);
         DB::purge('tswms_client');
         $this->source = DB::connection('tswms_client');
+        if ($this->option('count-only')) {
+            $count = $this->source->getSchemaBuilder()->hasTable('tswms-tasks-goods')
+                ? $this->source->table('tswms-tasks-goods')->count()
+                : 0;
+            $this->line('TSWMS_TASK_GOODS_COUNT:'.$count);
+
+            return self::SUCCESS;
+        }
         $only = array_filter($this->option('only'));
         $this->runStep('clients', fn () => $this->importPartners(), $only);
         $this->runStep('accounts', fn () => $this->importAccounts(), $only);
@@ -433,7 +441,13 @@ final class ImportTswmsCommand extends Command
     {
         if (! $this->source->getSchemaBuilder()->hasTable('tswms-tasks-goods')) {
             return;
-        } foreach ($this->source->table('tswms-tasks-goods')->get() as $r) {
+        }
+        $query = $this->source->table('tswms-tasks-goods')->orderBy('id');
+        $limit = max(0, (int) $this->option('task-goods-limit'));
+        if ($limit > 0) {
+            $query->offset(max(0, (int) $this->option('task-goods-offset')))->limit($limit);
+        }
+        foreach ($query->get() as $r) {
             $task = $this->mapped('tswms-tasks', (string) ($r->{'task-id'} ?? $r->task_id ?? ''), 'App\\Models\\Task');
             if (! $task) {
                 continue;

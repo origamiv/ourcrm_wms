@@ -50,6 +50,14 @@ final class TswmsImportGroupJob implements ShouldQueue
             return;
         }
 
+        if ($this->group === 5 && $stages === ['task_goods']) {
+            $import->forceFill(['current_stage' => 'task_goods'])->save();
+            TswmsImportTaskGoodsCoordinatorJob::dispatch($this->importId, $this->group + 1)
+                ->onConnection('redis')->onQueue('tswms-import');
+
+            return;
+        }
+
         $jobs = array_map(fn (string $stage): TswmsImportStageJob => new TswmsImportStageJob($this->importId, $stage), $stages);
         $import->forceFill(['current_stage' => $stages[0], 'total_jobs' => $import->total_jobs + count($jobs)])->save();
 
