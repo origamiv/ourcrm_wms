@@ -7,6 +7,8 @@ import { formatDate } from "../lib/dates";
 
 interface ImportRun {
     id: string;
+    row_type: "run" | "stage";
+    parent_id: string | null;
     name: string;
     project: string;
     started_at: string | null;
@@ -15,6 +17,7 @@ interface ImportRun {
     processed_records: number;
     processed_chunks: number;
     total_stages: number;
+    completed_stages: number;
     status: string;
     current_stage: string | null;
     current_stage_number: number | null;
@@ -28,8 +31,8 @@ const error = ref("");
 let timer: number | undefined;
 
 function progress(row: ImportRun): number {
-    if (row.total_chunks > 0) {
-        return Math.min(100, Math.round(row.processed_chunks / row.total_chunks * 100));
+    if (row.row_type === "run") {
+        return row.total_stages > 0 ? Math.min(100, Math.round(row.completed_stages / row.total_stages * 100)) : 0;
     }
     return row.total_records > 0 ? Math.min(100, Math.round(row.processed_records / row.total_records * 100)) : 0;
 }
@@ -79,9 +82,9 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                 <tbody>
                     <tr v-if="loading"><td colspan="11" class="empty-cell">Загрузка…</td></tr>
                     <tr v-else-if="rows.length === 0"><td colspan="11" class="empty-cell">Импорты ещё не запускались</td></tr>
-                    <tr v-for="row in rows" :key="row.id">
+                    <tr v-for="row in rows" :key="row.row_type + '-' + row.id" :class="{ 'stage-row': row.row_type === 'stage' }">
                         <td data-label="#"><span class="row-id">{{ row.id }}</span></td>
-                        <td data-label="Название импорта" class="wrap-cell"><strong>{{ row.name }}</strong><small v-if="row.current_stage">{{ row.current_stage }}</small></td>
+                        <td data-label="Название импорта" class="wrap-cell"><strong>{{ row.row_type === 'stage' ? '↳ ' : '' }}{{ row.name }}</strong></td>
                         <td data-label="Проект">{{ row.project }}</td>
                         <td data-label="Дата и время старта">{{ formatDate(row.started_at, true) }}</td>
                         <td data-label="Текущий этап" class="wrap-cell">{{ row.current_stage_number ? row.current_stage_number + ". " + row.current_stage_name : "—" }}</td>
@@ -105,6 +108,8 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 .imports-table th, .imports-table td { padding: 12px 10px; text-align: left; vertical-align: middle; }
 .imports-table th { white-space: nowrap; }
 .imports-table td { overflow-wrap: anywhere; }
+.stage-row td { background: #f8fbfa; }
+.stage-row td:first-child, .stage-row td:nth-child(2) { color: #667085; }
 .wrap-cell { max-width: 220px; white-space: normal; }
 .wrap-cell small, .error-detail { display: block; margin-top: 4px; color: #667085; font-size: 11px; overflow-wrap: anywhere; }
 .row-id { color: #667085; font-variant-numeric: tabular-nums; }

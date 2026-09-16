@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\ImportRun;
+use App\Models\ImportRunStage;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -39,9 +40,13 @@ final class ImportRunTaskGoodsChunkJob implements ShouldQueue
         if ($exitCode !== 0) {
             throw new RuntimeException(trim(Artisan::output()) ?: 'Не удалось импортировать chunk task_goods.');
         }
+        $stage = ImportRunStage::query()->where('import_run_id', $import->id)->where('stage_key', 'task_goods')->firstOrFail();
+        $records = min($this->limit, max(0, $stage->total_records - $this->offset));
         $import->increment('completed_jobs');
         $import->increment('processed_chunks');
-        $import->increment('processed_records', min($this->limit, max(0, $import->total_records - $this->offset)));
+        $import->increment('processed_records', $records);
+        $stage->increment('processed_records', $records);
+        $stage->increment('processed_chunks');
     }
 
     public function tags(): array

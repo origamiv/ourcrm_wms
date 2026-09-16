@@ -4,8 +4,26 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 final class ImportRun extends BaseModel
 {
+    public const STAGE_NAMES = [
+        'clients' => 'Клиенты',
+        'accounts' => 'Аккаунты',
+        'webhooks' => 'Вебхуки',
+        'goods' => 'Товары',
+        'warehouses' => 'Склады',
+        'services' => 'Сервисы',
+        'documents' => 'Документы',
+        'task_stages' => 'Этапы задач',
+        'users' => 'Пользователи',
+        'tasks' => 'Задачи',
+        'task_goods' => 'Товары задач',
+        'acceptances' => 'Приемки',
+        'cell_goods' => 'Размещения',
+    ];
+
     protected $table = 'wms.import_runs';
 
     protected $guarded = ['id'];
@@ -28,4 +46,9 @@ final class ImportRun extends BaseModel
         'processed_records' => 'integer',
         'processed_chunks' => 'integer',
     ];
+
+    public function stages(): HasMany
+    {
+        return $this->hasMany(ImportRunStage::class, 'import_run_id')->orderBy('stage_number');
+    }
 }

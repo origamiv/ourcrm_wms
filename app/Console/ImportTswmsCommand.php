@@ -6,6 +6,7 @@ namespace App\Console;
 
 use App\Jobs\ImportRunCoordinatorJob;
 use App\Models\ImportRun;
+use App\Models\ImportRunStage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PDO;
@@ -76,6 +77,16 @@ final class ImportTswmsCommand extends Command
                     'dry_run' => (bool) $this->option('dry-run'),
                 ],
             ]);
+            $stageKeys = $only !== [] ? array_values(array_intersect(array_keys(ImportRun::STAGE_NAMES), $only)) : array_keys(ImportRun::STAGE_NAMES);
+            foreach ($stageKeys as $number => $stageKey) {
+                ImportRunStage::query()->create([
+                    'import_run_id' => $import->id,
+                    'stage_number' => $number + 1,
+                    'stage_key' => $stageKey,
+                    'name' => ImportRun::STAGE_NAMES[$stageKey],
+                    'total_chunks' => $stageKey === 'task_goods' ? 0 : 1,
+                ]);
+            }
             ImportRunCoordinatorJob::dispatch($import->id)->onConnection('redis')->onQueue('imports');
             $this->components->info("Импорт TSWMS #{$import->id} поставлен в очередь imports.");
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\ImportRun;
+use App\Models\ImportRunStage;
 use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -43,9 +44,18 @@ final class ImportRunTaskGoodsCoordinatorJob implements ShouldQueue
             throw new RuntimeException(trim(Artisan::output()) ?: 'Не удалось определить количество task_goods.');
         }
         $count = (int) $match[1];
+        $stage = ImportRunStage::query()->where('import_run_id', $import->id)->where('stage_key', 'task_goods')->firstOrFail();
+        $chunks = (int) ceil($count / max(1, $this->limit));
+        $stage->forceFill([
+            'status' => $count > 0 ? 'running' : 'completed',
+            'started_at' => $stage->started_at ?: now(),
+            'total_records' => $count,
+            'total_chunks' => $chunks,
+            'finished_at' => $count > 0 ? null : now(),
+        ])->save();
         $import->forceFill([
             'total_records' => $import->total_records + $count,
-            'total_chunks' => $import->total_chunks + (int) ceil($count / max(1, $this->limit)),
+            'total_chunks' => $import->total_chunks + $chunks,
         ])->save();
         $jobs = [];
         for ($offset = 0; $offset < $count; $offset += $this->limit) {
@@ -66,9 +76,11 @@ final class ImportRunTaskGoodsCoordinatorJob implements ShouldQueue
             ->onQueue('imports')
             ->then(function (Batch $batch) use ($importId, $nextGroup): void {
                 ImportRun::query()->whereKey($importId)->increment('completed_stages');
+                ImportRunStage::query()->where('import_run_id', $importId)->where('stage_key', 'task_goods')->update(['status' => 'completed', 'finished_at' => now()]);
                 ImportRunGroupJob::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('imports');
             })
             ->catch(function (Batch $batch, Throwable $exception) use ($importId): void {
+                ImportRunStage::query()->where('import_run_id', $importId)->where('stage_key', 'task_goods')->update(['status' => 'failed', 'error_message' => $exception->getMessage(), 'finished_at' => now()]);
                 ImportRun::query()->whereKey($importId)->update([
                     'status' => 'failed',
                     'error_class' => $exception::class,

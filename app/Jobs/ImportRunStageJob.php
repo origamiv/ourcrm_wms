@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\ImportRun;
+use App\Models\ImportRunStage;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -13,6 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
+use Throwable;
 
 final class ImportRunStageJob implements ShouldQueue
 {
@@ -27,6 +29,11 @@ final class ImportRunStageJob implements ShouldQueue
     public function handle(): void
     {
         $import = ImportRun::query()->findOrFail($this->importId);
+        $stage = $import->stages()->where('stage_key', $this->stage)->firstOrFail();
+        $stage->forceFill([
+            'status' => 'running',
+            'started_at' => $stage->started_at ?: now(),
+        ])->save();
         $import->forceFill([
             'status' => 'running',
             'current_stage' => $this->stage,
@@ -60,6 +67,22 @@ final class ImportRunStageJob implements ShouldQueue
         $import->increment('processed_chunks');
         $import->increment('completed_stages');
         $import->increment('completed_jobs');
+        $stage->forceFill([
+            'status' => 'completed',
+            'total_records' => $records,
+            'processed_records' => $records,
+            'processed_chunks' => 1,
+            'total_chunks' => 1,
+            'finished_at' => now(),
+        ])->save();
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        ImportRunStage::query()
+            ->where('import_run_id', $this->importId)
+            ->where('stage_key', $this->stage)
+            ->update(['status' => 'failed', 'error_message' => $exception->getMessage(), 'finished_at' => now()]);
     }
 
     public function tags(): array

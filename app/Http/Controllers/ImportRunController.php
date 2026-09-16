@@ -6,39 +6,28 @@ namespace App\Http\Controllers;
 
 use App\Http\BaseApiController;
 use App\Models\ImportRun;
+use App\Models\ImportRunStage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ImportRunController extends BaseApiController
 {
-    private const STAGES = [
-        'clients' => 'Клиенты',
-        'accounts' => 'Аккаунты',
-        'webhooks' => 'Вебхуки',
-        'goods' => 'Товары',
-        'warehouses' => 'Склады',
-        'services' => 'Сервисы',
-        'documents' => 'Документы',
-        'task_stages' => 'Этапы задач',
-        'users' => 'Пользователи',
-        'tasks' => 'Задачи',
-        'task_goods' => 'Товары задач',
-        'acceptances' => 'Приемки',
-        'cell_goods' => 'Размещения',
-    ];
-
     /** Возвращает историю запусков импортов текущего tenant с прогрессом обработки. */
     public function index(Request $request): JsonResponse
     {
         $runs = ImportRun::query()
+            ->with('stages')
             ->visibleTo((string) $request->user()->tenant_id)
             ->orderByDesc('started_at')
             ->orderByDesc('id')
             ->paginate(50);
 
-        return response()->json([
-            'data' => collect($runs->items())->map(fn (ImportRun $run): array => [
+        $data = collect($runs->items())->flatMap(function (ImportRun $run): array {
+            $current = $run->stages->firstWhere('status', 'running') ?: $run->stages->firstWhere('stage_key', $run->current_stage);
+            $parent = [
+                'row_type' => 'run',
                 'id' => (string) $run->id,
+                'parent_id' => null,
                 'name' => $run->name ?: 'Импорт данных',
                 'project' => $run->project ?: $run->source_system,
                 'started_at' => $run->started_at?->toISOString(),
@@ -47,12 +36,38 @@ final class ImportRunController extends BaseApiController
                 'processed_records' => (int) $run->processed_records,
                 'processed_chunks' => (int) $run->processed_chunks,
                 'total_stages' => (int) $run->total_stages,
+                'completed_stages' => (int) $run->completed_stages,
                 'status' => (string) $run->status,
-                'current_stage' => $run->current_stage,
-                'current_stage_number' => $run->current_stage ? array_search($run->current_stage, array_keys(self::STAGES), true) + 1 : null,
-                'current_stage_name' => $run->current_stage ? (self::STAGES[$run->current_stage] ?? $run->current_stage) : null,
+                'current_stage' => $current?->stage_key ?: $run->current_stage,
+                'current_stage_number' => $current?->stage_number,
+                'current_stage_name' => $current?->name,
                 'error_message' => $run->error_message,
-            ])->values(),
+            ];
+            $stages = $run->stages->map(fn (ImportRunStage $stage): array => [
+                'row_type' => 'stage',
+                'id' => (string) $stage->id,
+                'parent_id' => (string) $run->id,
+                'name' => $stage->name,
+                'project' => $run->project ?: $run->source_system,
+                'started_at' => $stage->started_at?->toISOString(),
+                'total_records' => (int) $stage->total_records,
+                'total_chunks' => (int) $stage->total_chunks,
+                'processed_records' => (int) $stage->processed_records,
+                'processed_chunks' => (int) $stage->processed_chunks,
+                'total_stages' => null,
+                'completed_stages' => null,
+                'status' => (string) $stage->status,
+                'current_stage' => $stage->stage_key,
+                'current_stage_number' => (int) $stage->stage_number,
+                'current_stage_name' => $stage->name,
+                'error_message' => $stage->error_message,
+            ])->all();
+
+            return [$parent, ...$stages];
+        })->values();
+
+        return response()->json([
+            'data' => $data,
             'current_page' => $runs->currentPage(),
             'last_page' => $runs->lastPage(),
             'total' => $runs->total(),
