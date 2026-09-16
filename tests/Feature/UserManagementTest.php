@@ -34,7 +34,8 @@ it('selects a tenant without replacing the Livewire session', function () {
         ->set('email', $user->email)
         ->set('password', 'Test_password_123')
         ->call('login')
-        ->assertSet('password', '');
+        ->assertSet('password', '')
+        ->assertRedirect('/login');
 
     Livewire::test(Login::class)
         ->call('selectTenant', 'tenant_b')

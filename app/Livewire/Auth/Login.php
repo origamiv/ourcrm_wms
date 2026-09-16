@@ -18,6 +18,14 @@ final class Login extends Component
 
     public array $tenants = [];
 
+    public function mount(): void
+    {
+        $user = Auth::user();
+        if ($user && session()->has('wms_pending_tenants')) {
+            $this->tenants = $this->availableTenants($user);
+        }
+    }
+
     public function login(AuthenticationService $auth): void
     {
         $this->validate(['email' => ['required', 'email', 'max:255'], 'password' => ['required', 'string', 'max:1024']]);
@@ -30,7 +38,9 @@ final class Login extends Component
         session()->forget(['wms_tenant', 'wms_credential']);
         $this->tenants = $this->availableTenants($user);
         if (count($this->tenants) > 1) {
+            session()->regenerate();
             session()->put('wms_pending_tenants', collect($this->tenants)->pluck('id')->map(fn ($id) => (string) $id)->all());
+            $this->redirect('/login');
 
             return;
         }
