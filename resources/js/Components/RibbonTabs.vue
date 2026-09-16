@@ -344,9 +344,6 @@ function openInstructions() {
         border-width: 3px;
         font-size: 10px;
     }
-    .instructions-link span {
-        display: none;
-    }
     .module-tabs {
         border-width: 3px;
     }
