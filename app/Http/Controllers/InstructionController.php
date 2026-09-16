@@ -63,10 +63,15 @@ final class InstructionController extends BaseApiController
         return Storage::disk($row->storage_disk)->response($row->storage_path, $row->original_filename, ['Content-Type' => $row->mime_type, 'Content-Disposition' => 'inline']);
     }
 
-    public function download(Request $request, string $id)
+    public function download(Request $request, string $id, \App\Services\InstructionPdfService $pdf)
     {
         $row = Instruction::query()->visibleTo($request->user()->tenant_id)->where('status', 1)->findOrFail($id);
-        return Storage::disk($row->storage_disk)->download($row->storage_path, $row->original_filename, ['Content-Type' => $row->mime_type]);
+        return response($pdf->render($row), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="instruction_'.$row->id.'.pdf"',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     private function item(Instruction $row): array
