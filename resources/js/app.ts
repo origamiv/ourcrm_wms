@@ -66,6 +66,7 @@ import OrderSources from "./Pages/OrderSources.vue";
 import OrderCancelStatuses from "./Pages/OrderCancelStatuses.vue";
 import LogisticCompanies from "./Pages/LogisticCompanies.vue";
 import ShipmentStatuses from "./Pages/ShipmentStatuses.vue";
+import Shipments from "./Pages/Shipments.vue";
 import "./lib/http";
 
 const vuetify = createVuetify({ components: { VSelect } });
@@ -129,6 +130,7 @@ const pages: Record<string, any> = {
     OrderCancelStatuses,
     LogisticCompanies,
     ShipmentStatuses,
+    Shipments,
     Worktime,
     Imports,
     Instructions,

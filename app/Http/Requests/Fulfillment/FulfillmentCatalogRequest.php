@@ -125,6 +125,11 @@ abstract class FulfillmentCatalogRequest extends BaseRequest
                 'delivery_service_id' => ['nullable', 'integer', 'min:1'], 'order_status_id' => ['nullable', 'integer', 'min:1'], 'order_source_id' => ['nullable', 'integer', 'min:1'], 'order_cancel_status_id' => ['nullable', 'integer', 'min:1'], 'delivery_track' => ['nullable', 'string', 'max:128'], 'delivery_date' => ['nullable', 'date'], 'created_date' => ['nullable', 'date'], 'goods_total_price' => ['nullable', 'numeric'], 'goods_count' => ['nullable', 'integer', 'min:0'], 'comment_partner' => ['nullable', 'string'], 'comment_internal' => ['nullable', 'string'], 'custom' => ['nullable', 'array'], 'src' => ['nullable', 'array'],
             ];
         }
+        if ($this->route('catalog') === 'shipments') {
+            $rules += [
+                'code' => ['required', 'string', 'max:255'], 'order_id' => ['nullable', 'integer', 'min:1'], 'client_id' => ['nullable', 'integer', 'min:1'], 'warehouse_id' => ['nullable', 'integer', 'min:1'], 'shipment_status_id' => ['nullable', 'integer', 'min:1'], 'created_date' => ['nullable', 'date'], 'checked_at' => ['nullable', 'date'], 'sent_at' => ['nullable', 'date'], 'src' => ['nullable', 'array'],
+            ];
+        }
 
         return $rules;
     }

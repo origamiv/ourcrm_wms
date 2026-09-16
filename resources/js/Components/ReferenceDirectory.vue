@@ -215,7 +215,7 @@ let detailRequest = 0;
 const isFulfillment = ["warehouses", "type_warehouses", "kind_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "type_services", "services_ff", "tasks", "task_types", "task_statuses", "task_stages", "priorities", "marketplaces", "delivery_services"].includes(
     props.entity,
 );
-const isLogistics = ["orders", "order_statuses", "order_sources", "order_cancel_statuses", "logistic_companies", "shipment_statuses"].includes(props.entity);
+const isLogistics = ["orders", "shipments", "order_statuses", "order_sources", "order_cancel_statuses", "logistic_companies", "shipment_statuses"].includes(props.entity);
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz

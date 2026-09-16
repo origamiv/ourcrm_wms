@@ -2,6 +2,7 @@
 import RibbonTabs from "./RibbonTabs.vue";
 const tabs = [
     { label: "Заказы", url: "/logistics/orders", component: "Orders", icon: "goods" },
+    { label: "Отгрузки", url: "/logistics/shipments", component: "Shipments", icon: "goods" },
     { label: "Справочники", url: "/logistics/references", component: "LogisticsReferences", icon: "administration", children: [
         { label: "Статусы заказов", url: "/logistics/order_statuses", component: "OrderStatuses", icon: "goods" },
         { label: "Источники заказов", url: "/logistics/order_sources", component: "OrderSources", icon: "goods" },

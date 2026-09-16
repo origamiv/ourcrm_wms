@@ -19,7 +19,7 @@ final class SectionPageController
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'instructions' => 'Instructions', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts', 'worktime' => 'Worktime'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals', 'services' => 'ClientServices', 'accounts' => 'ClientAccounts'],
             'maintenance' => ['imports' => 'Imports'],
-            'logistics' => ['orders' => 'Orders', 'references' => 'LogisticsReferences', 'order_statuses' => 'OrderStatuses', 'order_sources' => 'OrderSources', 'order_cancel_statuses' => 'OrderCancelStatuses', 'logistic_companies' => 'LogisticCompanies', 'shipment_statuses' => 'ShipmentStatuses'],
+            'logistics' => ['orders' => 'Orders', 'shipments' => 'Shipments', 'references' => 'LogisticsReferences', 'order_statuses' => 'OrderStatuses', 'order_sources' => 'OrderSources', 'order_cancel_statuses' => 'OrderCancelStatuses', 'logistic_companies' => 'LogisticCompanies', 'shipment_statuses' => 'ShipmentStatuses'],
         ];
         $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
         if ($left === 'integration') {

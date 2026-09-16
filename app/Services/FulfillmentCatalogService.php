@@ -26,7 +26,7 @@ final class FulfillmentCatalogService
 {
     public function save(User $actor, string $catalog, array $data, ?string $id = null, bool $delete = false): array
     {
-        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'kind_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'task_stages', 'priorities', 'orders', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'], true), 404);
+        abort_unless(in_array($catalog, ['marketplaces', 'delivery_services', 'warehouses', 'type_warehouses', 'kind_warehouses', 'type_storage', 'zones', 'cells', 'cell_goods', 'acceptances', 'type_acceptance', 'type_services', 'services_ff', 'task_types', 'task_statuses', 'task_stages', 'priorities', 'orders', 'shipments', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'], true), 404);
 
         return DB::transaction(function () use ($actor, $catalog, $data, $id, $delete) {
             $tenant = $actor->tenant_id;
@@ -49,6 +49,7 @@ final class FulfillmentCatalogService
                 'task_stages' => \App\Models\TaskStage::class,
                 'priorities' => \App\Models\Priority::class,
                 'orders' => \App\Models\Order::class,
+                'shipments' => \App\Models\Shipment::class,
                 'order_statuses' => \App\Models\OrderStatus::class,
                 'order_sources' => \App\Models\OrderSource::class,
                 'order_cancel_statuses' => \App\Models\OrderCancelStatus::class,
