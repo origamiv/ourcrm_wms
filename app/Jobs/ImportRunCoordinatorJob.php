@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\TswmsImport;
+use App\Models\ImportRun;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-final class TswmsImportCoordinatorJob implements ShouldQueue
+final class ImportRunCoordinatorJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -21,9 +21,9 @@ final class TswmsImportCoordinatorJob implements ShouldQueue
 
     public function handle(): void
     {
-        $import = TswmsImport::query()->findOrFail($this->importId);
+        $import = ImportRun::query()->findOrFail($this->importId);
         $import->forceFill(['status' => 'running', 'started_at' => now()])->save();
-        TswmsImportGroupJob::dispatch($this->importId, 0)->onConnection('redis')->onQueue('tswms-import');
+        ImportRunGroupJob::dispatch($this->importId, 0)->onConnection('redis')->onQueue('imports');
     }
 
     public function tags(): array

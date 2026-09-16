@@ -73,7 +73,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
             })->name($section);
         }
         Route::get('/{left}/{top}/{id?}/{action?}', App\Http\Controllers\SectionPageController::class)
-            ->whereIn('left', ['main', 'clients', 'goods', 'integration', 'fulfillment'])->whereNumber('id')
+            ->whereIn('left', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance'])->whereNumber('id')
             ->whereIn('action', ['view', 'edit', 'create', 'delete', 'password']);
 
         Route::post('/web/clients', [App\Http\Controllers\ClientController::class, 'store']);
@@ -91,6 +91,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::post('/web/{catalog}', [App\Http\Controllers\AccessCatalogController::class, 'store'])->whereIn('catalog', ['roles', 'permissions']);
         Route::put('/web/{catalog}/{id}', [App\Http\Controllers\AccessCatalogController::class, 'update'])->whereIn('catalog', ['roles', 'permissions'])->whereNumber('id');
         Route::get('/web/users/sync', [WmsUserController::class, 'index']);
+        Route::get('/web/imports', [App\Http\Controllers\ImportRunController::class, 'index']);
         Route::get('/web/users/{id}', [WmsUserController::class, 'show'])->whereNumber('id');
         Route::post('/web/users', [WmsUserController::class, 'store']);
         Route::put('/web/users/{id}', [WmsUserController::class, 'update'])->whereNumber('id');

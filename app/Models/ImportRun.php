@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-final class TswmsImport extends BaseModel
+final class ImportRun extends BaseModel
 {
-    protected $table = 'wms.tswms_imports';
+    protected $table = 'wms.import_runs';
 
     protected $guarded = ['id'];
 
@@ -23,5 +23,9 @@ final class TswmsImport extends BaseModel
         'created_count' => 'integer',
         'updated_count' => 'integer',
         'skipped_count' => 'integer',
+        'total_records' => 'integer',
+        'total_chunks' => 'integer',
+        'processed_records' => 'integer',
+        'processed_chunks' => 'integer',
     ];
 }

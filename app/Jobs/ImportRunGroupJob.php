@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\TswmsImport;
+use App\Models\ImportRun;
 use Illuminate\Bus\Batch;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Bus;
 use Throwable;
 
-final class TswmsImportGroupJob implements ShouldQueue
+final class ImportRunGroupJob implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -38,7 +38,7 @@ final class TswmsImportGroupJob implements ShouldQueue
 
     public function handle(): void
     {
-        $import = TswmsImport::query()->findOrFail($this->importId);
+        $import = ImportRun::query()->findOrFail($this->importId);
         $stages = self::GROUPS[$this->group] ?? [];
         $selected = $import->options['only'] ?? [];
         if ($selected !== []) {
@@ -52,34 +52,38 @@ final class TswmsImportGroupJob implements ShouldQueue
 
         if ($this->group === 5 && $stages === ['task_goods']) {
             $import->forceFill(['current_stage' => 'task_goods'])->save();
-            TswmsImportTaskGoodsCoordinatorJob::dispatch($this->importId, $this->group + 1)
-                ->onConnection('redis')->onQueue('tswms-import');
+            ImportRunTaskGoodsCoordinatorJob::dispatch($this->importId, $this->group + 1)
+                ->onConnection('redis')->onQueue('imports');
 
             return;
         }
 
-        $jobs = array_map(fn (string $stage): TswmsImportStageJob => new TswmsImportStageJob($this->importId, $stage), $stages);
-        $import->forceFill(['current_stage' => $stages[0], 'total_jobs' => $import->total_jobs + count($jobs)])->save();
+        $jobs = array_map(fn (string $stage): ImportRunStageJob => new ImportRunStageJob($this->importId, $stage), $stages);
+        $import->forceFill([
+            'current_stage' => $stages[0],
+            'total_jobs' => $import->total_jobs + count($jobs),
+            'total_chunks' => $import->total_chunks + count($jobs),
+        ])->save();
 
         $importId = $this->importId;
         $nextGroup = $this->group + 1;
         $batch = Bus::batch($jobs)
-            ->name('TSWMS import #'.$this->importId.' group '.$this->group)
+            ->name('Import #'.$this->importId.' group '.$this->group)
             ->onConnection('redis')
-            ->onQueue('tswms-import')
+            ->onQueue('imports')
             ->then(function (Batch $batch) use ($importId, $nextGroup): void {
-                $import = TswmsImport::query()->find($importId);
+                $import = ImportRun::query()->find($importId);
                 if (! $import) {
                     return;
                 }
                 if ($nextGroup < count(self::GROUPS)) {
-                    self::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('tswms-import');
+                    self::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('imports');
                 } else {
                     $import->forceFill(['status' => 'completed', 'current_stage' => null, 'finished_at' => now()])->save();
                 }
             })
             ->catch(function (Batch $batch, Throwable $exception) use ($importId): void {
-                TswmsImport::query()->whereKey($importId)->update([
+                ImportRun::query()->whereKey($importId)->update([
                     'status' => 'failed',
                     'error_class' => $exception::class,
                     'error_message' => $exception->getMessage(),
@@ -87,7 +91,7 @@ final class TswmsImportGroupJob implements ShouldQueue
                 ]);
             })
             ->finally(function (Batch $batch) use ($importId): void {
-                TswmsImport::query()->whereKey($importId)->update(['batch_id' => $batch->id]);
+                ImportRun::query()->whereKey($importId)->update(['batch_id' => $batch->id]);
             });
 
         $batch->dispatch();
@@ -98,11 +102,11 @@ final class TswmsImportGroupJob implements ShouldQueue
         return ['tswms', 'import:'.$this->importId, 'group:'.$this->group];
     }
 
-    private function dispatchNextOrFinish(TswmsImport $import): void
+    private function dispatchNextOrFinish(ImportRun $import): void
     {
         $next = $this->group + 1;
         if ($next < count(self::GROUPS)) {
-            self::dispatch($this->importId, $next)->onConnection('redis')->onQueue('tswms-import');
+            self::dispatch($this->importId, $next)->onConnection('redis')->onQueue('imports');
 
             return;
         }

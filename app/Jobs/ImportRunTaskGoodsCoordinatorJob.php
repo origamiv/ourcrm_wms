@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\TswmsImport;
+use App\Models\ImportRun;
 use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Bus;
 use RuntimeException;
 use Throwable;
 
-final class TswmsImportTaskGoodsCoordinatorJob implements ShouldQueue
+final class ImportRunTaskGoodsCoordinatorJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -28,7 +28,7 @@ final class TswmsImportTaskGoodsCoordinatorJob implements ShouldQueue
 
     public function handle(): void
     {
-        $import = TswmsImport::query()->findOrFail($this->importId);
+        $import = ImportRun::query()->findOrFail($this->importId);
         $options = [
             '--tenant' => (string) $import->tenant_id,
             '--only' => ['task_goods'],
@@ -43,13 +43,17 @@ final class TswmsImportTaskGoodsCoordinatorJob implements ShouldQueue
             throw new RuntimeException(trim(Artisan::output()) ?: 'Не удалось определить количество task_goods.');
         }
         $count = (int) $match[1];
+        $import->forceFill([
+            'total_records' => $import->total_records + $count,
+            'total_chunks' => $import->total_chunks + (int) ceil($count / max(1, $this->limit)),
+        ])->save();
         $jobs = [];
         for ($offset = 0; $offset < $count; $offset += $this->limit) {
-            $jobs[] = new TswmsImportTaskGoodsChunkJob($this->importId, $offset, $this->limit);
+            $jobs[] = new ImportRunTaskGoodsChunkJob($this->importId, $offset, $this->limit);
         }
         if ($jobs === []) {
             $import->increment('completed_stages');
-            TswmsImportGroupJob::dispatch($this->importId, $this->nextGroup)->onConnection('redis')->onQueue('tswms-import');
+            ImportRunGroupJob::dispatch($this->importId, $this->nextGroup)->onConnection('redis')->onQueue('imports');
 
             return;
         }
@@ -57,15 +61,15 @@ final class TswmsImportTaskGoodsCoordinatorJob implements ShouldQueue
         $importId = $this->importId;
         $nextGroup = $this->nextGroup;
         Bus::batch($jobs)
-            ->name('TSWMS import #'.$importId.' task_goods')
+            ->name('Import #'.$importId.' task_goods')
             ->onConnection('redis')
-            ->onQueue('tswms-import')
+            ->onQueue('imports')
             ->then(function (Batch $batch) use ($importId, $nextGroup): void {
-                TswmsImport::query()->whereKey($importId)->increment('completed_stages');
-                TswmsImportGroupJob::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('tswms-import');
+                ImportRun::query()->whereKey($importId)->increment('completed_stages');
+                ImportRunGroupJob::dispatch($importId, $nextGroup)->onConnection('redis')->onQueue('imports');
             })
             ->catch(function (Batch $batch, Throwable $exception) use ($importId): void {
-                TswmsImport::query()->whereKey($importId)->update([
+                ImportRun::query()->whereKey($importId)->update([
                     'status' => 'failed',
                     'error_class' => $exception::class,
                     'error_message' => $exception->getMessage(),

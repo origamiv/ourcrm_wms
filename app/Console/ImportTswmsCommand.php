@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console;
 
-use App\Jobs\TswmsImportCoordinatorJob;
-use App\Models\TswmsImport;
+use App\Jobs\ImportRunCoordinatorJob;
+use App\Models\ImportRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PDO;
@@ -50,7 +50,7 @@ final class ImportTswmsCommand extends Command
         }
         if (! $this->option('inline')) {
             $only = array_values(array_filter($this->option('only')));
-            $activeQuery = TswmsImport::query()
+            $activeQuery = ImportRun::query()
                 ->where('tenant_id', $this->tenant)
                 ->whereIn('status', ['queued', 'running']);
             $sourceClientId = (int) ($this->option('tswms-client-id') ?: 0);
@@ -63,18 +63,21 @@ final class ImportTswmsCommand extends Command
 
                 return self::FAILURE;
             }
-            $import = TswmsImport::query()->create([
+            $import = ImportRun::query()->create([
                 'tenant_id' => $this->tenant,
+                'project' => 'tswms',
+                'name' => $only === [] ? 'Полный импорт' : implode(', ', $only),
                 'source_client_id' => (int) ($this->option('tswms-client-id') ?: 0) ?: null,
                 'status' => 'queued',
                 'total_stages' => $only === [] ? 13 : count($only),
+                'total_chunks' => 0,
                 'options' => [
                     'only' => $only,
                     'dry_run' => (bool) $this->option('dry-run'),
                 ],
             ]);
-            TswmsImportCoordinatorJob::dispatch($import->id)->onConnection('redis')->onQueue('tswms-import');
-            $this->components->info("Импорт TSWMS #{$import->id} поставлен в очередь tswms-import.");
+            ImportRunCoordinatorJob::dispatch($import->id)->onConnection('redis')->onQueue('imports');
+            $this->components->info("Импорт TSWMS #{$import->id} поставлен в очередь imports.");
 
             return self::SUCCESS;
         }
@@ -128,6 +131,7 @@ final class ImportTswmsCommand extends Command
         $this->runStep('acceptances', fn () => $this->importAcceptances(), $only);
         $this->runStep('cell_goods', fn () => $this->importCellGoods(), $only);
         $this->info("Импорт завершён: создано {$this->created}, обновлено {$this->updated}.");
+        $this->line('IMPORT_RECORDS:'.($this->created + $this->updated));
 
         return self::SUCCESS;
     }

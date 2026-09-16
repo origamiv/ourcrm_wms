@@ -18,6 +18,7 @@ final class SectionPageController
             'goods' => ['goods' => 'Goods', 'good_cards' => 'GoodCardDetail', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts', 'worktime' => 'Worktime'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals', 'services' => 'ClientServices', 'accounts' => 'ClientAccounts'],
+            'maintenance' => ['imports' => 'Imports'],
         ];
         $entity = $left === 'clients' && $top !== 'clients' ? 'client_'.$top : $top;
         if ($left === 'integration') {
@@ -25,7 +26,9 @@ final class SectionPageController
         }
         $component = $pages[$left][$top] ?? null;
         abort_unless($component, 404);
-        if ($top === 'worktime') return Inertia::render('Worktime');
+        if ($top === 'worktime') {
+            return Inertia::render('Worktime');
+        }
         $goodId = null;
         $taskId = null;
         $clientScope = null;

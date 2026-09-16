@@ -100,7 +100,7 @@ return [
 
     'waits' => [
         'redis:default' => 60,
-        'redis:tswms-import' => 60,
+        'redis:imports' => 60,
     ],
 
     /*
@@ -213,9 +213,9 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
-        'tswms-import' => [
+        'imports' => [
             'connection' => 'redis',
-            'queue' => ['tswms-import'],
+            'queue' => ['imports'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 4,
@@ -235,7 +235,7 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
-            'tswms-import' => [
+            'imports' => [
                 'maxProcesses' => 4,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 5,
@@ -246,7 +246,7 @@ return [
             'supervisor-1' => [
                 'maxProcesses' => 3,
             ],
-            'tswms-import' => [
+            'imports' => [
                 'maxProcesses' => 2,
             ],
         ],

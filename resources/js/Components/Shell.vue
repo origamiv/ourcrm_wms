@@ -11,7 +11,7 @@ const collapsed = ref(false),
     message = ref(""),
     connected = ref(navigator.onLine);
 function go(
-    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces" | "Worktime",
+    component: "Home" | "Users" | "Clients" | "Goods" | "IntegrationWebhooks" | "Marketplaces" | "Imports" | "Worktime",
     url: string,
 ) {
     mobileMenuOpen.value = false;
@@ -148,6 +148,16 @@ onUnmounted(() => {
                     />
                     <span class="nav-label">Фулфилмент</span>
                 </a>
+                <a
+                    v-if="page.props.auth.is_admin"
+                    href="/maintenance/imports"
+                    aria-label="Обслуживание"
+                    :class="{ active: page.url.startsWith('/maintenance/') }"
+                    @click.prevent="go('Imports', '/maintenance/imports')"
+                >
+                    <img class="nav-icon" src="/design/crm/administration.svg" alt="" />
+                    <span class="nav-label">Обслуживание</span>
+                </a>
             </nav>
             <div class="sidebar-bottom">
                 <span
@@ -173,6 +183,8 @@ onUnmounted(() => {
                               ? "Интеграции"
                             : page.url.startsWith("/fulfillment/")
                               ? "Фулфилмент"
+                              : page.url.startsWith("/maintenance/")
+                                ? "Обслуживание"
                               : "Рабочий стол"
                 }}</span>
                 <WorktimeControls />

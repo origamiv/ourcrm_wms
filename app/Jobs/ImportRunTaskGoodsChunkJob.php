@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\TswmsImport;
+use App\Models\ImportRun;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
 
-final class TswmsImportTaskGoodsChunkJob implements ShouldQueue
+final class ImportRunTaskGoodsChunkJob implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -26,7 +26,7 @@ final class TswmsImportTaskGoodsChunkJob implements ShouldQueue
 
     public function handle(): void
     {
-        $import = TswmsImport::query()->findOrFail($this->importId);
+        $import = ImportRun::query()->findOrFail($this->importId);
         $options = [
             '--tenant' => (string) $import->tenant_id,
             '--tswms-client-id' => (string) ($import->source_client_id ?: 0),
@@ -40,6 +40,8 @@ final class TswmsImportTaskGoodsChunkJob implements ShouldQueue
             throw new RuntimeException(trim(Artisan::output()) ?: 'Не удалось импортировать chunk task_goods.');
         }
         $import->increment('completed_jobs');
+        $import->increment('processed_chunks');
+        $import->increment('processed_records', min($this->limit, max(0, $import->total_records - $this->offset)));
     }
 
     public function tags(): array

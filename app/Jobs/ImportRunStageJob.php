@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Models\TswmsImport;
+use App\Models\ImportRun;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
 
-final class TswmsImportStageJob implements ShouldQueue
+final class ImportRunStageJob implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -26,7 +26,7 @@ final class TswmsImportStageJob implements ShouldQueue
 
     public function handle(): void
     {
-        $import = TswmsImport::query()->findOrFail($this->importId);
+        $import = ImportRun::query()->findOrFail($this->importId);
         $import->forceFill([
             'status' => 'running',
             'current_stage' => $this->stage,
@@ -51,6 +51,13 @@ final class TswmsImportStageJob implements ShouldQueue
             throw new RuntimeException(trim(Artisan::output()) ?: "Этап {$this->stage} завершился с ошибкой.");
         }
 
+        $records = 0;
+        if (preg_match('/IMPORT_RECORDS:(\d+)/', Artisan::output(), $match)) {
+            $records = (int) $match[1];
+        }
+        $import->increment('total_records', $records);
+        $import->increment('processed_records', $records);
+        $import->increment('processed_chunks');
         $import->increment('completed_stages');
         $import->increment('completed_jobs');
     }
