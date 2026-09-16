@@ -98,6 +98,34 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                 </tbody>
             </table>
         </div>
+        <div class="imports-mobile-list" aria-label="Импорты">
+            <div v-if="loading" class="imports-mobile-empty">Загрузка…</div>
+            <div v-else-if="rows.length === 0" class="imports-mobile-empty">Импорты ещё не запускались</div>
+            <article v-for="row in rows" v-else :key="'mobile-' + row.row_type + '-' + row.id" class="import-mobile-card" :class="{ 'stage-mobile-card': row.row_type === 'stage' }">
+                <div class="import-mobile-card-head">
+                    <div class="import-mobile-title">
+                        <span class="import-mobile-id">#{{ row.id }}</span>
+                        <strong>{{ row.row_type === 'stage' ? '↳ ' : '' }}{{ row.name }}</strong>
+                    </div>
+                    <span class="status-badge" :class="'status-' + row.status">{{ statusLabel(row.status) }}</span>
+                </div>
+                <div class="import-mobile-meta">
+                    <div><span>Проект</span><strong>{{ row.project }}</strong></div>
+                    <div><span>Старт</span><strong>{{ formatDate(row.started_at, true) }}</strong></div>
+                    <div><span>Текущий этап</span><strong>{{ row.current_stage_number ? row.current_stage_number + '. ' + row.current_stage_name : '—' }}</strong></div>
+                </div>
+                <div class="import-mobile-progress">
+                    <div class="import-mobile-progress-label"><span>Прогресс</span><b>{{ progress(row) }}%</b></div>
+                    <span class="import-progress-track"><i :style="{ width: progress(row) + '%' }"></i></span>
+                </div>
+                <div class="import-mobile-stats">
+                    <div><span>Этапы</span><strong>{{ row.completed_stages }} / {{ row.total_stages }}</strong></div>
+                    <div><span>Записи</span><strong>{{ row.processed_records }} / {{ row.total_records }}</strong></div>
+                    <div><span>Чанки</span><strong>{{ row.processed_chunks }} / {{ row.total_chunks }}</strong></div>
+                </div>
+                <p v-if="row.error_message" class="error-detail">{{ row.error_message }}</p>
+            </article>
+        </div>
     </section>
 </template>
 
@@ -123,15 +151,28 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 .status-running { color: #1459a6; background: #dcecff; }
 .status-completed { color: #176b2a; background: #dff3e4; }
 .status-failed { color: #a32626; background: #ffe1e1; }
+.imports-mobile-list { display: none; }
 @media (max-width: 900px) {
-    .imports-table { min-width: 0; }
-    .imports-table thead { display: none; }
-    .imports-table, .imports-table tbody, .imports-table tr, .imports-table td { display: block; width: 100%; }
-    .imports-table tr { margin-bottom: 12px; border: 1px solid #dcecef; border-radius: 10px; background: #fff; }
-    .imports-table td { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #edf3f4; }
-    .imports-table td::before { flex: 0 0 42%; color: #667085; content: attr(data-label); }
-    .imports-table td:last-child { border-bottom: 0; }
-    .imports-table .empty-cell { display: block; }
-    .imports-table .empty-cell::before { content: none; }
+    .imports-table-wrap { display: none; }
+    .imports-mobile-list { display: grid; gap: 10px; }
+    .import-mobile-card { overflow: hidden; border: 1px solid #dcecef; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); }
+    .stage-mobile-card { border-color: #c9e3d1; background: #f8fbfa; }
+    .import-mobile-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 12px; border-bottom: 1px solid #edf3f4; }
+    .import-mobile-title { display: flex; min-width: 0; align-items: flex-start; gap: 8px; }
+    .import-mobile-title strong { min-width: 0; color: #0c1821; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+    .import-mobile-id { flex: 0 0 auto; color: #667085; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .import-mobile-card-head .status-badge { flex: 0 0 auto; }
+    .import-mobile-meta, .import-mobile-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+    .import-mobile-meta div, .import-mobile-stats div { min-width: 0; }
+    .import-mobile-meta div:last-child { grid-column: 1 / -1; }
+    .import-mobile-meta span, .import-mobile-stats span, .import-mobile-progress-label span { display: block; margin-bottom: 3px; color: #667085; font-size: 11px; }
+    .import-mobile-meta strong, .import-mobile-stats strong { display: block; color: #0c1821; font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+    .import-mobile-progress { padding: 0 12px; }
+    .import-mobile-progress-label { display: flex; justify-content: space-between; align-items: baseline; }
+    .import-mobile-progress-label b { color: #1e892f; font-size: 12px; }
+    .import-mobile-progress .import-progress-track { display: block; width: 100%; height: 8px; }
+    .import-mobile-stats { padding-top: 14px; border-top: 1px solid #edf3f4; }
+    .import-mobile-card .error-detail { margin: 0; padding: 0 12px 12px; color: #a32626; }
+    .imports-mobile-empty { padding: 32px 16px; border: 1px solid #dcecef; border-radius: 10px; color: #667085; text-align: center; }
 }
 </style>
