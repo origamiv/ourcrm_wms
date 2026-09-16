@@ -501,25 +501,39 @@ final class ImportTswmsCommand extends Command
     private function importOrders(): void
     {
         if (! $this->source->getSchemaBuilder()->hasTable('tswms-orders')) return;
-        foreach ($this->source->table('tswms-orders')->orderBy('id')->get() as $row) {
+        $clients = $this->sourceMappings('tswms-partners', 'App\\Models\\Client');
+        $warehouses = $this->sourceMappings('warehouses', 'App\\Models\\Warehouse');
+        $integrations = $this->sourceMappings('tswms-integrations', 'App\\Models\\IntegrationWebhook');
+        $statuses = DB::table('wms.order_statuses')->where('tenant_id', $this->tenant)->pluck('id', 'code')->all();
+        $sources = DB::table('wms.order_sources')->where('tenant_id', $this->tenant)->pluck('id', 'code')->all();
+        $cancels = DB::table('wms.order_cancel_statuses')->where('tenant_id', $this->tenant)->pluck('id', 'code')->all();
+        $services = DB::table('wms.delivery_services')->where('tenant_id', $this->tenant)->get(['id', 'shortname'])->all();
+        $serviceMap = [];
+        foreach ($services as $service) { $serviceMap[(string) preg_replace('/^tswms_service_/', '', (string) $service->shortname)] = $service->id; }
+        $this->source->table('tswms-orders')->orderBy('id')->chunk(1000, function ($rows) use ($clients, $warehouses, $integrations, $statuses, $sources, $cancels, $serviceMap): void {
+            $batch = [];
+            foreach ($rows as $row) {
             $id = (string) $row->id;
-            $client = $this->mapped('tswms-partners', (string) ($row->{'partner-id'} ?? $row->partner_id ?? ''), 'App\\Models\\Client');
-            $warehouse = $this->mapped('warehouses', (string) ($row->warehouse_id ?? ''), 'App\\Models\\Warehouse');
-            $status = $this->localOrderReference('wms.order_statuses', 'tswms-orders-status', $row->{'status-id'} ?? null, 'App\\Models\\OrderStatus');
-            $source = $this->localOrderReference('wms.order_sources', 'tswms-orders-source', $row->{'source-id'} ?? null, 'App\\Models\\OrderSource');
-            $cancel = $this->localOrderReference('wms.order_cancel_statuses', 'directories_order_cancel_statuses', $row->cancel_status_id ?? null, 'App\\Models\\OrderCancelStatus');
-            $service = $this->localDeliveryService($row->delivery_id ?? null);
-            $integration = $this->mapped('tswms-integrations', (string) ($row->{'integration-id'} ?? $row->integration_id ?? ''), 'App\\Models\\IntegrationWebhook');
-            $this->upsert('wms.orders', [
-                'code' => $id, 'number' => $row->number ?? null, 'client_id' => $client, 'warehouse_id' => $warehouse,
-                'delivery_service_id' => $service, 'order_status_id' => $status, 'order_source_id' => $source, 'order_cancel_status_id' => $cancel, 'integration_id' => $integration,
+            $statusId = (string) ($row->{'status-id'} ?? $row->status_id ?? ''); $sourceId = (string) ($row->{'source-id'} ?? $row->source_id ?? ''); $cancelId = (string) ($row->cancel_status_id ?? ''); $serviceId = (string) ($row->delivery_id ?? '');
+            $data = [
+                'code' => $id, 'number' => $row->number ?? null, 'client_id' => $clients[(string) ($row->{'partner-id'} ?? $row->partner_id ?? '')] ?? null, 'warehouse_id' => $warehouses[(string) ($row->warehouse_id ?? '')] ?? null,
+                'delivery_service_id' => $serviceMap[$serviceId] ?? null, 'order_status_id' => $statuses[$statusId] ?? null, 'order_source_id' => $sources[$sourceId] ?? null, 'order_cancel_status_id' => $cancels[$cancelId] ?? null, 'integration_id' => $integrations[(string) ($row->{'integration-id'} ?? $row->integration_id ?? '')] ?? null,
                 'delivery_track' => $row->{'delivery-track'} ?? $row->delivery_track ?? null, 'delivery_date' => $row->{'delivery-date'} ?? $row->delivery_date ?? null, 'created_date' => $row->{'created-date'} ?? $row->created_date ?? null,
                 'currency' => $row->currency ?? null, 'goods_total_price' => $row->{'goods-total-price'} ?? $row->goods_total_price ?? null, 'goods_count' => $row->{'goods-count'} ?? $row->goods_count ?? null,
                 'comment_partner' => $row->{'comment-partner'} ?? $row->comment_partner ?? null, 'comment_internal' => $row->{'comment-internal'} ?? $row->comment_internal ?? null, 'custom' => json_encode($row->custom ?? null, JSON_UNESCAPED_UNICODE),
                 'need_imei' => (bool) ($row->{'need-imei'} ?? $row->need_imei ?? false), 'need_uin' => (bool) ($row->{'need-uin'} ?? $row->need_uin ?? false), 'need_gtin' => (bool) ($row->{'need-gtin'} ?? $row->need_gtin ?? false), 'need_sgtin' => (bool) ($row->{'need-sgtin'} ?? $row->need_sgtin ?? false), 'need_expiration' => (bool) ($row->need_expiration ?? false), 'need_gtd' => (bool) ($row->{'need-gtd'} ?? false), 'is_b2b' => (bool) ($row->{'is-b2b'} ?? false), 'is_crossborder' => (bool) ($row->is_crossborder ?? false), 'wb_supply_id' => $row->{'wb-supply-id'} ?? null,
                 'crm_party_id' => $row->crm_party_id ?? null, 'crm_party_address_id' => $row->crm_party_address_id ?? null, 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $id, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now(),
-            ], 'tswms-orders', $id, 'App\\Models\\Order');
-        }
+            ];
+            $batch[] = $data;
+            $this->sourceRecords++;
+            }
+            if ($batch === []) return;
+            DB::table('wms.orders')->upsert($batch, ['tenant_id', 'code'], array_values(array_diff(array_keys($batch[0]), ['id', 'code', 'created_at'])));
+            $ids = DB::table('wms.orders')->where('tenant_id', $this->tenant)->whereIn('code', array_column($batch, 'code'))->pluck('id', 'code');
+            $maps = [];
+            foreach ($batch as $data) { $maps[] = ['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_database' => $this->sourceDatabase, 'source_table' => 'tswms-orders', 'source_id' => $data['code'], 'target_entity' => 'App\\Models\\Order', 'target_id' => $ids[$data['code']] ?? null, 'source_hash' => $this->sourceHash((object) $data), 'created_at' => now(), 'updated_at' => now()]; }
+            DB::table('wms.tswms_import_mappings')->upsert($maps, ['source_system', 'source_client_id', 'source_table', 'source_id', 'target_entity'], ['target_id', 'source_database', 'source_hash', 'updated_at']);
+        });
     }
 
     private function importOrderGoods(): void
