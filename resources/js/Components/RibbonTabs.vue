@@ -16,6 +16,12 @@ const tabsNav = ref<HTMLElement | null>(null);
 const menuStyle = ref({ left: "0px", top: "0px", maxHeight: "320px" });
 let anchor: HTMLElement | null = null;
 const scrollStorageKey = computed(() => `ribbon-tabs-scroll:${props.label}`);
+const instructionSection = computed(() => {
+    const section = page.url.split("/")[1] || "";
+    return ["main", "clients", "goods", "integration", "fulfillment", "maintenance"].includes(section) && !page.url.startsWith("/main/instructions")
+        ? section
+        : "";
+});
 function saveTabsScroll() {
     if (!tabsNav.value) return;
     sessionStorage.setItem(scrollStorageKey.value, String(tabsNav.value.scrollLeft));
@@ -112,6 +118,9 @@ function open(tab: RibbonTab) {
             props: { ...page.props, companyScope: null, clientScope: null },
         });
 }
+function openInstructions() {
+    if (instructionSection.value) router.visit(`/instructions?section=${instructionSection.value}`);
+}
 </script>
 <template>
     <div class="ribbon-group">
@@ -150,6 +159,17 @@ function open(tab: RibbonTab) {
                 </a>
             </template>
         </nav>
+        <button
+            v-if="instructionSection"
+            class="instructions-link"
+            type="button"
+            aria-label="Инструкции"
+            title="Инструкции текущего раздела"
+            @click="openInstructions"
+        >
+            <img src="/design/crm/documents.svg" alt="" width="20" height="20" />
+            <span>Инструкции</span>
+        </button>
         <Teleport to="body"
             ><nav
                 v-if="expanded"
@@ -182,7 +202,36 @@ function open(tab: RibbonTab) {
 </template>
 <style scoped>
 .ribbon-group {
+    display: flex;
+    align-items: center;
+    width: 100%;
     min-width: 0;
+    gap: 16px;
+}
+.instructions-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    margin-left: auto;
+    padding: 0 16px;
+    border: 1px solid #a8d4a9;
+    border-radius: 8px;
+    background: #e1f3e7;
+    color: #26547c;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.instructions-link:hover {
+    background: #cdebd7;
+    color: #1e892f;
+}
+.instructions-link img {
+    object-fit: contain;
+    filter: brightness(0) saturate(100%) invert(38%) sepia(69%) saturate(636%)
+        hue-rotate(79deg) brightness(94%) contrast(91%);
 }
 .ribbon-dropdown {
     position: fixed;
@@ -274,6 +323,16 @@ function open(tab: RibbonTab) {
     outline-offset: -2px;
 }
 @media (max-width: 767px) {
+    .ribbon-group {
+        gap: 8px;
+    }
+    .instructions-link {
+        gap: 0;
+        padding: 0 9px;
+    }
+    .instructions-link span {
+        display: none;
+    }
     .module-tabs {
         border-width: 3px;
     }
