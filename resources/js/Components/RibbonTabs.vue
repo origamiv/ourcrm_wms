@@ -207,6 +207,7 @@ function openInstructions() {
     align-self: flex-start;
     width: 100%;
     min-width: 0;
+    margin-bottom: 16px;
     gap: 16px;
 }
 .ribbon-group .module-tabs {
