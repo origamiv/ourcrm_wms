@@ -101,7 +101,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
             <div class="instructions-list">
                 <div v-if="isAdminPage" class="page-heading"><div><h1>Инструкции</h1><p class="muted">Справочник инструкций по процессам разделов</p></div></div>
                 <div v-else class="instructions-heading"><h1>Инструкции</h1><p class="muted">Инструкции по процессам текущего раздела</p></div>
-                <div class="table-scroll instructions-table-wrap"><table class="instructions-table"><thead><tr><th>#</th><th>Название</th><th>Формат</th><th>Изменено</th><th>Действия</th></tr></thead><tbody><tr v-if="loading"><td colspan="5" class="empty-cell">Загрузка…</td></tr><tr v-else-if="!rows.length"><td colspan="5" class="empty-cell">Инструкций пока нет</td></tr><tr v-for="row in rows" :key="row.id" class="instruction-row mobile-card-expanded"><td data-label="#">{{ row.id }}</td><td data-label="Название"><strong>{{ row.name }}</strong><small>{{ row.original_filename }}</small></td><td data-label="Формат">{{ types[row.content_type] || row.content_type }}</td><td data-label="Изменено">{{ formatDate(row.updated_at, true) }}</td><td data-label="Действия" class="instruction-actions"><a class="instruction-open" :href="section ? `/${section}/help/${row.id}` : `/instructions/${row.id}`">Открыть инструкцию</a><button type="button" @click="download(row)">Скачать</button><template v-if="isAdminPage"><button type="button" @click="edit(row)">Изменить</button><button type="button" @click="remove(row)">Удалить</button></template></td></tr></tbody></table></div>
+                <div class="table-scroll instructions-table-wrap"><table class="instructions-table"><thead><tr><th>#</th><th>Название</th><th>Формат</th><th>Изменено</th><th>Действия</th></tr></thead><tbody><tr v-if="loading"><td colspan="5" class="empty-cell">Загрузка…</td></tr><tr v-else-if="!rows.length"><td colspan="5" class="empty-cell">Инструкций пока нет</td></tr><tr v-for="row in rows" :key="row.id" class="instruction-row instruction-mobile-card"><td data-label="#">{{ row.id }}</td><td data-label="Название"><strong>{{ row.name }}</strong><small>{{ row.original_filename }}</small></td><td data-label="Формат">{{ types[row.content_type] || row.content_type }}</td><td data-label="Изменено">{{ formatDate(row.updated_at, true) }}</td><td data-label="Действия" class="instruction-actions"><a class="instruction-open" :href="section ? `/${section}/help/${row.id}` : `/instructions/${row.id}`">Открыть инструкцию</a><button type="button" @click="download(row)">Скачать</button><template v-if="isAdminPage"><button type="button" @click="edit(row)">Изменить</button><button type="button" @click="remove(row)">Удалить</button></template></td></tr></tbody></table></div>
             </div>
             <aside v-if="isAdminPage" class="instruction-editor" aria-label="Создание и редактирование инструкции">
                 <h1>{{ editingId ? "Изменить инструкцию" : "Добавить инструкцию" }}</h1>
@@ -135,24 +135,4 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
 @media (max-width: 1000px) { .instructions-layout { grid-template-columns: 1fr; }.instruction-editor { order:-1; } }
 @media (max-width: 800px) { .instructions-heading { display: block; }.instructions-heading p { margin-top: 6px; } }
 @media (max-width: 700px) { .instruction-markdown { padding:28px 22px 34px; font-size:14px; line-height:1.7; }.instruction-markdown :deep(h1) { font-size:25px; }.instruction-markdown :deep(h2) { font-size:19px; }.instruction-markdown :deep(img) { float:none; width:100%; max-height:none; margin:12px 0 20px; } }
-@media (max-width: 700px) {
-    .instructions-table-wrap { overflow: visible; }
-    .instructions-table { display: block; }
-    .instructions-table thead { display: none; }
-    .instructions-table tbody { display: grid; gap: 12px; }
-    .instructions-table .instruction-row { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0; overflow: hidden; border: 1px solid #dcecef; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); }
-    .instructions-table .instruction-row td[data-label] { display: flex; align-items: center; min-width: 0; min-height: 42px; padding: 10px; border-top: 0; text-align: left; overflow-wrap: anywhere; }
-    .instructions-table .instruction-row td[data-label]::before { content: attr(data-label); display: block; flex: 0 0 82px; margin-right: 10px; color: #1e892f; font-size: 11px; font-weight: 600; }
-    .instructions-table .instruction-row td[data-label="#"] { grid-column: 1; grid-row: 1; color: #71828a; font-size: 11px; }
-    .instructions-table .instruction-row td[data-label="#"]::before { display: none; }
-    .instructions-table .instruction-row td[data-label="Название"] { grid-column: 1 / -1; grid-row: 2; align-items: flex-start; border-top: 1px solid #edf3f4; }
-    .instructions-table .instruction-row td[data-label="Название"]::before { flex: 0 0 82px; }
-    .instructions-table .instruction-row td[data-label="Формат"],
-    .instructions-table .instruction-row td[data-label="Изменено"] { grid-column: 1 / -1; border-top: 1px solid #edf3f4; }
-    .instructions-table .instruction-row td[data-label="Действия"] { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid #a8d4a9; background: #e1f3e7; }
-    .instructions-table .instruction-row td[data-label="Действия"]::before { flex-basis: 82px; }
-    .instructions-table .instruction-actions a,
-    .instructions-table .instruction-actions button { min-height: 36px; padding: 8px 10px; }
-    .instructions-table .instruction-open { font-weight: 700; }
-}
 </style>

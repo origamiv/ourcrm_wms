@@ -2297,3 +2297,82 @@ td {
         line-height: 0 !important;
     }
 }
+
+/* Компактная мобильная карточка инструкции: подробности открываются на отдельной странице. */
+@media (max-width: 700px) {
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card {
+        display: grid !important;
+        grid-template-columns: max-content minmax(0, 1fr) max-content !important;
+        align-items: center !important;
+        min-height: 0 !important;
+        height: auto !important;
+        padding: 0 !important;
+        background: #fff !important;
+        border: 1px solid #dcecef !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 8px rgb(16 24 40 / 5%) !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label] {
+        display: flex !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 42px !important;
+        padding: 8px 10px !important;
+        border: 0 !important;
+        background: #fff !important;
+        color: #0c1821 !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label]::before {
+        display: none !important;
+        content: none !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="#"] {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        color: #71828a !important;
+        font-size: 11px !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Название"] {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        overflow: hidden !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Название"] strong {
+        display: block !important;
+        overflow: hidden !important;
+        color: #0c1821 !important;
+        font-size: 14px !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Название"] small,
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Формат"],
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Изменено"] {
+        display: none !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Действия"] {
+        grid-column: 3 !important;
+        grid-row: 1 !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        padding: 7px 8px !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Действия"] a,
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Действия"] button {
+        min-height: 32px !important;
+        padding: 7px 9px !important;
+    }
+
+    html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Действия"] button:not(:first-of-type) {
+        display: none !important;
+    }
+}
