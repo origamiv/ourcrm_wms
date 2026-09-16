@@ -11,7 +11,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
@@ -25,15 +24,6 @@ final class ImportRunGoodsChunkJob implements ShouldQueue
     public int $timeout = 900;
 
     public function __construct(public int $importId, public int $offset, public int $limit) {}
-
-    public function middleware(): array
-    {
-        return [
-            (new WithoutOverlapping('import-goods-'.$this->importId))
-                ->releaseAfter(5)
-                ->expireAfter(1800),
-        ];
-    }
 
     public function handle(): void
     {

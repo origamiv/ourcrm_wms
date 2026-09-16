@@ -746,21 +746,28 @@ final class ImportTswmsCommand extends Command
 
     private function upsert(string $table, array $data, string $sourceTable, string $sourceId, string $entity, string $lookup = ''): void
     {
-        $mapping = DB::table('wms.tswms_import_mappings')->where(['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_table' => $sourceTable, 'source_id' => $sourceId, 'target_entity' => $entity])->first();
-        $row = (object) $data;
-        $hash = $this->sourceHash($row);
-        if ($mapping && (string) $mapping->source_hash === $hash) {
-            return;
-        }
-        $target = $mapping?->target_id;
-        if ($target) {
-            DB::table($table)->where('id', $target)->update($data);
-            $this->updated++;
-        } else {
-            $target = (string) DB::table($table)->insertGetId($data);
-            $this->created++;
-        }
-        $this->remember($sourceTable, $sourceId, $entity, $target, $row);
+        DB::transaction(function () use ($table, $data, $sourceTable, $sourceId, $entity): void {
+            $key = implode('|', ['tswms', $this->sourceClientId, $sourceTable, $sourceId, $entity]);
+            DB::selectOne('select pg_advisory_xact_lock(hashtextextended(?, 0))', [$key]);
+            $mapping = DB::table('wms.tswms_import_mappings')
+                ->where(['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_table' => $sourceTable, 'source_id' => $sourceId, 'target_entity' => $entity])
+                ->lockForUpdate()
+                ->first();
+            $row = (object) $data;
+            $hash = $this->sourceHash($row);
+            if ($mapping && (string) $mapping->source_hash === $hash) {
+                return;
+            }
+            $target = $mapping?->target_id;
+            if ($target) {
+                DB::table($table)->where('id', $target)->update($data);
+                $this->updated++;
+            } else {
+                $target = (string) DB::table($table)->insertGetId($data);
+                $this->created++;
+            }
+            $this->remember($sourceTable, $sourceId, $entity, $target, $row);
+        });
     }
 
     private function mapped(string $table, string $id, string $entity): ?string
