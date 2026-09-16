@@ -102,6 +102,21 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
                 <div v-if="isAdminPage" class="page-heading"><div><h1>Инструкции</h1><p class="muted">Справочник инструкций по процессам разделов</p></div></div>
                 <div v-else class="instructions-heading"><h1>Инструкции</h1><p class="muted">Инструкции по процессам текущего раздела</p></div>
                 <div class="table-scroll instructions-table-wrap"><table class="instructions-table"><thead><tr><th>#</th><th>Название</th><th>Формат</th><th>Изменено</th><th>Действия</th></tr></thead><tbody><tr v-if="loading"><td colspan="5" class="empty-cell">Загрузка…</td></tr><tr v-else-if="!rows.length"><td colspan="5" class="empty-cell">Инструкций пока нет</td></tr><tr v-for="row in rows" :key="row.id" class="instruction-row instruction-mobile-card"><td data-label="#">{{ row.id }}</td><td data-label="Название"><strong>{{ row.name }}</strong><small>{{ row.original_filename }}</small></td><td data-label="Формат">{{ types[row.content_type] || row.content_type }}</td><td data-label="Изменено">{{ formatDate(row.updated_at, true) }}</td><td data-label="Действия" class="instruction-actions"><a class="instruction-open" :href="section ? `/${section}/help/${row.id}` : `/instructions/${row.id}`">Открыть инструкцию</a><button type="button" @click="download(row)">Скачать</button><template v-if="isAdminPage"><button type="button" @click="edit(row)">Изменить</button><button type="button" @click="remove(row)">Удалить</button></template></td></tr></tbody></table></div>
+                <div class="instructions-mobile-cards">
+                    <div v-if="loading" class="instructions-mobile-empty">Загрузка…</div>
+                    <div v-else-if="!rows.length" class="instructions-mobile-empty">Инструкций пока нет</div>
+                    <article v-for="row in rows" v-else :key="row.id" class="instructions-mobile-card">
+                        <span class="instructions-mobile-card__id">{{ row.id }}</span>
+                        <strong class="instructions-mobile-card__name">{{ row.name }}</strong>
+                        <div class="instructions-mobile-card__actions">
+                            <a :href="section ? `/${section}/help/${row.id}` : `/instructions/${row.id}`" aria-label="Открыть инструкцию" title="Открыть инструкцию">→</a>
+                            <template v-if="isAdminPage">
+                                <button type="button" aria-label="Изменить инструкцию" title="Изменить" @click="edit(row)">✎</button>
+                                <button type="button" aria-label="Удалить инструкцию" title="Удалить" @click="remove(row)">×</button>
+                            </template>
+                        </div>
+                    </article>
+                </div>
             </div>
             <aside v-if="isAdminPage" class="instruction-editor" aria-label="Создание и редактирование инструкции">
                 <h1>{{ editingId ? "Изменить инструкцию" : "Добавить инструкцию" }}</h1>
@@ -135,4 +150,18 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
 @media (max-width: 1000px) { .instructions-layout { grid-template-columns: 1fr; }.instruction-editor { order:-1; } }
 @media (max-width: 800px) { .instructions-heading { display: block; }.instructions-heading p { margin-top: 6px; } }
 @media (max-width: 700px) { .instruction-markdown { padding:28px 22px 34px; font-size:14px; line-height:1.7; }.instruction-markdown :deep(h1) { font-size:25px; }.instruction-markdown :deep(h2) { font-size:19px; }.instruction-markdown :deep(img) { float:none; width:100%; max-height:none; margin:12px 0 20px; } }
+.instructions-mobile-cards { display: none; }
+@media (max-width: 900px) {
+    .instructions-table-wrap { display: none !important; }
+    .instructions-mobile-cards { display: grid; gap: 10px; }
+    .instructions-mobile-card { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; align-items: center; min-width: 0; min-height: 48px; padding: 0; overflow: hidden; border: 1px solid #dcecef; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); }
+    .instructions-mobile-card__id { padding: 10px; color: #71828a; font-size: 11px; }
+    .instructions-mobile-card__name { min-width: 0; padding: 10px 4px; overflow: hidden; color: #0c1821; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .instructions-mobile-card__actions { display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
+    .instructions-mobile-card__actions a,
+    .instructions-mobile-card__actions button { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: #e1f3e7; color: #176b2a; font: inherit; font-size: 18px; text-decoration: none; cursor: pointer; }
+    .instructions-mobile-card__actions a:hover,
+    .instructions-mobile-card__actions button:hover { background: #cdebd7; }
+    .instructions-mobile-empty { padding: 28px 16px; border: 1px solid #dcecef; border-radius: 10px; background: #fff; color: #667085; text-align: center; }
+}
 </style>
