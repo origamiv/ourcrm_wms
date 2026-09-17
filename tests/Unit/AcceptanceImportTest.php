@@ -42,3 +42,11 @@ it('агрегирует активные размещения по ячейке
         ->and($placements[1]['source_id'])->toBe('8:11')
         ->and($placements[1]['cnt'])->toBe(2);
 });
+
+it('сопоставляет тип интеграции с единым сервисом', function (): void {
+    expect(invokeAcceptanceImportHelper('clientServiceDefinition', 'wb'))->toBe(['wildberries', 'Wildberries'])
+        ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'Wildberries FBS'))->toBe(['wildberries', 'Wildberries'])
+        ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'ozon'))->toBe(['ozon', 'Ozon'])
+        ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'yandex'))->toBe(['yandex_market', 'Yandex.Market'])
+        ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'DNS'))->toBe(['dns', 'DNS']);
+});

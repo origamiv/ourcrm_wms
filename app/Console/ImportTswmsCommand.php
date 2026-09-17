@@ -420,13 +420,48 @@ final class ImportTswmsCommand extends Command
             }$type = (string) ($r->type ?? 'integration');
             $name = (string) ($r->name ?? $type);
             $src = ['source_system' => 'tswms', 'source_table' => $table, 'source_id' => (string) $r->id, 'source_fields' => (array) $r, 'credentials' => ['key1' => $r->key1 ?? null, 'key2' => $r->key2 ?? null, 'key3' => $r->key3 ?? null]];
-            $serviceId = $this->mapped($table, (string) $r->id, 'App\\Models\\ClientService');
-            if (! $serviceId) {
-                $this->upsert('clients.services', ['name' => $name, 'shortname' => $this->latinShortname('service_'.$type.'_'.$r->id), 'status' => (int) ($r->active ?? $r->is_active ?? 1), 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()], $table, (string) $r->id, 'App\\Models\\ClientService');
-                $serviceId = $this->mapped($table, (string) $r->id, 'App\\Models\\ClientService');
-            }$data = ['name' => $name, 'shortname' => $this->latinShortname($type.'_'.$r->id), 'host' => $r->host ?? null, 'login' => $r->login ?? null, 'pass' => $r->pass ?? null, 'token' => $r->token ?? ($r->key1 ?? null), 'descr' => 'Доступ TSWMS: '.$type, 'status' => (int) ($r->active ?? $r->is_active ?? 1), 'src' => json_encode($src, JSON_UNESCAPED_UNICODE), 'client_id' => (int) $client, 'service_id' => $serviceId ? (int) $serviceId : null, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()];
+            $serviceId = $this->clientServiceId($type);
+            $data = ['name' => $name, 'shortname' => $this->latinShortname($type.'_'.$r->id), 'host' => $r->host ?? null, 'login' => $r->login ?? null, 'pass' => $r->pass ?? null, 'token' => $r->token ?? ($r->key1 ?? null), 'descr' => 'Доступ TSWMS: '.$type, 'status' => (int) ($r->active ?? $r->is_active ?? 1), 'src' => json_encode($src, JSON_UNESCAPED_UNICODE), 'client_id' => (int) $client, 'service_id' => $serviceId, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()];
             $this->upsert('clients.accounts', $data, $table, (string) $r->id, 'App\\Models\\ClientAccount');
         }
+    }
+
+    private function clientServiceId(string $type): int
+    {
+        [$shortname, $name] = $this->clientServiceDefinition($type);
+
+        $serviceId = DB::table('clients.services')
+            ->where('shortname', $shortname)
+            ->whereNull('deleted_at')
+            ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $this->tenant))
+            ->orderByRaw('tenant_id IS NOT NULL')
+            ->value('id');
+
+        if ($serviceId !== null) {
+            return (int) $serviceId;
+        }
+
+        return (int) DB::table('clients.services')->insertGetId([
+            'name' => $name,
+            'shortname' => $shortname,
+            'status' => 1,
+            'tenant_id' => $this->tenant,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /** @return array{string, string} */
+    private function clientServiceDefinition(string $type): array
+    {
+        $normalized = mb_strtolower(trim($type));
+
+        return match (true) {
+            $normalized === 'wb', str_contains($normalized, 'wildberries') => ['wildberries', 'Wildberries'],
+            str_contains($normalized, 'ozon') => ['ozon', 'Ozon'],
+            str_contains($normalized, 'yandex'), $normalized === 'ym' => ['yandex_market', 'Yandex.Market'],
+            default => [$this->latinShortname($normalized ?: 'integration'), trim($type) ?: 'Интеграция'],
+        };
     }
 
     private function importWebhooks(): void
