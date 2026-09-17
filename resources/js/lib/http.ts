@@ -67,10 +67,6 @@ export async function http(
             void endSession();
             throw new HttpError(r.status, body);
         }
-        if (r.status === 403) {
-            void endSession();
-            throw new HttpError(r.status, body);
-        }
         if (!r.ok) throw new HttpError(r.status, body);
         if (sessionEnded) throw new Error("Сеанс завершён");
         return body;

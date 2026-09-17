@@ -22,7 +22,6 @@ final class MarketplaceCatalogService
             $sync->checkpoint($tenant);
             DB::table('public.sync_state')->where('tenant_id', $tenant)->lockForUpdate()->firstOrFail();
 
-            $actor = User::findOrFail($actor->id);
             abort_unless($actor->tenant_id === $tenant && app(AccessService::class)->isAdmin($actor), 403);
 
             $row = GoodMarketplace::withTrashed()->visibleTo($tenant)->findOrFail($id);
