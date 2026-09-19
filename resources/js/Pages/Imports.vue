@@ -70,20 +70,11 @@ function cardDate(value: string | null): string {
     return formatted === "—" ? formatted : formatted.slice(0, 5) + formatted.slice(8);
 }
 
-function hasActiveRuns(): boolean {
-    return rows.value.some((row) => ["queued", "running"].includes(row.status));
-}
-
 async function load() {
     try {
         const response = await http("/web/imports");
         rows.value = response.data ?? [];
         error.value = "";
-        if (hasActiveRuns() && timer === undefined) timer = window.setInterval(load, 7000);
-        if (!hasActiveRuns() && timer !== undefined) {
-            window.clearInterval(timer);
-            timer = undefined;
-        }
     } catch (exception) {
         error.value = exception instanceof HttpError ? exception.message : "Не удалось загрузить историю импортов.";
     } finally {
@@ -91,7 +82,10 @@ async function load() {
     }
 }
 
-onMounted(load);
+onMounted(() => {
+    load();
+    timer = window.setInterval(load, 7000);
+});
 onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 </script>
 
