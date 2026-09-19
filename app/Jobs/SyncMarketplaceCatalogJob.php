@@ -11,6 +11,7 @@ use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use InvalidArgumentException;
@@ -18,7 +19,7 @@ use Throwable;
 
 final class SyncMarketplaceCatalogJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(public int $webhookId, public string $tenant, public ?int $importId = null) {}
 
