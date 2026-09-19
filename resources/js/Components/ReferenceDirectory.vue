@@ -1723,7 +1723,11 @@ useCardRoute<ReferenceRow>({
                                     <option
                                         v-for="row in choices(field.lookup!)"
                                         :key="row.id"
-                                        :value="row.id"
+                                        :value="
+                                            isScheduler && field.key === 'task_key'
+                                                ? row.shortname
+                                                : row.id
+                                        "
                                     >
                                         {{ displayName(row) }}
                                     </option>
