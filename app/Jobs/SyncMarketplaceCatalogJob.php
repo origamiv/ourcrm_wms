@@ -42,10 +42,10 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             ? ImportRun::query()->where('tenant_id', $this->tenant)->findOrFail($this->importId)
             : $this->createLegacyImport($webhook, $marketplace, $marketplaceName);
         $stage = ImportRunStage::query()->where('import_run_id', $run->id)->where('stage_key', 'catalog')->firstOrFail();
-        $stage->forceFill(['status' => 'running', 'started_at' => $stage->started_at ?: now()])->save();
-        $run->forceFill(['status' => 'running', 'current_stage' => 'catalog', 'started_at' => $run->started_at ?: now(), 'last_job_id' => $this->job?->getJobId()])->save();
 
         try {
+            $stage->forceFill(['status' => 'running', 'started_at' => $stage->started_at ?: now()])->save();
+            $run->forceFill(['status' => 'running', 'current_stage' => 'catalog', 'started_at' => $run->started_at ?: now(), 'last_job_id' => $this->job?->getJobId()])->save();
             $data = new IntegrationData;
             $data->forceFill(['name' => $webhook->name, 'shortname' => $webhook->shortname.'_'.now()->format('YmdHis'), 'webhook_id' => $webhook->id, 'service_id' => $webhook->service_id, 'status' => 0, 'status_processing' => 0, 'tenant_id' => $this->tenant, 'src' => ['webhook_id' => $webhook->id]])->save();
             $ruleIds = array_values(array_filter((array) $webhook->rules_id));
@@ -81,6 +81,35 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             $run->forceFill(['status' => 'failed', 'error_class' => $exception::class, 'error_message' => $message, 'finished_at' => now()])->save();
             throw $exception;
         }
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        if ($this->importId === null) {
+            return;
+        }
+
+        $run = ImportRun::query()
+            ->where('tenant_id', $this->tenant)
+            ->whereKey($this->importId)
+            ->whereIn('status', ['queued', 'running'])
+            ->first();
+        if (! $run) {
+            return;
+        }
+
+        $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
+        $message = 'Задача синхронизации каталога аварийно завершена: '.$reason;
+        $run->forceFill([
+            'status' => 'failed',
+            'error_class' => $exception::class,
+            'error_message' => $message,
+            'finished_at' => now(),
+        ])->save();
+        ImportRunStage::query()
+            ->where('import_run_id', $run->id)
+            ->whereIn('status', ['queued', 'running'])
+            ->update(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()]);
     }
 
     private function createLegacyImport(IntegrationWebhook $webhook, string $marketplace, string $marketplaceName): ImportRun
