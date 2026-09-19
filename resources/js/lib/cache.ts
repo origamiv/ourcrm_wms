@@ -144,7 +144,8 @@ export class EntityCache<T extends EntityRow> {
                     const key = `${this.scope}:${change.id}`;
                     const old = (await request(store.get(key))) as
                         Entry<T> | undefined;
-                    if (!old || BigInt(change.version) >= BigInt(old.version))
+                    const version = String(change.version ?? "0");
+                    if (!old || BigInt(version) >= BigInt(old.version ?? "0"))
                         store.put({ ...change, key, scope: this.scope });
                 }
                 if (meta) tx.objectStore("meta").put(meta, this.scope);
@@ -161,7 +162,8 @@ export class EntityCache<T extends EntityRow> {
                 if (String(key) === id && key !== id) this.memory.delete(key);
             }
             const old = this.memory.get(id);
-            if (!old || BigInt(c.version) >= BigInt(old.version))
+            const version = String(c.version ?? "0");
+            if (!old || BigInt(version) >= BigInt(old.version ?? "0"))
                 this.memory.set(id, normalized);
         }
         if (meta) this.meta = meta;

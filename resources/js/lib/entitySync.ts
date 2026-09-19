@@ -91,7 +91,7 @@ export function createEntitySync<T extends EntityRow>(
                 else {
                     online.value = navigator.onLine;
                     error.value = navigator.onLine
-                        ? "Не удалось обновить данные. Можно продолжить работу с сервером."
+                        ? ""
                         : "Нет связи с сервером. Доступны сохранённые данные.";
                 }
             }
