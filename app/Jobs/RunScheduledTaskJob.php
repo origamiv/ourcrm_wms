@@ -13,11 +13,14 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Bus;
+use RuntimeException;
 use Throwable;
 
 final class RunScheduledTaskJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $tries = 1;
 
     public function __construct(public int $runId) {}
 
@@ -27,18 +30,25 @@ final class RunScheduledTaskJob implements ShouldQueue
         $run->update(['status' => 'running', 'started_at' => now()]);
         try {
             $task = $registry->find($run->task_key, $run->tenant_id);
-            if (! $task) throw new \RuntimeException('Задача больше не зарегистрирована.');
+            if (! $task) {
+                throw new RuntimeException('Задача больше не зарегистрирована.');
+            }
             $params = (array) ($run->scheduler?->params ?? []);
             if ($task['type'] === 'command') {
                 $arguments = (array) ($params['arguments'] ?? []);
                 $options = (array) ($params['options'] ?? []);
                 $commandOptions = [];
                 foreach ($options as $key => $value) {
-                    if ($value === null || $value === '') continue;
+                    if ($value === null || $value === '') {
+                        continue;
+                    }
                     $commandOptions[str_starts_with((string) $key, '--') ? (string) $key : '--'.(string) $key] = $value;
                 }
                 $exit = Artisan::call($task['target'], $arguments + $commandOptions);
                 $result = ['exit_code' => $exit, 'output' => mb_substr(Artisan::output(), 0, 10000)];
+                if ($exit !== 0) {
+                    throw new RuntimeException(trim($result['output']) ?: 'Плановая команда завершилась с ошибкой.');
+                }
             } else {
                 $arguments = (array) ($params['arguments'] ?? $params);
                 Bus::dispatchSync(app()->makeWith($task['target'], $arguments));
