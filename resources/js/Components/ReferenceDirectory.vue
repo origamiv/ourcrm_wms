@@ -1216,6 +1216,7 @@ useCardRoute<ReferenceRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            v-memo="[row, orderedColumns, checkedIds, expandedMobileRows, saving, online]"
                             :class="{
                                 'goods-category-row':
                                     isGood &&
