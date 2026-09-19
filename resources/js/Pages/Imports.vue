@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { Head } from "@inertiajs/vue3";
 import MaintenanceTabs from "../Components/MaintenanceTabs.vue";
 import { http, HttpError } from "../lib/http";
-import { formatDate } from "../lib/dates";
+import { formatDateInTimezone } from "../lib/dates";
 
 interface ImportRun {
     id: string;
@@ -56,7 +56,7 @@ function toggleCard(row: ImportRun): void {
 }
 
 function cardDate(value: string | null): string {
-    const formatted = formatDate(value, true);
+    const formatted = formatDateInTimezone(value, "Europe/Moscow", true);
     return formatted === "—" ? formatted : formatted.slice(0, 5) + formatted.slice(8);
 }
 
@@ -104,7 +104,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                         <td data-label="#"><span class="row-id">{{ row.id }}</span></td>
                         <td data-label="Название импорта" class="wrap-cell"><strong>{{ row.row_type === 'stage' ? '↳ ' : '' }}{{ row.name }}</strong></td>
                         <td data-label="Проект">{{ row.project }}</td>
-                        <td data-label="Дата и время старта">{{ formatDate(row.started_at, true) }}</td>
+                        <td data-label="Дата и время старта">{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</td>
                         <td data-label="Текущий этап" class="wrap-cell">{{ row.current_stage_number ? row.current_stage_number + ". " + row.current_stage_name : "—" }}</td>
                         <td data-label="Число этапов">{{ row.total_stages }}</td>
                         <td data-label="Прогресс"><div class="import-progress" :aria-label="'Прогресс: ' + progress(row) + '%'"><span class="import-progress-track"><i :style="{ width: progress(row) + '%' }"></i></span><b>{{ progress(row) }}%</b></div></td>
