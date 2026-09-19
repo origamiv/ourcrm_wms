@@ -24,7 +24,7 @@ function validate() {
         );
     input.value!.setCustomValidity(
         invalidText
-            ? "Введите существующую дату: дд.мм.гг" +
+            ? "Введите существующую дату: дд.мм.гггг" +
                   (props.withTime ? " чч:мм (24 часа)." : ".")
             : "",
     );
@@ -39,7 +39,7 @@ onMounted(() => {
                 shorthand: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
             },
         },
-        dateFormat: props.withTime ? "d.m.y H:i" : "d.m.y",
+        dateFormat: props.withTime ? "d.m.Y H:i" : "d.m.Y",
         ariaDateFormat: "d.m.Y",
         enableTime: !!props.withTime,
         time_24hr: true,
@@ -94,7 +94,7 @@ onBeforeUnmount(() => picker?.destroy());
         type="text"
         lang="ru-RU"
         autocomplete="off"
-        :placeholder="withTime ? 'дд.мм.гг чч:мм' : 'дд.мм.гг'"
+        :placeholder="withTime ? 'дд.мм.гггг чч:мм' : 'дд.мм.гггг'"
         @input="validate"
     />
 </template>

@@ -113,6 +113,11 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::put('/web/scheduler/{id}', [App\Http\Controllers\SchedulerController::class, 'update'])->whereNumber('id');
         Route::delete('/web/scheduler/{id}', [App\Http\Controllers\SchedulerController::class, 'destroy'])->whereNumber('id');
         Route::get('/web/scheduler/{id}/runs', [App\Http\Controllers\SchedulerController::class, 'runs'])->whereNumber('id');
+        Route::get('/web/scheduler-tasks', [App\Http\Controllers\SchedulerTaskController::class, 'index']);
+        Route::post('/web/scheduler-tasks', [App\Http\Controllers\SchedulerTaskController::class, 'store']);
+        Route::put('/web/scheduler-tasks/{id}', [App\Http\Controllers\SchedulerTaskController::class, 'update'])->whereNumber('id');
+        Route::delete('/web/scheduler-tasks/{id}', [App\Http\Controllers\SchedulerTaskController::class, 'destroy'])->whereNumber('id');
+        Route::get('/maintenance/references/tasks', fn () => Inertia\Inertia::render('SchedulerTasks'));
         Route::post('/web/instructions', [App\Http\Controllers\InstructionController::class, 'store']);
         Route::post('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'update'])->whereNumber('id');
         Route::delete('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'destroy'])->whereNumber('id');

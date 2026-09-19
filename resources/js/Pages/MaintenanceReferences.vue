@@ -1,0 +1,2 @@
+<template><Head title="Справочники обслуживания" /><section class="page-content"><div class="content-breadcrumb">Обслуживание › Справочники</div><MaintenanceTabs /><h1>Справочники обслуживания</h1><p class="muted">Выберите справочник в верхнем меню.</p></section></template>
+<script setup lang="ts">import { Head } from "@inertiajs/vue3"; import MaintenanceTabs from "../Components/MaintenanceTabs.vue";</script>

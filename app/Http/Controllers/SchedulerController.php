@@ -24,7 +24,7 @@ final class SchedulerController extends BaseApiController
 
     public function tasks(): JsonResponse
     {
-        return response()->json(['data' => app(SchedulerTaskRegistry::class)->all()]);
+        return response()->json(['data' => app(SchedulerTaskRegistry::class)->all(request()->user()->tenant_id)]);
     }
 
     public function store(CreateSchedulerRequest $request, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry): JsonResponse
@@ -52,9 +52,9 @@ final class SchedulerController extends BaseApiController
 
     private function save(array $data, Request $request, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry, ?Scheduler $item = null): JsonResponse
     {
-        if (! $registry->find($data['task_key'])) throw ValidationException::withMessages(['task_key' => 'Выбранная задача не зарегистрирована.']);
+        if (! $registry->find($data['task_key'], $request->user()->tenant_id)) throw ValidationException::withMessages(['task_key' => 'Выбранная задача не зарегистрирована.']);
         try { $schedule = $schedules->normalize($data['schedule']); } catch (\InvalidArgumentException $exception) { throw ValidationException::withMessages(['schedule' => $exception->getMessage()]); }
-        $task = $registry->find($data['task_key']);
+        $task = $registry->find($data['task_key'], $request->user()->tenant_id);
         $values = ['name' => $data['name'], 'module' => 'wms', 'tenant_id' => $request->user()->tenant_id, 'task_key' => $data['task_key'], 'task_type' => $task['type'], 'params' => $data['params'] ?? [], 'schedule' => $schedule, 'status' => (int) ($data['status'] ?? 1)];
         $values['next_run_at'] = $values['status'] ? $schedules->next($schedule) : null;
         if ($item) $item->update($values); else $item = Scheduler::query()->create($values);
@@ -68,6 +68,6 @@ final class SchedulerController extends BaseApiController
 
     private function row(Scheduler $item, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry): array
     {
-        return $item->toArray() + ['task_label' => $registry->find($item->task_key)['label'] ?? $item->task_key, 'schedule_label' => $schedules->label($item->schedule)];
+        return $item->toArray() + ['task_label' => $registry->find($item->task_key, $item->tenant_id)['label'] ?? $item->task_key, 'schedule_label' => $schedules->label($item->schedule)];
     }
 }

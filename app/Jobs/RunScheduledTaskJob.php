@@ -26,17 +26,17 @@ final class RunScheduledTaskJob implements ShouldQueue
         $run = SchedulerRun::query()->findOrFail($this->runId);
         $run->update(['status' => 'running', 'started_at' => now()]);
         try {
-            $task = $registry->find($run->task_key);
+            $task = $registry->find($run->task_key, $run->tenant_id);
             if (! $task) throw new \RuntimeException('Задача больше не зарегистрирована.');
             $params = (array) ($run->scheduler?->params ?? []);
             if ($task['type'] === 'command') {
                 $arguments = (array) ($params['arguments'] ?? []);
                 $options = (array) ($params['options'] ?? []);
-                $exit = Artisan::call($task['command'], $arguments + $options);
+                $exit = Artisan::call($task['target'], $arguments + $options);
                 $result = ['exit_code' => $exit, 'output' => mb_substr(Artisan::output(), 0, 10000)];
             } else {
                 $arguments = (array) ($params['arguments'] ?? $params);
-                Bus::dispatchSync(app()->makeWith($task['class'], $arguments));
+                Bus::dispatchSync(app()->makeWith($task['target'], $arguments));
                 $result = ['dispatched' => true];
             }
             $run->update(['status' => 'completed', 'result' => $result, 'finished_at' => now()]);
