@@ -162,6 +162,15 @@ function taskSkuCount(row: ReferenceRow): string {
 const isIntegration = props.entity.startsWith("integration_");
 const isMaintenance = ["scheduler_tasks", "scheduler"].includes(props.entity);
 const isScheduler = props.entity === "scheduler";
+const editorFields = computed(() =>
+    definition.fields.filter(
+        (field) =>
+            !(
+                isScheduler &&
+                ["next_run_at", "last_run_at"].includes(field.key)
+            ),
+    ),
+);
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
@@ -1598,7 +1607,7 @@ useCardRoute<ReferenceRow>({
                                 maxlength="255"
                         /></label>
                         <template
-                            v-for="field in definition.fields"
+                            v-for="field in editorFields"
                             :key="field.key"
                         >
                             <StringListInput
