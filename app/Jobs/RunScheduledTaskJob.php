@@ -44,7 +44,7 @@ final class RunScheduledTaskJob implements ShouldQueue
                 Bus::dispatchSync(app()->makeWith($task['target'], $arguments));
                 $result = ['dispatched' => true];
             }
-            $run->update(['status' => 'completed', 'result' => $result, 'finished_at' => now()]);
+            $run->update(['status' => 'completed', 'result' => $result, 'error_message' => null, 'finished_at' => now()]);
         } catch (Throwable $exception) {
             $run->update(['status' => 'failed', 'error_message' => mb_substr($exception->getMessage(), 0, 10000), 'finished_at' => now()]);
             throw $exception;
