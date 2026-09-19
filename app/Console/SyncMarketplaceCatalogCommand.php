@@ -12,7 +12,7 @@ final class SyncMarketplaceCatalogCommand extends Command
 {
     protected $signature = 'integration:sync-catalog {webhook_id : ID интеграции} {--tenant= : Организация} {--sync : Выполнить синхронно}';
 
-    protected $description = 'Загрузить каталог WB или OZON и сопоставить его с товарами WMS';
+    protected $description = 'Загрузить каталог WB, OZON или Яндекс Маркета и сопоставить его с товарами WMS';
 
     public function handle(): int
     {

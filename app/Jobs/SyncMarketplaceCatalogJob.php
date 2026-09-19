@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use InvalidArgumentException;
 
 final class SyncMarketplaceCatalogJob implements ShouldQueue
 {
@@ -22,12 +23,21 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
     {
         $webhook = IntegrationWebhook::query()->where('tenant_id', $this->tenant)->findOrFail($this->webhookId);
         $service = mb_strtolower((string) ($webhook->service_obj?->shortname ?? $webhook->service_obj?->name));
-        $marketplace = str_contains($service, 'ozon') ? 'ozon' : 'wildberries';
+        $marketplace = match (true) {
+            str_contains($service, 'ozon') => 'ozon',
+            str_contains($service, 'yandex') && str_contains($service, 'market') => 'yandex_market',
+            str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
+            default => throw new InvalidArgumentException('Сервис интеграции не является поддерживаемым маркетплейсом: '.$service),
+        };
         $data = new IntegrationData;
         $data->forceFill(['name' => $webhook->name, 'shortname' => $webhook->shortname.'_'.now()->format('YmdHis'), 'webhook_id' => $webhook->id, 'service_id' => $webhook->service_id, 'status' => 0, 'status_processing' => 0, 'tenant_id' => $this->tenant, 'src' => ['webhook_id' => $webhook->id]])->save();
         $ruleIds = array_values(array_filter((array) $webhook->rules_id));
         if ($ruleIds === []) {
-            $ruleIds = [IntegrationRule::query()->where('shortname', $marketplace === 'ozon' ? 'ozon_catalog' : 'wildberries_catalog')->value('id')];
+            $ruleIds = [IntegrationRule::query()->where('shortname', match ($marketplace) {
+                'ozon' => 'ozon_catalog',
+                'yandex_market' => 'yandex_market_catalog',
+                default => 'wildberries_catalog',
+            })->value('id')];
         }
         foreach ($ruleIds as $ruleId) {
             $rule = IntegrationRule::query()->findOrFail((int) $ruleId);

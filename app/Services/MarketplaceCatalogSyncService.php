@@ -15,6 +15,8 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
+use RuntimeException;
 
 final class MarketplaceCatalogSyncService
 {
@@ -23,7 +25,12 @@ final class MarketplaceCatalogSyncService
         $tenant = (string) $webhook->tenant_id;
         $accountId = (int) ($webhook->params['account_id'] ?? 0);
         $account = ClientAccount::query()->where('tenant_id', $tenant)->findOrFail($accountId);
-        $items = $marketplace === 'wildberries' ? $this->loadWildberries($account) : $this->loadOzon($account);
+        $items = match ($marketplace) {
+            'wildberries' => $this->loadWildberries($account),
+            'ozon' => $this->loadOzon($account),
+            'yandex_market' => $this->loadYandexMarket($webhook, $account),
+            default => throw new InvalidArgumentException('Неподдерживаемый маркетплейс: '.$marketplace),
+        };
         $autoCreate = app(TenantFeatureService::class)->enabled($tenant, TenantFeatureService::AUTO_CREATE_MARKETPLACE_GOODS);
         $maps = $this->goodMaps($tenant);
         $processed = 0;
@@ -115,6 +122,94 @@ final class MarketplaceCatalogSyncService
         return $items;
     }
 
+    private function loadYandexMarket(IntegrationWebhook $webhook, ClientAccount $account): array
+    {
+        $credentials = (array) ($account->src['credentials'] ?? []);
+        $businessId = trim((string) ($credentials['business_id'] ?? ''));
+        abort_if($businessId === '' || trim((string) $account->token) === '', 422, 'Для аккаунта Яндекс Маркета не заполнены Api-Key и business_id.');
+
+        $params = (array) ($webhook->params ?? []);
+        $cursor = trim((string) ($params['yandex_market_catalog']['next_page_token'] ?? '')) ?: null;
+        $items = [];
+        $resumed = $cursor !== null;
+
+        do {
+            $url = 'https://api.partner.market.yandex.ru/businesses/'.rawurlencode($businessId).'/offer-mappings?limit=200';
+            if ($cursor !== null) {
+                $url .= '&page_token='.rawurlencode($cursor);
+            }
+
+            try {
+                $response = $this->request($account, false, true)->post($url, ['archived' => false])->throw()->json();
+            } catch (RequestException $exception) {
+                if ($resumed && $cursor !== null && in_array($exception->response->status(), [400, 404], true)) {
+                    $cursor = null;
+                    $resumed = false;
+                    $this->saveYandexCursor($webhook, null);
+
+                    continue;
+                }
+
+                throw $exception;
+            }
+
+            if (($response['status'] ?? null) !== 'OK') {
+                throw new RuntimeException('Яндекс Маркет вернул некорректный статус ответа.');
+            }
+
+            array_push($items, ...$this->normalizeYandexPage((array) $response));
+            $cursor = trim((string) ($response['result']['paging']['nextPageToken'] ?? '')) ?: null;
+            $this->saveYandexCursor($webhook, $cursor);
+            $resumed = false;
+        } while ($cursor !== null);
+
+        return $items;
+    }
+
+    private function normalizeYandexPage(array $response): array
+    {
+        $items = [];
+        foreach ((array) ($response['result']['offerMappings'] ?? []) as $mapping) {
+            $offer = (array) ($mapping['offer'] ?? []);
+            $offerId = trim((string) ($offer['offerId'] ?? ''));
+            if ($offerId === '') {
+                continue;
+            }
+
+            $barcodes = array_values(array_unique(array_filter(array_map(
+                static fn (mixed $barcode): string => trim((string) $barcode),
+                (array) ($offer['barcodes'] ?? []),
+            ))));
+            $marketSku = trim((string) (($mapping['mapping'] ?? [])['marketSku'] ?? ''));
+
+            $items[] = [
+                'external_id' => $offerId,
+                'external_sku' => $marketSku,
+                'offer_id' => $offerId,
+                'name' => (string) ($offer['name'] ?? $offerId),
+                'barcodes' => $barcodes,
+                'status' => 1,
+                'raw_data' => ['offer' => $offer, 'mapping' => (array) ($mapping['mapping'] ?? [])],
+            ];
+        }
+
+        return $items;
+    }
+
+    private function saveYandexCursor(IntegrationWebhook $webhook, ?string $cursor): void
+    {
+        $params = (array) ($webhook->params ?? []);
+        if ($cursor === null) {
+            unset($params['yandex_market_catalog']['next_page_token']);
+            if (($params['yandex_market_catalog'] ?? []) === []) {
+                unset($params['yandex_market_catalog']);
+            }
+        } else {
+            $params['yandex_market_catalog']['next_page_token'] = $cursor;
+        }
+        $webhook->forceFill(['params' => $params])->saveQuietly();
+    }
+
     private function normalizeOzonPage(array $response): array
     {
         $items = [];
@@ -143,9 +238,12 @@ final class MarketplaceCatalogSyncService
         return $items;
     }
 
-    private function request(ClientAccount $account, bool $ozon = false): PendingRequest
+    private function request(ClientAccount $account, bool $ozon = false, bool $yandex = false): PendingRequest
     {
         $request = Http::retry(3, 1000)->timeout(45)->acceptJson();
+        if ($yandex) {
+            return $request->withHeaders(['Api-Key' => (string) $account->token, 'Content-Type' => 'application/json']);
+        }
         if ($ozon) {
             $credentials = (array) ($account->src['credentials'] ?? []);
 
