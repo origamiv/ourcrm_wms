@@ -8,6 +8,12 @@ const tabs = [
         component: "Imports",
         icon: "administration",
     },
+    {
+        label: "Планировщик",
+        url: "/maintenance/scheduler",
+        component: "Scheduler",
+        icon: "administration",
+    },
 ];
 </script>
 

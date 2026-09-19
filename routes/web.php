@@ -107,6 +107,12 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::put('/web/{catalog}/{id}', [App\Http\Controllers\AccessCatalogController::class, 'update'])->whereIn('catalog', ['roles', 'permissions'])->whereNumber('id');
         Route::get('/web/users/sync', [WmsUserController::class, 'index']);
         Route::get('/web/imports', [App\Http\Controllers\ImportRunController::class, 'index']);
+        Route::get('/web/scheduler', [App\Http\Controllers\SchedulerController::class, 'index']);
+        Route::get('/web/scheduler/tasks', [App\Http\Controllers\SchedulerController::class, 'tasks']);
+        Route::post('/web/scheduler', [App\Http\Controllers\SchedulerController::class, 'store']);
+        Route::put('/web/scheduler/{id}', [App\Http\Controllers\SchedulerController::class, 'update'])->whereNumber('id');
+        Route::delete('/web/scheduler/{id}', [App\Http\Controllers\SchedulerController::class, 'destroy'])->whereNumber('id');
+        Route::get('/web/scheduler/{id}/runs', [App\Http\Controllers\SchedulerController::class, 'runs'])->whereNumber('id');
         Route::post('/web/instructions', [App\Http\Controllers\InstructionController::class, 'store']);
         Route::post('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'update'])->whereNumber('id');
         Route::delete('/web/instructions/{id}', [App\Http\Controllers\InstructionController::class, 'destroy'])->whereNumber('id');
