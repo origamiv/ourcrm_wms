@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Jobs\SyncMarketplaceCatalogJob;
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
 use Illuminate\Support\Facades\DB;
@@ -78,11 +79,16 @@ final class ImportRunService
     {
         try {
             $redis = Redis::connection();
-            $payloads = [
-                ...$redis->lrange('queues:imports', 0, -1),
-                ...$redis->zrange('queues:imports:reserved', 0, -1),
-                ...$redis->zrange('queues:imports:delayed', 0, -1),
-            ];
+            $queueNames = ['imports', ...array_values(SyncMarketplaceCatalogJob::QUEUES)];
+            $payloads = [];
+            foreach ($queueNames as $queueName) {
+                $payloads = [
+                    ...$payloads,
+                    ...$redis->lrange('queues:'.$queueName, 0, -1),
+                    ...$redis->zrange('queues:'.$queueName.':reserved', 0, -1),
+                    ...$redis->zrange('queues:'.$queueName.':delayed', 0, -1),
+                ];
+            }
             $patterns = ['importId";i:'.$importId, '"importId":'.$importId];
 
             foreach ($payloads as $payload) {

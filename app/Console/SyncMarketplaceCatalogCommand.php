@@ -21,7 +21,17 @@ final class SyncMarketplaceCatalogCommand extends Command
         if ($this->option('sync')) {
             app(SyncMarketplaceCatalogJob::class, ['webhookId' => $webhook->id, 'tenant' => $tenant])->handle();
         } else {
-            SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant);
+            $webhook->loadMissing('service_obj');
+            $service = mb_strtolower((string) ($webhook->service_obj?->shortname ?? $webhook->service_obj?->name));
+            $marketplace = match (true) {
+                str_contains($service, 'ozon') => 'ozon',
+                str_contains($service, 'yandex') && str_contains($service, 'market') => 'yandex_market',
+                str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
+                default => null,
+            };
+            SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant)
+                ->onConnection('redis')
+                ->onQueue(SyncMarketplaceCatalogJob::queueForMarketplace((string) $marketplace));
         }
         $this->info($this->option('sync') ? 'Синхронизация выполнена.' : 'Синхронизация поставлена в очередь.');
 

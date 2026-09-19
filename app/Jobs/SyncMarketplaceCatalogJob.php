@@ -21,7 +21,18 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public const QUEUES = [
+        'wildberries' => 'imports_wildberries',
+        'ozon' => 'imports_ozon',
+        'yandex_market' => 'imports_yandex_market',
+    ];
+
     public function __construct(public int $webhookId, public string $tenant, public ?int $importId = null) {}
+
+    public static function queueForMarketplace(string $marketplace): string
+    {
+        return self::QUEUES[$marketplace] ?? 'imports';
+    }
 
     public function handle(): void
     {

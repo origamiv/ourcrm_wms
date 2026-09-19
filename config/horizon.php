@@ -104,6 +104,9 @@ return [
     'waits' => [
         'redis:default' => 60,
         'redis:imports' => 60,
+        'redis:imports_wildberries' => 60,
+        'redis:imports_ozon' => 60,
+        'redis:imports_yandex_market' => 60,
     ],
 
     /*
@@ -229,6 +232,42 @@ return [
             'timeout' => 1800,
             'nice' => 0,
         ],
+        'imports_wildberries' => [
+            'connection' => 'redis',
+            'queue' => ['imports_wildberries'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 2,
+            'timeout' => 1800,
+            'nice' => 0,
+        ],
+        'imports_ozon' => [
+            'connection' => 'redis',
+            'queue' => ['imports_ozon'],
+            'balance' => 'simple',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 2,
+            'timeout' => 1800,
+            'nice' => 0,
+        ],
+        'imports_yandex_market' => [
+            'connection' => 'redis',
+            'queue' => ['imports_yandex_market'],
+            'balance' => 'simple',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 2,
+            'timeout' => 1800,
+            'nice' => 0,
+        ],
     ],
 
     'environments' => [
@@ -243,6 +282,15 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 5,
             ],
+            'imports_wildberries' => [
+                'maxProcesses' => 1,
+            ],
+            'imports_ozon' => [
+                'maxProcesses' => 2,
+            ],
+            'imports_yandex_market' => [
+                'maxProcesses' => 2,
+            ],
         ],
 
         'local' => [
@@ -250,6 +298,15 @@ return [
                 'maxProcesses' => 3,
             ],
             'imports' => [
+                'maxProcesses' => 2,
+            ],
+            'imports_wildberries' => [
+                'maxProcesses' => 1,
+            ],
+            'imports_ozon' => [
+                'maxProcesses' => 2,
+            ],
+            'imports_yandex_market' => [
                 'maxProcesses' => 2,
             ],
         ],

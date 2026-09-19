@@ -107,7 +107,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
                 SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant, $import->id)
                     ->onConnection('redis')
-                    ->onQueue('imports');
+                    ->onQueue(SyncMarketplaceCatalogJob::queueForMarketplace($marketplace));
                 $queued++;
             });
 
