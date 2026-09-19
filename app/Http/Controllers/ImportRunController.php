@@ -18,7 +18,7 @@ final class ImportRunController extends BaseApiController
         $runs = ImportRun::query()
             ->with('stages')
             ->visibleTo((string) $request->user()->tenant_id)
-            ->orderByDesc('started_at')
+            ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->paginate(50);
 
