@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { Head } from "@inertiajs/vue3";
 import MaintenanceTabs from "../Components/MaintenanceTabs.vue";
 import RussianDateInput from "../Components/RussianDateInput.vue";
+import TableViewLayout from "../Components/TableViewLayout.vue";
 import { http, HttpError } from "../lib/http";
 import { formatDate } from "../lib/dates";
 
@@ -38,8 +39,8 @@ onMounted(load);
 
 <template>
     <Head title="Планировщик" />
-    <div class="scheduler-workspace" :class="{ 'has-editor': editorOpen }">
-        <section class="scheduler-main">
+    <TableViewLayout :editor-open="editorOpen">
+        <section class="users-list scheduler-main">
             <div class="content-breadcrumb">Обслуживание › Планировщик</div><MaintenanceTabs />
             <div class="page-heading"><div><h1>Планировщик</h1><p class="muted">Фоновые задачи модуля WMS, расписания и журнал запусков</p></div><button class="button primary" type="button" @click="reset()">Добавить расписание</button></div>
             <p v-if="error" class="notice error" role="alert">{{ error }}</p>
@@ -61,12 +62,11 @@ onMounted(load);
             </form></div>
         </aside>
         <div v-if="history" class="modal-backdrop" @click.self="history = null"><div class="editor-card history-card" role="dialog" aria-modal="true"><button class="editor-close" type="button" aria-label="Закрыть" @click="history = null">×</button><h2>История: {{ history.row.name }}</h2><div class="history-table"><table><thead><tr><th>#</th><th>Статус</th><th>Поставлено</th><th>Начало</th><th>Завершение</th><th>Ошибка</th></tr></thead><tbody><tr v-for="run in history.runs" :key="run.id"><td>{{ run.id }}</td><td>{{ run.status }}</td><td>{{ format(run.queued_at) }}</td><td>{{ format(run.started_at) }}</td><td>{{ format(run.finished_at) }}</td><td>{{ run.error_message || '—' }}</td></tr><tr v-if="!history.runs.length"><td colspan="6" class="empty-cell">Запусков ещё не было</td></tr></tbody></table></div><button class="button" type="button" @click="history = null">Закрыть</button></div></div>
-    </div>
+    </TableViewLayout>
 </template>
 
 <style scoped>
 .scheduler-page { min-width: 0; }
-.scheduler-workspace { display: flex; min-height: 0; flex: 1; overflow: hidden; background: #fff; border: 1px solid var(--crm-border); border-radius: 10px; }
 .scheduler-main { display: flex; flex: 1; min-width: 0; flex-direction: column; overflow: auto; padding: 30px; }
 .scheduler-editor { width: 390px; }
 .scheduler-editor h3 { margin: 24px 0 12px; font-size: 15px; }
@@ -111,5 +111,5 @@ onMounted(load);
 .history-table { overflow-x: auto; margin-bottom: 20px; }
 .history-table .imports-table { min-width: 760px; }
 @media (max-width: 640px) { .editor-card { padding: 22px 16px; } .form-grid { grid-template-columns: 1fr; } }
-@media (max-width: 900px) { .scheduler-workspace { display: block; overflow: auto; } .scheduler-main { padding: 18px 12px; } .scheduler-editor { width: auto; border-top: 1px solid #e8ecf0; } }
+@media (max-width: 900px) { .scheduler-main { padding: 18px 12px; } .scheduler-editor { width: auto; border-top: 1px solid #e8ecf0; } }
 </style>
