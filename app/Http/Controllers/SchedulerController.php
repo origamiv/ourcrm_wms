@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateSchedulerRequest;
 use App\Models\Scheduler;
 use App\Services\SchedulerScheduleService;
 use App\Services\SchedulerTaskRegistry;
+use App\Services\EntitySyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -27,15 +28,15 @@ final class SchedulerController extends BaseApiController
         return response()->json(['data' => app(SchedulerTaskRegistry::class)->all(request()->user()->tenant_id)]);
     }
 
-    public function store(CreateSchedulerRequest $request, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry): JsonResponse
+    public function store(CreateSchedulerRequest $request, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry, EntitySyncService $sync): JsonResponse
     {
-        return $this->save($request->validated(), $request, $schedules, $registry);
+        return $this->save($request->validated(), $request, $schedules, $registry, $sync);
     }
 
-    public function update(UpdateSchedulerRequest $request, int $id, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry): JsonResponse
+    public function update(UpdateSchedulerRequest $request, int $id, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry, EntitySyncService $sync): JsonResponse
     {
         $item = $this->find($request, $id);
-        return $this->save($request->validated(), $request, $schedules, $registry, $item);
+        return $this->save($request->validated(), $request, $schedules, $registry, $sync, $item);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
@@ -50,7 +51,7 @@ final class SchedulerController extends BaseApiController
         return response()->json(['data' => $item->runs()->latest('id')->get()]);
     }
 
-    private function save(array $data, Request $request, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry, ?Scheduler $item = null): JsonResponse
+    private function save(array $data, Request $request, SchedulerScheduleService $schedules, SchedulerTaskRegistry $registry, EntitySyncService $sync, ?Scheduler $item = null): JsonResponse
     {
         if (! $registry->find($data['task_key'], $request->user()->tenant_id)) throw ValidationException::withMessages(['task_key' => 'Выбранная задача не зарегистрирована.']);
         try { $schedule = $schedules->normalize($data['schedule']); } catch (\InvalidArgumentException $exception) { throw ValidationException::withMessages(['schedule' => $exception->getMessage()]); }
@@ -58,7 +59,7 @@ final class SchedulerController extends BaseApiController
         $values = ['name' => $data['name'], 'module' => 'wms', 'tenant_id' => $request->user()->tenant_id, 'task_key' => $data['task_key'], 'task_type' => $task['type'], 'params' => $data['params'] ?? [], 'schedule' => $schedule, 'status' => (int) ($data['status'] ?? 1)];
         $values['next_run_at'] = $values['status'] ? $schedules->next($schedule) : null;
         if ($item) $item->update($values); else $item = Scheduler::query()->create($values);
-        return response()->json(['data' => $this->row($item->fresh(), $schedules, $registry)]);
+        return response()->json(['data' => $sync->current(Scheduler::class, $item->tenant_id, $item->id)]);
     }
 
     private function find(Request $request, int $id): Scheduler
