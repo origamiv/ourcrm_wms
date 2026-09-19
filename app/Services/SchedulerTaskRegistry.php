@@ -10,7 +10,7 @@ final class SchedulerTaskRegistry
 {
     public function all(string $tenant): array
     {
-        return SchedulerTask::query()->visibleTo($tenant)->where('module', 'wms')->where('status', 1)->orderBy('name')->get()->map(fn (SchedulerTask $task): array => ['key' => $task->shortname, 'label' => $task->name, 'type' => $task->task_type, 'target' => $task->target, 'options' => $task->options])->all();
+        return SchedulerTask::query()->visibleTo($tenant)->where('module', 'wms')->where('status', 1)->orderBy('name')->get()->map(fn (SchedulerTask $task): array => ['key' => $task->shortname, 'label' => $task->name, 'type' => $task->task_type, 'target' => $task->target, 'options' => json_decode(json_encode($task->options ?? [], JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR)])->all();
     }
 
     public function find(string $key, string $tenant): ?array
