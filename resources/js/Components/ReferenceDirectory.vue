@@ -159,7 +159,7 @@ function taskSkuCount(row: ReferenceRow): string {
     return `${Number.isFinite(sku) ? sku : 0} / ${Number.isFinite(count) ? count : 0}`;
 }
 const isIntegration = props.entity.startsWith("integration_");
-const isMaintenance = props.entity === "scheduler_tasks";
+const isMaintenance = ["scheduler_tasks", "scheduler"].includes(props.entity);
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
@@ -203,7 +203,7 @@ const basePath = isIntegration
       : isClientSection
         ? `/clients/${props.entity.replace("client_", "")}`
         : isMaintenance
-          ? "/scheduler_tasks"
+          ? props.entity === "scheduler" ? "/scheduler" : "/scheduler_tasks"
           : `/main/${props.entity}`;
 const endpoint = isIndividual ? null : basePath.replace("/main/", "/");
 const clientFilter = ref("");

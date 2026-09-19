@@ -42,6 +42,7 @@ export interface ReferenceField {
         | "cells"
         | "cell_goods"
         | "tasks"
+        | "scheduler_tasks"
         | "acceptances"
         | "type_acceptance"
         | "type_services"
@@ -72,6 +73,7 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    scheduler: { title: "Планировщик", fields: [{ key: "task_key", label: "Задача", kind: "lookup", lookup: "scheduler_tasks" }, { key: "task_type", label: "Тип задачи" }, { key: "params", label: "Параметры", kind: "json", detail: true }, { key: "schedule", label: "Повторение", kind: "json", detail: true }, { key: "next_run_at", label: "Следующий запуск", kind: "datetime" }, { key: "last_run_at", label: "Последний запуск", kind: "datetime" }] as ReferenceField[] },
     scheduler_tasks: { title: "Задачи", fields: [{ key: "shortname", label: "Код" }, { key: "task_type", label: "Тип" }, { key: "target", label: "Обработчик" }, { key: "options", label: "Параметры", kind: "json", detail: true }] as ReferenceField[] },
     orders: {
         title: "Заказы",
