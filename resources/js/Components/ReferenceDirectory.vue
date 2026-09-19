@@ -1709,7 +1709,11 @@ useCardRoute<ReferenceRow>({
                                             form[field.key] &&
                                             !choices(field.lookup!).some(
                                                 (row) =>
-                                                    String(row.id) ===
+                                                    String(
+                                                        isScheduler && field.key === 'task_key'
+                                                            ? row.shortname
+                                                            : row.id,
+                                                    ) ===
                                                     String(form[field.key]),
                                             )
                                         "
