@@ -221,7 +221,7 @@ return [
             'queue' => ['imports'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses' => 4,
+            'maxProcesses' => 2,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 256,
@@ -239,7 +239,7 @@ return [
                 'balanceCooldown' => 3,
             ],
             'imports' => [
-                'maxProcesses' => 4,
+                'maxProcesses' => 2,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 5,
             ],
