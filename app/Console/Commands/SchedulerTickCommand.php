@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use Carbon\CarbonImmutable;
 use App\Jobs\RunScheduledTaskJob;
 use App\Models\Scheduler;
 use App\Services\SchedulerScheduleService;
@@ -22,7 +23,7 @@ final class SchedulerTickCommand extends Command
                 $scheduler = Scheduler::query()->lockForUpdate()->find($item->id);
                 if (! $scheduler || $scheduler->status !== 1 || ! $scheduler->next_run_at || $scheduler->next_run_at->isFuture()) return;
                 $run = $scheduler->runs()->create(['tenant_id' => $scheduler->tenant_id, 'module' => $scheduler->module, 'task_key' => $scheduler->task_key, 'status' => 'queued', 'queued_at' => now(SchedulerScheduleService::TIMEZONE)]);
-                $scheduler->update(['last_run_at' => $scheduler->next_run_at, 'next_run_at' => $service->next($scheduler->schedule, now(SchedulerScheduleService::TIMEZONE))]);
+                $scheduler->update(['last_run_at' => $scheduler->next_run_at, 'next_run_at' => $service->next($scheduler->schedule, CarbonImmutable::now(SchedulerScheduleService::TIMEZONE))]);
                 RunScheduledTaskJob::dispatch($run->id)->afterCommit();
             });
         });
