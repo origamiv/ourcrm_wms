@@ -111,6 +111,7 @@ export const references = {
         fields: [
             { key: "code", label: "Код", detail: true },
             { key: "shortname", label: "Краткое название" },
+            { key: "client_id", label: "Клиент", kind: "lookup", lookup: "clients" },
             {
                 key: "service_id",
                 label: "Сервис",

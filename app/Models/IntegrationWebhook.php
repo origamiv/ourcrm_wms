@@ -10,7 +10,12 @@ final class IntegrationWebhook extends BaseModel
 
     protected $guarded = ['*'];
 
-    protected $casts = ['status' => 'integer', 'rules_id' => 'array', 'params' => 'array', 'cnt' => 'integer', 'dat_last_run' => 'datetime'];
+    protected $casts = ['status' => 'integer', 'client_id' => 'integer', 'rules_id' => 'array', 'params' => 'array', 'cnt' => 'integer', 'dat_last_run' => 'datetime'];
+
+    public function client_obj(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'client_id');
+    }
 
     public function service_obj(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
