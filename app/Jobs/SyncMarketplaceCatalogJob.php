@@ -20,11 +20,11 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, SerializesModels;
 
-    public function __construct(public int $webhookId, public string $tenant) {}
+    public function __construct(public int $webhookId, public string $tenant, public ?int $importId = null) {}
 
     public function handle(): void
     {
-        $webhook = IntegrationWebhook::query()->where('tenant_id', $this->tenant)->findOrFail($this->webhookId);
+        $webhook = IntegrationWebhook::query()->where('tenant_id', $this->tenant)->with(['service_obj', 'client_obj'])->findOrFail($this->webhookId);
         $service = mb_strtolower((string) ($webhook->service_obj?->shortname ?? $webhook->service_obj?->name));
         $marketplace = match (true) {
             str_contains($service, 'ozon') => 'ozon',
@@ -37,27 +37,12 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             'ozon' => 'Ozon',
             default => 'Яндекс Маркет',
         };
-        $run = ImportRun::query()->create([
-            'tenant_id' => $this->tenant,
-            'source_client_id' => (int) ($webhook->params['account_id'] ?? 0) ?: null,
-            'source_system' => $marketplace,
-            'project' => 'marketplace',
-            'name' => 'Синхронизация каталога '.$marketplaceName.' — '.$webhook->name,
-            'status' => 'running',
-            'current_stage' => 'catalog',
-            'total_stages' => 1,
-            'completed_stages' => 0,
-            'started_at' => now(),
-            'options' => ['webhook_id' => $webhook->id, 'marketplace' => $marketplace],
-        ]);
-        $stage = ImportRunStage::query()->create([
-            'import_run_id' => $run->id,
-            'stage_number' => 1,
-            'stage_key' => 'catalog',
-            'name' => 'Каталог '.$marketplaceName,
-            'status' => 'running',
-            'started_at' => now(),
-        ]);
+        $run = $this->importId
+            ? ImportRun::query()->where('tenant_id', $this->tenant)->findOrFail($this->importId)
+            : $this->createLegacyImport($webhook, $marketplace, $marketplaceName);
+        $stage = ImportRunStage::query()->where('import_run_id', $run->id)->where('stage_key', 'catalog')->firstOrFail();
+        $stage->forceFill(['status' => 'running', 'started_at' => $stage->started_at ?: now()])->save();
+        $run->forceFill(['status' => 'running', 'current_stage' => 'catalog', 'started_at' => $run->started_at ?: now(), 'last_job_id' => $this->job?->getJobId()])->save();
 
         try {
             $data = new IntegrationData;
@@ -76,15 +61,44 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
                 if (! str_contains($handler, '\\')) {
                     $handler = 'App\\Rules\\'.$handler;
                 }
-                app($handler)->handle($data, ['marketplace' => $marketplace, 'rule_id' => $rule->id]);
+                app($handler)->handle($data, [
+                    'marketplace' => $marketplace,
+                    'rule_id' => $rule->id,
+                    'progress' => function (int $total, int $processed) use ($run, $stage): void {
+                        $run->forceFill(['total_records' => $total, 'processed_records' => $processed])->save();
+                        $stage->forceFill(['total_records' => $total, 'processed_records' => $processed])->save();
+                    },
+                ]);
             }
-            $stage->forceFill(['status' => 'completed', 'finished_at' => now(), 'processed_records' => (int) ($data->data['processed'] ?? 0), 'total_records' => (int) ($data->data['processed'] ?? 0)])->save();
-            $run->forceFill(['status' => 'completed', 'current_stage' => null, 'completed_stages' => 1, 'finished_at' => now(), 'processed_records' => (int) ($data->data['processed'] ?? 0), 'total_records' => (int) ($data->data['processed'] ?? 0)])->save();
+            $processed = (int) ($data->data['processed'] ?? 0);
+            $stage->forceFill(['status' => 'completed', 'finished_at' => now(), 'processed_records' => $processed, 'total_records' => max((int) $stage->total_records, $processed)])->save();
+            $run->forceFill(['status' => 'completed', 'current_stage' => null, 'completed_stages' => 1, 'finished_at' => now(), 'processed_records' => $processed, 'total_records' => max((int) $run->total_records, $processed)])->save();
         } catch (Throwable $exception) {
-            $message = 'Синхронизация каталога '.$marketplaceName.' не выполнена: '.trim($exception->getMessage()) ?: 'неизвестная ошибка.';
+            $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
+            $message = 'Синхронизация каталога '.$marketplaceName.' не выполнена: '.$reason;
             $stage->forceFill(['status' => 'failed', 'finished_at' => now(), 'error_message' => $message])->save();
             $run->forceFill(['status' => 'failed', 'error_class' => $exception::class, 'error_message' => $message, 'finished_at' => now()])->save();
             throw $exception;
         }
+    }
+
+    private function createLegacyImport(IntegrationWebhook $webhook, string $marketplace, string $marketplaceName): ImportRun
+    {
+        $run = ImportRun::query()->create([
+            'tenant_id' => $this->tenant,
+            'source_client_id' => $webhook->client_id,
+            'source_webhook_id' => $webhook->id,
+            'source_system' => $marketplace,
+            'project' => 'marketplace',
+            'name' => 'Синхронизация каталога '.$marketplaceName.' — '.$webhook->name,
+            'status' => 'queued',
+            'current_stage' => 'catalog',
+            'total_stages' => 1,
+            'completed_stages' => 0,
+            'options' => ['webhook_id' => $webhook->id, 'marketplace' => $marketplace, 'account_id' => (int) (($webhook->params ?? [])['account_id'] ?? 0) ?: null],
+        ]);
+        ImportRunStage::query()->create(['import_run_id' => $run->id, 'stage_number' => 1, 'stage_key' => 'catalog', 'name' => 'Каталог '.$marketplaceName, 'status' => 'queued']);
+
+        return $run;
     }
 }

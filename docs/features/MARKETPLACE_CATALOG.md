@@ -1,8 +1,10 @@
 # Каталог маркетплейсов
 
-Команда `integration:sync-catalog` загружает каталог выбранного webhook Wildberries, OZON или Яндекс Маркета и передаёт данные через последовательность `integration.rules`.
+Команда `integration:sync-catalogs {tenant}` находит активные webhook выбранного tenant с правилами каталогов Wildberries, OZON или Яндекс Маркета и ставит отдельную задачу на каждый webhook. Повторный запуск не дублирует уже выполняющуюся задачу.
 
-Для Яндекс Маркета аккаунт хранит Api-Key в `clients.accounts.token`, а идентификатор бизнеса — в `clients.accounts.src.credentials.business_id`. Вебхук содержит только `params.account_id`; правило выбирается по сервису интеграции. Каталог загружается методом `businesses/{businessId}/offer-mappings` с постраничным курсором.
+Для каждой интеграции аккаунт выбирается по `webhooks.params.account_id`. Команда проверяет принадлежность аккаунта tenant и клиенту webhook. Для Яндекс Маркета аккаунт хранит Api-Key в `clients.accounts.token`, а идентификатор бизнеса — в `clients.accounts.src.credentials.business_id`. Каталог загружается методом `businesses/{businessId}/offer-mappings` с постраничным курсором.
+
+Каждый запуск отображается в **Обслуживание → Импорты** с клиентом, marketplace, webhook ID, account ID, текущим статусом, обработанным количеством и текстом ошибки.
 
 Результаты сохраняются в `wms.goods_marketplace`. Для Яндекс Маркета `external_id` и `offer_id` равны `offerId`, а `external_sku` содержит `marketSku`. Сопоставление выполняется по артикулу/offer ID и штрихкоду. Существующее ручное сопоставление не изменяется.
 

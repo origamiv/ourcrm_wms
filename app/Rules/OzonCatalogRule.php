@@ -12,6 +12,6 @@ final class OzonCatalogRule
 {
     public function handle(IntegrationData $data, array $params = []): IntegrationData
     {
-        return app(MarketplaceCatalogSyncService::class)->sync(IntegrationWebhook::findOrFail($data->webhook_id), $data, 'ozon');
+        return app(MarketplaceCatalogSyncService::class)->sync(IntegrationWebhook::findOrFail($data->webhook_id), $data, 'ozon', $params['progress'] ?? null);
     }
 }

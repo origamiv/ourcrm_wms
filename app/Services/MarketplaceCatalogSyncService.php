@@ -20,11 +20,17 @@ use RuntimeException;
 
 final class MarketplaceCatalogSyncService
 {
-    public function sync(IntegrationWebhook $webhook, IntegrationData $data, string $marketplace): IntegrationData
+    public function sync(IntegrationWebhook $webhook, IntegrationData $data, string $marketplace, ?callable $progress = null): IntegrationData
     {
         $tenant = (string) $webhook->tenant_id;
         $accountId = (int) ($webhook->params['account_id'] ?? 0);
         $account = ClientAccount::query()->where('tenant_id', $tenant)->findOrFail($accountId);
+        if ((int) $account->status !== 1) {
+            throw new RuntimeException('Аккаунт маркетплейса отключён.');
+        }
+        if ($webhook->client_id !== null && (int) $account->client_id !== (int) $webhook->client_id) {
+            throw new RuntimeException('Аккаунт маркетплейса не принадлежит клиенту интеграции.');
+        }
         $items = match ($marketplace) {
             'wildberries' => $this->loadWildberries($account),
             'ozon' => $this->loadOzon($account),
@@ -34,6 +40,9 @@ final class MarketplaceCatalogSyncService
         $autoCreate = app(TenantFeatureService::class)->enabled($tenant, TenantFeatureService::AUTO_CREATE_MARKETPLACE_GOODS);
         $maps = $this->goodMaps($tenant);
         $processed = 0;
+        if ($progress) {
+            $progress(count($items), 0);
+        }
 
         foreach ($items as $item) {
             DB::transaction(function () use ($webhook, $tenant, $marketplace, $item, $autoCreate, &$maps): void {
@@ -64,6 +73,9 @@ final class MarketplaceCatalogSyncService
                 $row->save();
             }, 3);
             $processed++;
+            if ($progress) {
+                $progress(count($items), $processed);
+            }
         }
 
         $data->forceFill(['data' => ['marketplace' => $marketplace, 'processed' => $processed, 'auto_create' => $autoCreate], 'status_processing' => 1, 'status' => 1])->save();

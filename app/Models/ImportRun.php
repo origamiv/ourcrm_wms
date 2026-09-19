@@ -43,6 +43,7 @@ final class ImportRun extends BaseModel
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'source_client_id' => 'integer',
+        'source_webhook_id' => 'integer',
         'total_stages' => 'integer',
         'completed_stages' => 'integer',
         'total_jobs' => 'integer',

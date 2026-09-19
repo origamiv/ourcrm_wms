@@ -42,6 +42,11 @@ final class ImportRunController extends BaseApiController
                 'current_stage_number' => $current?->stage_number,
                 'current_stage_name' => $current?->name,
                 'error_message' => $run->error_message,
+                'webhook_id' => $run->source_webhook_id ?: ($run->options['webhook_id'] ?? null),
+                'client_id' => $run->source_client_id ?: ($run->options['client_id'] ?? null),
+                'client_name' => $run->options['client_name'] ?? null,
+                'account_id' => $run->options['account_id'] ?? null,
+                'marketplace' => $run->options['marketplace'] ?? $run->source_system,
             ];
             $stages = $run->stages->map(fn (ImportRunStage $stage): array => [
                 'row_type' => 'stage',
@@ -61,6 +66,11 @@ final class ImportRunController extends BaseApiController
                 'current_stage_number' => (int) $stage->stage_number,
                 'current_stage_name' => $stage->name,
                 'error_message' => $stage->error_message,
+                'webhook_id' => $run->source_webhook_id ?: ($run->options['webhook_id'] ?? null),
+                'client_id' => $run->source_client_id ?: ($run->options['client_id'] ?? null),
+                'client_name' => $run->options['client_name'] ?? null,
+                'account_id' => $run->options['account_id'] ?? null,
+                'marketplace' => $run->options['marketplace'] ?? $run->source_system,
             ])->all();
 
             return [$parent, ...$stages];

@@ -12,6 +12,6 @@ final class WildberriesCatalogRule
 {
     public function handle(IntegrationData $data, array $params = []): IntegrationData
     {
-        return app(MarketplaceCatalogSyncService::class)->sync(IntegrationWebhook::findOrFail($data->webhook_id), $data, 'wildberries');
+        return app(MarketplaceCatalogSyncService::class)->sync(IntegrationWebhook::findOrFail($data->webhook_id), $data, 'wildberries', $params['progress'] ?? null);
     }
 }

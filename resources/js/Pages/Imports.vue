@@ -23,6 +23,11 @@ interface ImportRun {
     current_stage_number: number | null;
     current_stage_name: string | null;
     error_message: string | null;
+    webhook_id: number | null;
+    client_id: number | null;
+    client_name: string | null;
+    account_id: number | null;
+    marketplace: string;
 }
 
 const rows = ref<ImportRun[]>([]);
@@ -31,12 +36,17 @@ const error = ref("");
 const expandedCards = ref<Set<string>>(new Set());
 let timer: number | undefined;
 
-function progress(row: ImportRun): number {
+function progress(row: ImportRun): number | null {
     if (row.row_type === "run") {
         return row.total_stages > 0 ? Math.min(100, Math.round(row.completed_stages / row.total_stages * 100)) : 0;
     }
-    if (row.total_records === 0) return row.status === "completed" ? 100 : 0;
+    if (row.total_records === 0) return row.status === "completed" ? 100 : null;
     return Math.min(100, Math.round(row.processed_records / row.total_records * 100));
+}
+
+function progressText(row: ImportRun): string {
+    const value = progress(row);
+    return value === null ? "—" : value + "%";
 }
 
 function statusLabel(status: string): string {
@@ -96,21 +106,20 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
         <p v-if="error" class="notice error" role="alert">{{ error }}</p>
         <div class="table-scroll imports-table-wrap">
             <table class="imports-table">
-                <thead><tr><th>#</th><th>Название импорта</th><th>Проект</th><th>Дата и время старта</th><th>Текущий этап</th><th>Число этапов</th><th>Прогресс</th><th>Число записей</th><th>Число чанков</th><th>Обработано записей / чанков</th><th>Статус</th></tr></thead>
+                <thead><tr><th>#</th><th>Название импорта</th><th>Клиент</th><th>Маркетплейс</th><th>Интеграция</th><th>Дата и время старта</th><th>Текущий этап</th><th>Прогресс</th><th>Обработано записей</th><th>Статус</th></tr></thead>
                 <tbody>
-                    <tr v-if="loading"><td colspan="11" class="empty-cell">Загрузка…</td></tr>
-                    <tr v-else-if="rows.length === 0"><td colspan="11" class="empty-cell">Импорты ещё не запускались</td></tr>
+                    <tr v-if="loading"><td colspan="10" class="empty-cell">Загрузка…</td></tr>
+                    <tr v-else-if="rows.length === 0"><td colspan="10" class="empty-cell">Импорты ещё не запускались</td></tr>
                     <tr v-for="row in rows" :key="row.row_type + '-' + row.id" :class="{ 'stage-row': row.row_type === 'stage' }">
                         <td data-label="#"><span class="row-id">{{ row.id }}</span></td>
                         <td data-label="Название импорта" class="wrap-cell"><strong>{{ row.row_type === 'stage' ? '↳ ' : '' }}{{ row.name }}</strong></td>
-                        <td data-label="Проект">{{ row.project }}</td>
+                        <td data-label="Клиент">{{ row.client_name || (row.client_id ? '#' + row.client_id : '—') }}</td>
+                        <td data-label="Маркетплейс">{{ row.marketplace }}</td>
+                        <td data-label="Интеграция">#{{ row.webhook_id || '—' }}<small v-if="row.account_id" class="wrap-cell">Аккаунт #{{ row.account_id }}</small></td>
                         <td data-label="Дата и время старта">{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</td>
                         <td data-label="Текущий этап" class="wrap-cell">{{ row.current_stage_number ? row.current_stage_number + ". " + row.current_stage_name : "—" }}</td>
-                        <td data-label="Число этапов">{{ row.total_stages }}</td>
-                        <td data-label="Прогресс"><div class="import-progress" :aria-label="'Прогресс: ' + progress(row) + '%'"><span class="import-progress-track"><i :style="{ width: progress(row) + '%' }"></i></span><b>{{ progress(row) }}%</b></div></td>
-                        <td data-label="Число записей">{{ row.total_records }}</td>
-                        <td data-label="Число чанков">{{ row.total_chunks }}</td>
-                        <td data-label="Обработано записей / чанков">{{ row.processed_records }} / {{ row.processed_chunks }}</td>
+                        <td data-label="Прогресс"><div class="import-progress" :aria-label="'Прогресс: ' + progressText(row)"><span class="import-progress-track"><i :style="{ width: (progress(row) ?? 0) + '%' }"></i></span><b>{{ progressText(row) }}</b></div></td>
+                        <td data-label="Обработано записей">{{ row.processed_records }} / {{ row.total_records }}</td>
                         <td data-label="Статус"><span class="status-badge" :class="'status-' + row.status">{{ statusLabel(row.status) }}</span><small v-if="row.error_message" class="error-detail">{{ row.error_message }}</small></td>
                     </tr>
                 </tbody>
@@ -135,17 +144,17 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                 </button>
                 <div v-if="expandedCards.has(cardKey(row))" class="import-mobile-card-body">
                     <div class="import-mobile-meta">
-                        <div><span>Проект</span><strong>{{ row.project }}</strong></div>
+                        <div><span>Клиент</span><strong>{{ row.client_name || (row.client_id ? '#' + row.client_id : '—') }}</strong></div>
+                        <div><span>Маркетплейс</span><strong>{{ row.marketplace }}</strong></div>
+                        <div><span>Интеграция</span><strong>#{{ row.webhook_id || '—' }}<template v-if="row.account_id"> / аккаунт #{{ row.account_id }}</template></strong></div>
                         <div><span>Текущий этап</span><strong>{{ row.current_stage_number ? row.current_stage_number + '. ' + row.current_stage_name : '—' }}</strong></div>
                     </div>
                     <div class="import-mobile-progress">
-                        <div class="import-mobile-progress-label"><span>Прогресс</span><b>{{ progress(row) }}%</b></div>
-                        <span class="import-progress-track"><i :style="{ width: progress(row) + '%' }"></i></span>
+                        <div class="import-mobile-progress-label"><span>Прогресс</span><b>{{ progressText(row) }}</b></div>
+                        <span class="import-progress-track"><i :style="{ width: (progress(row) ?? 0) + '%' }"></i></span>
                     </div>
                     <div class="import-mobile-stats">
-                        <div><span>Этапы</span><strong>{{ row.completed_stages }} / {{ row.total_stages }}</strong></div>
                         <div><span>Записи</span><strong>{{ row.processed_records }} / {{ row.total_records }}</strong></div>
-                        <div><span>Чанки</span><strong>{{ row.processed_chunks }} / {{ row.total_chunks }}</strong></div>
                     </div>
                     <p v-if="row.error_message" class="error-detail">{{ row.error_message }}</p>
                 </div>
