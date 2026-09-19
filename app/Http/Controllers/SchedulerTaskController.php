@@ -6,15 +6,13 @@ namespace App\Http\Controllers;
 
 use App\Http\BaseApiController;
 use App\Models\SchedulerTask;
-use App\Services\SchedulerTaskRegistry;
 use App\Services\EntitySyncService;
 use Illuminate\Http\Request;
 
 final class SchedulerTaskController extends BaseApiController
 {
-    public function index(Request $request, SchedulerTaskRegistry $registry)
+    public function index(Request $request)
     {
-        $registry->ensureDefaults($request->user()->tenant_id);
         return response()->json(['data' => SchedulerTask::query()->visibleTo($request->user()->tenant_id)->where('module', 'wms')->latest('id')->get()]);
     }
 
