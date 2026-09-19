@@ -16,6 +16,7 @@ import AdminTabs from "./AdminTabs.vue";
 import DataTransferMenu from "./DataTransferMenu.vue";
 import ClientTabs from "./ClientTabs.vue";
 import LogisticsTabs from "./LogisticsTabs.vue";
+import TableColumnSettings, { type ColumnSettings } from "./TableColumnSettings.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -32,17 +33,14 @@ interface ReferenceRow extends EntityRow {
 const props = defineProps<{ entity: keyof typeof references; taskView?: "table" | "kanban" }>();
 const emit = defineEmits<{ toggleTaskView: [] }>();
 const definition = references[props.entity];
-const columnSettingsOpen = ref(false);
+const columnSettings = ref<ColumnSettings>({ order: [], hidden: [] });
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) { if (event && event.detail > 1) return; const key = String(id); const next = new Set(expandedMobileRows.value); if (next.has(key)) next.delete(key); else next.add(key); expandedMobileRows.value = next; }
 function openName(row: ReferenceRow, event: MouseEvent) { if (window.matchMedia('(max-width: 900px)').matches) { event.stopPropagation(); toggleMobileRow(row.id, event); return; } open(row, true); }
-const columnOrder = ref<string[]>([]);
-const hiddenColumns = ref<string[]>([]);
-const draggedColumn = ref<string | null>(null);
 const isCellGood = props.entity === "cell_goods";
 const isAcceptance = props.entity === "acceptances";
 const isTask = props.entity === "tasks";
-const isClients = props.entity === "clients";
+const isClients = String(props.entity) === "clients";
 const columnStorageKey = computed(
     () => `reference-columns:${String(props.entity)}`,
 );
@@ -79,14 +77,14 @@ const allColumns = computed(() => {
     const known = new Map(
         configurableColumns.value.map((field) => [field.key, field]),
     );
-    const saved = columnOrder.value.filter((key) => known.has(key));
+    const saved = columnSettings.value.order.filter((key) => known.has(key));
     const fresh = configurableColumns.value
         .map((field) => field.key)
         .filter((key) => !saved.includes(key));
     return [...saved, ...fresh].map((key) => known.get(key)!);
 });
 const orderedColumns = computed(() =>
-    allColumns.value.filter((field) => isFixedColumn(field.key) || !hiddenColumns.value.includes(field.key)),
+    allColumns.value.filter((field) => isFixedColumn(field.key) || !columnSettings.value.hidden.includes(field.key)),
 );
 const renderedSpecialColumns = new Set([
     "__id",
@@ -115,57 +113,7 @@ const extraColumns = computed(() =>
 );
 function isColumnVisible(key: string): boolean {
     if (isFixedColumn(key)) return true;
-    return !hiddenColumns.value.includes(key) && allColumns.value.some((field) => field.key === key);
-}
-function loadColumnSettings() {
-    try {
-        const saved = JSON.parse(
-            localStorage.getItem(columnStorageKey.value) ?? "null",
-        );
-        if (Array.isArray(saved)) {
-            columnOrder.value = saved.map(String);
-        } else if (saved && typeof saved === "object") {
-            columnOrder.value = Array.isArray(saved.order)
-                ? saved.order.map(String)
-                : configurableColumns.value.map((field) => field.key);
-            hiddenColumns.value = Array.isArray(saved.hidden)
-                ? saved.hidden.map(String)
-                : [];
-        } else {
-            columnOrder.value = configurableColumns.value.map((field) => field.key);
-        }
-    } catch {
-        columnOrder.value = configurableColumns.value.map((field) => field.key);
-    }
-}
-function saveColumnSettings() {
-    localStorage.setItem(
-        columnStorageKey.value,
-        JSON.stringify({ order: columnOrder.value, hidden: hiddenColumns.value }),
-    );
-}
-function toggleColumn(key: string) {
-    if (isFixedColumn(key)) return;
-    hiddenColumns.value = hiddenColumns.value.includes(key)
-        ? hiddenColumns.value.filter((item) => item !== key)
-        : [...hiddenColumns.value, key];
-    saveColumnSettings();
-}
-function startColumnDrag(key: string) {
-    draggedColumn.value = key;
-}
-function dropColumn(target: string) {
-    const source = draggedColumn.value;
-    if (!source || source === target) return;
-    const current = allColumns.value.map((field) => field.key);
-    const from = current.indexOf(source);
-    const to = current.indexOf(target);
-    if (from < 0 || to < 0) return;
-    current.splice(from, 1);
-    current.splice(to, 0, source);
-    columnOrder.value = current;
-    saveColumnSettings();
-    draggedColumn.value = null;
+    return !columnSettings.value.hidden.includes(key) && allColumns.value.some((field) => field.key === key);
 }
 function columnValue(row: ReferenceRow, field: (typeof definition.fields)[number]) {
     const value = row[field.key];
@@ -864,7 +812,6 @@ async function confirmDelete() {
     await save(true);
 }
 onMounted(async () => {
-    loadColumnSettings();
     await Promise.all([
         store.start(),
         ...Object.values(lookupStores).map((store) => store.start()),
@@ -981,39 +928,6 @@ useCardRoute<ReferenceRow>({
                 <span>Категории — папки, товары — коробки</span>
             </div>
             <div v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'" class="table-scroll">
-                <div v-if="columnSettingsOpen" class="column-settings-panel" role="dialog" aria-label="Настройка колонок">
-                    <div class="column-settings-title">
-                        <span>Показывать колонки</span>
-                        <button
-                            type="button"
-                            class="column-settings-close"
-                            aria-label="Закрыть настройки колонок"
-                            title="Закрыть"
-                            @click.stop="columnSettingsOpen = false"
-                        >
-                            ×
-                        </button>
-                    </div>
-                    <div
-                        v-for="field in allColumns"
-                        :key="field.key"
-                        class="column-settings-item"
-                        draggable="true"
-                        @dragstart="startColumnDrag(field.key)"
-                        @dragover.prevent
-                        @drop="dropColumn(field.key)"
-                    >
-                        <label class="column-settings-control">
-                            <input
-                                type="checkbox"
-                                :checked="isColumnVisible(field.key)"
-                                @change="toggleColumn(field.key)"
-                            />
-                            <span class="column-drag-handle" aria-hidden="true">⠿</span>
-                            <span class="column-settings-label">{{ field.label }}</span>
-                        </label>
-                    </div>
-                </div>
                 <table
                     :role="isGood ? 'treegrid' : undefined"
                     :aria-label="isGood ? 'Дерево товаров' : undefined"
@@ -1089,13 +1003,12 @@ useCardRoute<ReferenceRow>({
                             <th v-if="isColumnVisible('status')">{{ isKiz ? "Состояние" : "Статус" }}</th>
                             <th v-if="isColumnVisible('__actions')">
                                 Действия
-                                <button
-                                    type="button"
-                                    class="column-settings-button"
-                                    title="Настроить колонки"
-                                    aria-label="Настроить колонки"
-                                    @click.stop="columnSettingsOpen = !columnSettingsOpen"
-                                >⚙</button>
+                                <TableColumnSettings
+                                    v-model="columnSettings"
+                                    :columns="configurableColumns"
+                                    :fixed="[...fixedColumnKeys]"
+                                    :storage-key="columnStorageKey"
+                                />
                             </th>
                         </tr>
                         <tr class="filter-row">

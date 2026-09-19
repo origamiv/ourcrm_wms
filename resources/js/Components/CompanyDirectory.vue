@@ -77,7 +77,6 @@ const flags: Record<string, string> = isClientCompany
           is_client: "Клиент",
           is_partner: "Партнёр",
       };
-const columnSettingsOpen = ref(false);
 const hiddenColumns = ref<string[]>([]);
 const columnFields = computed(() => [
     { key: "name", label: isCompany ? "Название компании" : "ФИО" },
@@ -468,7 +467,7 @@ useCardRoute<DirectoryRow>({
                                     <th v-if="isColumnVisible(key)">{{ label }}</th>
                                 </template>
                             </template>
-                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" :storage-key="columnStorageKey" /></th>
+                            <th>Действия <TableColumnSettings :columns="columnFields" :storage-key="columnStorageKey" /></th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>

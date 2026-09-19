@@ -16,7 +16,6 @@ interface ClientRow extends EntityRow {
     deleted_at: string | null;
 }
 const page = usePage<any>();
-const columnSettingsOpen = ref(false);
 const columnFields = [
     { key: "name", label: "Название" },
     { key: "shortname", label: "Краткое название" },
@@ -265,7 +264,7 @@ useCardRoute<ClientRow>({
                             </th>
                             <th>Краткое название</th>
                             <th>Статус</th>
-                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" storage-key="clients-columns" /></th>
+                            <th>Действия <TableColumnSettings :columns="columnFields" storage-key="clients-columns" /></th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>

@@ -20,7 +20,6 @@ interface CatalogRow extends EntityRow {
 }
 const props = defineProps<{ entity: "roles" | "permissions"; title: string }>();
 const page = usePage<any>();
-const columnSettingsOpen = ref(false);
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) {
     if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
@@ -297,7 +296,7 @@ useCardRoute<CatalogRow>({
                             </th>
                             <th>Системная запись</th>
                             <th>Статус</th>
-                            <th>Действия <TableColumnSettings v-model:open="columnSettingsOpen" :columns="columnFields" :storage-key="`${entity}-columns`" /></th>
+                            <th>Действия <TableColumnSettings :columns="columnFields" :storage-key="`${entity}-columns`" /></th>
                         </tr>
                         <tr class="column-filters">
                             <th class="id-column"></th>
