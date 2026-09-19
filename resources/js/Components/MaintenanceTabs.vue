@@ -13,13 +13,7 @@ const tabs = [
         url: "/maintenance/references",
         component: "MaintenanceReferences",
         icon: "administration",
-        children: [{ label: "Задачи", url: "/maintenance/references/tasks", component: "SchedulerTasks", icon: "administration" }],
-    },
-    {
-        label: "Задачи",
-        url: "/maintenance/references/tasks",
-        component: "SchedulerTasks",
-        icon: "administration",
+        children: [{ label: "Задачи", url: "/maintenance/tasks", component: "SchedulerTasks", icon: "administration" }],
     },
     {
         label: "Планировщик",
