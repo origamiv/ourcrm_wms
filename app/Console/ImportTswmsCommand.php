@@ -472,6 +472,8 @@ final class ImportTswmsCommand extends Command
         } if ($this->source->getSchemaBuilder()->hasTable('tswms-integrations')) {
             $rows = array_merge($rows, array_map(fn ($r) => [$r, 'tswms-integrations'], $this->source->table('tswms-integrations')->get()->all()));
         } foreach ($rows as [$r,$table]) {
+            $partner = (string) ($r->{'partner-id'} ?? $r->partner_id ?? $r->client_id ?? '');
+            $client = $this->mapped('tswms-partners', $partner, 'App\\Models\\Client');
             $type = mb_strtolower((string) ($r->type ?? 'integration'));
             $sourceId = (string) $r->id;
             $account = $this->mapped($table, $sourceId, 'App\\Models\\ClientAccount');
@@ -480,7 +482,7 @@ final class ImportTswmsCommand extends Command
             }$service = $this->localIntegrationService($type);
             $incoming = in_array(true, [(bool) ($r->goods_active ?? $r->{'goods-active'} ?? false), (bool) ($r->fbs_active ?? $r->{'fbs-active'} ?? false)], true);
             $params = ['account_id' => $account ? (int) $account : null, 'source' => ['table' => $table, 'id' => $sourceId, 'type' => $type], 'warehouse_id' => $r->warehouse_id ?? null, 'settings' => $r->config_json ?? $r->{'config-json'} ?? null, 'source_fields' => (array) $r];
-            $data = ['name' => (string) ($r->name ?? $type), 'shortname' => $this->latinShortname($type.'_'.$sourceId), 'service_id' => $service, 'type_hook_id' => 2, 'rules_id' => null, 'params' => json_encode($params, JSON_UNESCAPED_UNICODE), 'status' => (int) ($r->active ?? $r->is_active ?? 1), 'cnt' => 0, 'dat_last_run' => $r->last_check_at ?? $r->{'last-check'} ?? null, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()];
+            $data = ['name' => (string) ($r->name ?? $type), 'shortname' => $this->latinShortname($type.'_'.$sourceId), 'client_id' => $client ? (int) $client : null, 'service_id' => $service, 'type_hook_id' => 2, 'rules_id' => null, 'params' => json_encode($params, JSON_UNESCAPED_UNICODE), 'status' => (int) ($r->active ?? $r->is_active ?? 1), 'cnt' => 0, 'dat_last_run' => $r->last_check_at ?? $r->{'last-check'} ?? null, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()];
             $this->upsert('integration.webhooks', $data, $table, $sourceId, 'App\\Models\\IntegrationWebhook');
         }
     }
