@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 
 interface Column {
     key: string;
@@ -21,6 +21,8 @@ const props = withDefaults(
 );
 const settings = defineModel<ColumnSettings>({ default: () => ({ order: [], hidden: [] }) });
 const open = ref(false);
+const button = ref<HTMLButtonElement | null>(null);
+const panelStyle = ref<Record<string, string>>({});
 const fixed = computed(() => new Set(props.fixed));
 const ordered = computed(() => {
     const keys = new Set(props.columns.map((column) => column.key));
@@ -59,8 +61,16 @@ function drop(target: string) {
     persist();
     dragged.value = null;
 }
-function toggleOpen() {
+async function toggleOpen() {
     open.value = !open.value;
+    if (!open.value) return;
+    await nextTick();
+    const rect = button.value?.getBoundingClientRect();
+    if (!rect) return;
+    panelStyle.value = {
+        top: `${Math.min(rect.bottom + 8, window.innerHeight - 16)}px`,
+        left: `${Math.min(Math.max(16, rect.right - 220), window.innerWidth - 236)}px`,
+    };
 }
 onMounted(() => {
     try {
@@ -82,11 +92,12 @@ onMounted(() => {
     <button
         type="button"
         class="column-settings-button"
+        ref="button"
         title="Настроить колонки"
         aria-label="Настроить колонки"
         @click.stop="toggleOpen"
     >⚙</button>
-    <div v-if="open" class="column-settings-panel" role="dialog" aria-label="Настройка колонок" @click.stop>
+    <div v-if="open" class="column-settings-panel" :style="panelStyle" role="dialog" aria-label="Настройка колонок" @click.stop>
         <div class="column-settings-title">
             <span>Показывать колонки</span>
             <button type="button" class="column-settings-close" aria-label="Закрыть" @click="open = false">×</button>
@@ -112,7 +123,7 @@ onMounted(() => {
 <style scoped>
 .column-settings-button { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; margin-left:6px; border:0; border-radius:4px; background:transparent; color:#667085; font-size:19px; line-height:1; cursor:pointer; }
 .column-settings-button:hover { background:#eef7f0; color:#2274a5; }
-.column-settings-panel { position:absolute; z-index:99999; top:42px; right:8px; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,max-content)); gap:8px; width:max-content; min-width:220px; max-width:min(720px,calc(100vw - 32px)); max-height:min(70vh,520px); overflow-y:auto; padding:10px; border:1px solid #d7e5db; border-radius:8px; background:#fff; color:#344054; box-shadow:0 10px 24px rgb(16 24 40 / 14%); }
+.column-settings-panel { position:fixed; z-index:99999; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,max-content)); gap:8px; width:max-content; min-width:220px; max-width:min(720px,calc(100vw - 32px)); max-height:min(70vh,520px); overflow-y:auto; padding:10px; border:1px solid #d7e5db; border-radius:8px; background:#fff; color:#344054; box-shadow:0 10px 24px rgb(16 24 40 / 14%); }
 .column-settings-title { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:700; }
 .column-settings-close { border:0; background:transparent; color:#667085; font-size:20px; line-height:1; cursor:pointer; }
 .column-settings-item { min-width:0; border:1px solid transparent; border-radius:5px; }
