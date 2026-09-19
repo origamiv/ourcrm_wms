@@ -89,9 +89,10 @@ export function createEntitySync<T extends EntityRow>(
             if (allowed()) {
                 if (e instanceof HttpError) error.value = e.message;
                 else {
-                    online.value = false;
-                    error.value =
-                        "Нет связи с сервером. Доступны сохранённые данные.";
+                    online.value = navigator.onLine;
+                    error.value = navigator.onLine
+                        ? "Не удалось обновить данные. Можно продолжить работу с сервером."
+                        : "Нет связи с сервером. Доступны сохранённые данные.";
                 }
             }
         } finally {
