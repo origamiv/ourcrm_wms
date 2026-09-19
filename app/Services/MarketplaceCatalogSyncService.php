@@ -10,10 +10,13 @@ use App\Models\GoodCard;
 use App\Models\GoodMarketplace;
 use App\Models\IntegrationData;
 use App\Models\IntegrationWebhook;
+use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
@@ -252,7 +255,29 @@ final class MarketplaceCatalogSyncService
 
     private function request(ClientAccount $account, bool $ozon = false, bool $yandex = false): PendingRequest
     {
+        $isWildberries = ! $ozon && ! $yandex;
         $request = Http::retry(3, 1000)->timeout(45)->acceptJson();
+        if ($isWildberries) {
+            $egressIp = $this->egressIp();
+            $request = $request->withOptions([
+                'on_stats' => function (TransferStats $stats) use ($egressIp): void {
+                    $handlerStats = $stats->getHandlerStats();
+                    $response = $stats->getResponse();
+                    $context = [
+                        'url' => (string) $stats->getEffectiveUri(),
+                        'egress_ip' => $egressIp,
+                        'local_ip' => $handlerStats['local_ip'] ?? null,
+                        'remote_ip' => $handlerStats['primary_ip'] ?? null,
+                        'http_status' => $response?->getStatusCode(),
+                        'dns_ms' => isset($handlerStats['namelookup_time']) ? round((float) $handlerStats['namelookup_time'] * 1000, 1) : null,
+                        'connect_ms' => isset($handlerStats['connect_time']) ? round((float) $handlerStats['connect_time'] * 1000, 1) : null,
+                        'total_ms' => round($stats->getTransferTime() * 1000, 1),
+                    ];
+
+                    Log::log($stats->hasResponse() ? 'info' : 'warning', 'Сетевой запрос к Wildberries', $context);
+                },
+            ]);
+        }
         if ($yandex) {
             return $request->withHeaders(['Api-Key' => (string) $account->token, 'Content-Type' => 'application/json']);
         }
@@ -263,6 +288,23 @@ final class MarketplaceCatalogSyncService
         }
 
         return $request->withToken((string) $account->token)->withHeaders(['X-Client-Secret' => (string) config('wms.wildberries_client_secret')]);
+    }
+
+    private function egressIp(): ?string
+    {
+        return Cache::remember('wms:marketplace:wildberries:egress-ip', now()->addMinute(), function (): ?string {
+            try {
+                $ip = trim(Http::connectTimeout(3)->timeout(5)->get('https://api.ipify.org')->throw()->body());
+
+                return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : null;
+            } catch (\Throwable $exception) {
+                Log::warning('Не удалось определить внешний IP для Wildberries', [
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return null;
+            }
+        });
     }
 
     private function goodMaps(string $tenant): array
