@@ -60,7 +60,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
                 $rule = $rules->get(self::RULES[$marketplace]);
                 $configuredRuleIds = array_map('intval', array_filter((array) $webhook->rules_id));
-                if (! $rule || ! in_array((int) $rule->id, $configuredRuleIds, true)) {
+                if (! $rule || ($configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
                     $skipped++;
 
                     return;
