@@ -32,7 +32,12 @@ final class RunScheduledTaskJob implements ShouldQueue
             if ($task['type'] === 'command') {
                 $arguments = (array) ($params['arguments'] ?? []);
                 $options = (array) ($params['options'] ?? []);
-                $exit = Artisan::call($task['target'], $arguments + $options);
+                $commandOptions = [];
+                foreach ($options as $key => $value) {
+                    if ($value === null || $value === '') continue;
+                    $commandOptions[str_starts_with((string) $key, '--') ? (string) $key : '--'.(string) $key] = $value;
+                }
+                $exit = Artisan::call($task['target'], $arguments + $commandOptions);
                 $result = ['exit_code' => $exit, 'output' => mb_substr(Artisan::output(), 0, 10000)];
             } else {
                 $arguments = (array) ($params['arguments'] ?? $params);
