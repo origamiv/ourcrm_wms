@@ -17,6 +17,7 @@ import DataTransferMenu from "./DataTransferMenu.vue";
 import ClientTabs from "./ClientTabs.vue";
 import LogisticsTabs from "./LogisticsTabs.vue";
 import MaintenanceTabs from "./MaintenanceTabs.vue";
+import SchedulerRepeatEditor from "./SchedulerRepeatEditor.vue";
 import TableColumnSettings, { type ColumnSettings } from "./TableColumnSettings.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
@@ -160,6 +161,7 @@ function taskSkuCount(row: ReferenceRow): string {
 }
 const isIntegration = props.entity.startsWith("integration_");
 const isMaintenance = ["scheduler_tasks", "scheduler"].includes(props.entity);
+const isScheduler = props.entity === "scheduler";
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
@@ -551,6 +553,40 @@ function changeLookup(field: string) {
     pendingDocumentDefaults.delete(field);
     pendingTaskDefaults.delete(field);
     if (isDocument && field === "client_id") form.value.customer_id = null;
+    if (isScheduler && field === "task_key" && !selected.value) {
+        applySchedulerTaskDefaults(true);
+    }
+}
+function schedulerTaskDefaults(force = false): void {
+    if (!isScheduler || selected.value) return;
+    const current = String(form.value.params ?? "").trim();
+    if (!force && current && current !== "{}") return;
+    const task = choices("scheduler_tasks").find(
+        (row) => String(row.shortname ?? row.id) === String(form.value.task_key),
+    );
+    if (!task) return;
+    let options: Record<string, any> = {};
+    try {
+        options = typeof task.options === "string" ? JSON.parse(task.options) : (task.options ?? {});
+    } catch {
+        options = {};
+    }
+    const tenant = String(page.props.auth?.tenant_id ?? "");
+    const values = (items: Record<string, any> | undefined): Record<string, any> =>
+        Object.fromEntries(
+            Object.entries(items ?? {}).map(([key, definition]) => {
+                const value = definition?.default === "current_tenant" ? tenant : definition?.default ?? null;
+                return [key, value];
+            }),
+        );
+    const params = {
+        arguments: values(options.required),
+        options: values(task.task_type === "command" ? options.optional : {}),
+    };
+    form.value.params = JSON.stringify(params, null, 2);
+}
+function applySchedulerTaskDefaults(force = false): void {
+    schedulerTaskDefaults(force);
 }
 function displayName(row: ReferenceRow) {
     return (
@@ -695,6 +731,7 @@ function fillForm(row: ReferenceRow | null, readOnly = false) {
         }
         applyDocumentDefaults();
     }
+    if (isScheduler && !row) applySchedulerTaskDefaults();
 }
 async function save(remove = false) {
     if (
@@ -1605,8 +1642,13 @@ useCardRoute<ReferenceRow>({
                             />
                             <label v-else :key="field.key"
                                 >{{ field.label }}
+                                <SchedulerRepeatEditor
+                                    v-if="isScheduler && field.key === 'schedule'"
+                                    v-model="form[field.key]"
+                                    :disabled="viewing || saving || !online || !!conflict"
+                                />
                                 <textarea
-                                    v-if="field.kind === 'json'"
+                                    v-if="field.kind === 'json' && !(isScheduler && field.key === 'schedule')"
                                     v-model="form[field.key]"
                                     :aria-label="field.label"
                                     rows="6"
