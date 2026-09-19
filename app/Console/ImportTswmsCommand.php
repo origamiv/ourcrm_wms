@@ -77,10 +77,10 @@ final class ImportTswmsCommand extends Command
             ];
             if ($active) {
                 $importData['error_class'] = RuntimeException::class;
-                $importData['error_message'] = 'Для этого тенанта уже выполняется импорт TSWMS.';
+                $importData['error_message'] = 'Импорт не запущен: для этого тенанта уже выполняется другой импорт TSWMS.';
                 $importData['finished_at'] = now();
                 ImportRun::query()->create($importData);
-                $this->components->error('Для этого тенанта уже выполняется импорт TSWMS.');
+                $this->components->error('Импорт не запущен: для этого тенанта уже выполняется другой импорт TSWMS.');
 
                 return self::FAILURE;
             }

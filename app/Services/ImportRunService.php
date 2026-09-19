@@ -28,7 +28,7 @@ final class ImportRunService
                     return;
                 }
 
-                $message = 'Импорт остановлен: пакет заданий завершён, но запуск не переведён в конечный статус.';
+                $message = 'Импорт остановлен: обработчик очереди завершил пакет заданий без завершения импорта. Проверьте worker очереди imports.';
                 $import->forceFill([
                     'status' => 'failed',
                     'error_class' => RuntimeException::class,
