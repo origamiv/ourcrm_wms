@@ -72,6 +72,7 @@ const assets: ReferenceField[] = [
     { key: "user_id", label: "Пользователь", kind: "lookup", lookup: "users" },
 ];
 export const references = {
+    scheduler_tasks: { title: "Задачи", fields: [{ key: "shortname", label: "Код" }, { key: "task_type", label: "Тип" }, { key: "target", label: "Обработчик" }, { key: "options", label: "Параметры", kind: "json", detail: true }] as ReferenceField[] },
     orders: {
         title: "Заказы",
         fields: [

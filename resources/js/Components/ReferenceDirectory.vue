@@ -16,6 +16,7 @@ import AdminTabs from "./AdminTabs.vue";
 import DataTransferMenu from "./DataTransferMenu.vue";
 import ClientTabs from "./ClientTabs.vue";
 import LogisticsTabs from "./LogisticsTabs.vue";
+import MaintenanceTabs from "./MaintenanceTabs.vue";
 import TableColumnSettings, { type ColumnSettings } from "./TableColumnSettings.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
@@ -158,6 +159,7 @@ function taskSkuCount(row: ReferenceRow): string {
     return `${Number.isFinite(sku) ? sku : 0} / ${Number.isFinite(count) ? count : 0}`;
 }
 const isIntegration = props.entity.startsWith("integration_");
+const isMaintenance = props.entity === "scheduler_tasks";
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
@@ -200,7 +202,9 @@ const basePath = isIntegration
       ? `/goods/${props.entity}`
       : isClientSection
         ? `/clients/${props.entity.replace("client_", "")}`
-        : `/main/${props.entity}`;
+        : isMaintenance
+          ? "/scheduler_tasks"
+          : `/main/${props.entity}`;
 const endpoint = isIndividual ? null : basePath.replace("/main/", "/");
 const clientFilter = ref("");
 const docTypeFilter = ref("");
@@ -867,7 +871,9 @@ useCardRoute<ReferenceRow>({
                           ? (props.entity === "orders" ? "Логистика" : "Логистика › Справочники")
                         : isGoodsSection
                           ? "Товары"
-                          : isClientSection
+                        : isMaintenance
+                          ? "Обслуживание › Справочники"
+                        : isClientSection
                             ? "Клиенты"
                             : "Администрирование › Справочники"
                 }}
@@ -877,7 +883,7 @@ useCardRoute<ReferenceRow>({
                 v-else-if="isFulfillment"
             /><LogisticsTabs v-else-if="isLogistics" /><GoodsTabs
                 v-else-if="isGoodsSection"
-            /><ClientTabs v-else-if="isClientSection" /><AdminTabs v-else />
+            /><ClientTabs v-else-if="isClientSection" /><MaintenanceTabs v-else-if="isMaintenance" /><AdminTabs v-else />
             <p v-if="clientScope || warehouseScope" class="notice">
                 <template v-if="clientScope">Клиент: <strong>{{ clientScope.name }}</strong></template>
                 <template v-else>Склад: <strong>{{ warehouseScope?.name }}</strong></template>
