@@ -1925,6 +1925,91 @@ td {
 }
 .tenantBlocked .sidebar nav a:not(:first-child) { opacity:.38; filter:grayscale(1); pointer-events:none; cursor:not-allowed; }
 
+/* Каталоги МП: заголовок карточки отделён от зелёного тела. */
+@media (max-width: 900px) {
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) {
+        display: grid !important;
+        grid-template-columns: max-content minmax(0, 1fr) !important;
+        align-items: center !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-id,
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-name {
+        display: flex !important;
+        width: auto !important;
+        max-width: none !important;
+        min-height: 42px !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-id {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-name {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        overflow: hidden !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded {
+        display: block !important;
+        width: 100% !important;
+        background: #fff !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-id,
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-name {
+        display: inline-flex !important;
+        width: auto !important;
+        max-width: none !important;
+        min-height: 42px !important;
+        background: #fff !important;
+        vertical-align: top !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-id {
+        width: 38px !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-name {
+        width: calc(100% - 38px) !important;
+        overflow: hidden !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-detail {
+        display: grid !important;
+        grid-template-columns: minmax(110px, 150px) minmax(0, 1fr) !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 50px !important;
+        padding: 9px 10px !important;
+        background: #e1f3e7 !important;
+        border-top: 1px solid #a8d4a9 !important;
+        border-bottom: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-detail::before {
+        display: block !important;
+        grid-column: 1 !important;
+        flex: none !important;
+        color: #1e892f !important;
+        content: attr(data-label) !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-detail > * {
+        grid-column: 2 !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+}
+
 /* Единая строка свернутой мобильной карточки: id, название, действия. */
 @media (max-width: 900px) {
     html body .main-panel .table-scroll table tbody tr:not(.mobile-card-expanded):has(.name-button) {
