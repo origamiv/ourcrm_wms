@@ -2012,6 +2012,40 @@ td {
     html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row td.mmp-desktop-name {
         display: none !important;
     }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row td.mmp-id {
+        display: flex !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        max-width: none !important;
+        align-items: center !important;
+        gap: 10px !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row td.mmp-id .mmp-inline-title {
+        display: block !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        flex: 1 1 auto !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        color: #0c1821 !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-id {
+        display: flex !important;
+        width: 100% !important;
+        min-height: 42px !important;
+        background: #fff !important;
+    }
 }
 
 /* Единая строка свернутой мобильной карточки: id, название, действия. */
