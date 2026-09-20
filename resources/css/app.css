@@ -1935,7 +1935,7 @@ td {
     }
 
     html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-id,
-    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-name {
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-mobile-title {
         display: flex !important;
         width: auto !important;
         max-width: none !important;
@@ -1948,7 +1948,7 @@ td {
         grid-row: 1 !important;
     }
 
-    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-name {
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row:not(.mobile-card-expanded) td.mmp-mobile-title {
         grid-column: 2 !important;
         grid-row: 1 !important;
         overflow: hidden !important;
@@ -1962,7 +1962,7 @@ td {
     }
 
     html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-id,
-    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-name {
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-mobile-title {
         display: inline-flex !important;
         width: auto !important;
         max-width: none !important;
@@ -1975,7 +1975,7 @@ td {
         width: 38px !important;
     }
 
-    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-name {
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row.mobile-card-expanded td.mmp-mobile-title {
         width: calc(100% - 38px) !important;
         overflow: hidden !important;
     }
@@ -2007,6 +2007,10 @@ td {
         grid-column: 2 !important;
         min-width: 0 !important;
         max-width: 100% !important;
+    }
+
+    html body .main-panel .marketplace-catalog .catalog-table-wrap table tbody tr.mmp-mobile-row td.mmp-desktop-name {
+        display: none !important;
     }
 }
 
