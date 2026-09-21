@@ -5,29 +5,38 @@ declare(strict_types=1);
 namespace App\Console;
 
 use App\Jobs\SyncMarketplaceCatalogJob;
-use App\Models\IntegrationRule;
-use App\Models\IntegrationWebhook;
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
+use App\Models\IntegrationRule;
+use App\Models\IntegrationWebhook;
 use Illuminate\Console\Command;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 final class SyncMarketplaceCatalogsCommand extends Command
 {
-    protected $signature = 'integration:sync-catalogs {tenant : Tenant WMS}';
-
-    protected $description = 'Поставить в очередь синхронизацию каталогов маркетплейсов tenant';
-
     private const RULES = [
         'wildberries' => 'wildberries_catalog',
         'ozon' => 'ozon_catalog',
         'yandex_market' => 'yandex_market_catalog',
     ];
 
+    protected $signature = 'integration:sync-catalogs
+                            {tenant : Tenant WMS}
+                            {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}';
+
+    protected $description = 'Поставить в очередь синхронизацию каталогов маркетплейсов tenant';
+
     public function handle(): int
     {
         $tenant = (string) $this->argument('tenant');
+        $marketplaceFilter = $this->option('marketplace');
+        if ($marketplaceFilter !== null && ! array_key_exists((string) $marketplaceFilter, self::RULES)) {
+            $this->components->error('Недопустимая площадка. Используйте: wildberries, ozon или yandex_market.');
+
+            return self::INVALID;
+        }
+
         if (! DB::table('public.tenants')->where('id', $tenant)->exists()) {
             $this->components->error("Tenant {$tenant} не найден.");
 
@@ -36,7 +45,9 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
         $rules = IntegrationRule::query()
             ->where('status', 1)
-            ->whereIn('shortname', array_values(self::RULES))
+            ->whereIn('shortname', array_values($marketplaceFilter === null
+                ? self::RULES
+                : [self::RULES[(string) $marketplaceFilter]]))
             ->whereHas('typeProcessing_obj', fn ($query) => $query->where('status', 1)->where('shortname', 'marketplace_catalog'))
             ->get()
             ->keyBy('shortname');
@@ -50,9 +61,9 @@ final class SyncMarketplaceCatalogsCommand extends Command
             ->where('status', 1)
             ->with(['service_obj', 'client_obj'])
             ->orderBy('id')
-            ->each(function (IntegrationWebhook $webhook) use ($tenant, $rules, &$queued, &$duplicates, &$skipped): void {
+            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $rules, &$queued, &$duplicates, &$skipped): void {
                 $marketplace = $this->marketplaceFor($webhook);
-                if ($marketplace === null) {
+                if ($marketplace === null || ($marketplaceFilter !== null && $marketplace !== $marketplaceFilter)) {
                     $skipped++;
 
                     return;
