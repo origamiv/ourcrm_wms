@@ -62,10 +62,10 @@ html body .main-panel .imports-page .import-marketplace-badge {
     white-space: nowrap !important;
 }
 
-html body .main-panel .imports-page .import-marketplace-badge.marketplace-wb { background: #cb11ab !important; color: #fff !important; }
-html body .main-panel .imports-page .import-marketplace-badge.marketplace-ozon { background: #005bff !important; color: #fff !important; }
-html body .main-panel .imports-page .import-marketplace-badge.marketplace-ym { background: #ffcc00 !important; color: #111 !important; }
-html body .main-panel .imports-page .import-marketplace-badge.marketplace-other { background: #e5e7eb !important; color: #374151 !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-wb { background: #fff !important; border: 1px solid #a20c8b !important; color: #a20c8b !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-ozon { background: #fff !important; border: 1px solid #005bff !important; color: #005bff !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-ym { background: #fff !important; border: 1px solid #9a5a00 !important; color: #9a5a00 !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-other { background: #fff !important; border: 1px solid #9aa5b1 !important; color: #5f6b76 !important; }
 
 /* Инструкции — самостоятельные мобильные карточки, не подчиняются карточкам таблиц справочников. */
 @media (max-width: 700px) {
@@ -3121,4 +3121,26 @@ td {
     html body .main-panel .imports-workspace .import-mobile-detail > strong small { display: block !important; margin-top: 3px !important; color: #667085 !important; font-size: 10px !important; }
     html body .main-panel .imports-workspace .import-mobile-detail-error { grid-column: 1 / -1 !important; min-height: 76px !important; }
     html body .main-panel .imports-workspace .import-mobile-detail-error > strong { color: #a32626 !important; line-height: 1.4 !important; }
+}
+
+/* Спокойное оформление бейджей маркетплейсов: цвет только у рамки и текста. */
+html body .main-panel .imports-page .import-mobile-summary-marketplace.import-marketplace-badge,
+html body .main-panel .imports-page .import-detail-cell .import-marketplace-badge {
+    background: #fff !important;
+    border: 1px solid currentColor !important;
+}
+html body .main-panel .imports-page .import-mobile-summary-marketplace.import-marketplace-badge.marketplace-wb,
+html body .main-panel .imports-page .import-detail-cell .import-marketplace-badge.marketplace-wb { color: #a20c8b !important; }
+html body .main-panel .imports-page .import-mobile-summary-marketplace.import-marketplace-badge.marketplace-ozon,
+html body .main-panel .imports-page .import-detail-cell .import-marketplace-badge.marketplace-ozon { color: #005bff !important; }
+html body .main-panel .imports-page .import-mobile-summary-marketplace.import-marketplace-badge.marketplace-ym,
+html body .main-panel .imports-page .import-detail-cell .import-marketplace-badge.marketplace-ym { color: #9a5a00 !important; }
+html body .main-panel .imports-page .import-mobile-summary-marketplace.import-marketplace-badge.marketplace-other,
+html body .main-panel .imports-page .import-detail-cell .import-marketplace-badge.marketplace-other { color: #5f6b76 !important; }
+
+@media (max-width: 900px) {
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-marketplace.import-marketplace-badge,
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-detail-cell .import-marketplace-badge {
+        background: #e1f3e7 !important;
+    }
 }
