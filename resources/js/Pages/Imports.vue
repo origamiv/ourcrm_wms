@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Head } from "@inertiajs/vue3";
 import MaintenanceTabs from "../Components/MaintenanceTabs.vue";
 import { http, HttpError } from "../lib/http";
@@ -33,8 +33,11 @@ interface ImportRun {
 const rows = ref<ImportRun[]>([]);
 const loading = ref(true);
 const error = ref("");
+const expandedRuns = ref<Set<string>>(new Set());
 const expandedCards = ref<Set<string>>(new Set());
 let timer: number | undefined;
+
+const visibleRows = computed(() => rows.value.filter((row) => row.row_type === "run" || expandedRuns.value.has(row.parent_id ?? "")));
 
 function progress(row: ImportRun): number | null {
     if (row.row_type === "run") {
@@ -63,6 +66,22 @@ function toggleCard(row: ImportRun): void {
     if (next.has(key)) next.delete(key);
     else next.add(key);
     expandedCards.value = next;
+}
+
+function hasChildren(row: ImportRun): boolean {
+    return row.row_type === "run" && rows.value.some((child) => child.row_type === "stage" && child.parent_id === row.id);
+}
+
+function isRunExpanded(row: ImportRun): boolean {
+    return expandedRuns.value.has(row.id);
+}
+
+function toggleRun(row: ImportRun): void {
+    if (!hasChildren(row)) return;
+    const next = new Set(expandedRuns.value);
+    if (next.has(row.id)) next.delete(row.id);
+    else next.add(row.id);
+    expandedRuns.value = next;
 }
 
 function cardDate(value: string | null): string {
@@ -104,9 +123,12 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                 <tbody>
                     <tr v-if="loading"><td colspan="10" class="empty-cell">Загрузка…</td></tr>
                     <tr v-else-if="rows.length === 0"><td colspan="10" class="empty-cell">Импорты ещё не запускались</td></tr>
-                    <tr v-for="row in rows" :key="row.row_type + '-' + row.id" :class="{ 'stage-row': row.row_type === 'stage' }">
+                    <tr v-for="row in visibleRows" :key="row.row_type + '-' + row.id" :class="{ 'stage-row': row.row_type === 'stage' }">
                         <td data-label="#"><span class="row-id">{{ row.id }}</span></td>
-                        <td data-label="Название импорта" class="wrap-cell"><strong>{{ row.row_type === 'stage' ? '↳ ' : '' }}{{ row.name }}</strong></td>
+                        <td data-label="Название импорта" class="wrap-cell">
+                            <button v-if="hasChildren(row)" type="button" class="import-run-toggle" :aria-expanded="isRunExpanded(row)" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row)">{{ isRunExpanded(row) ? '⌄' : '›' }}</button>
+                            <strong>{{ row.row_type === 'stage' ? '↳ ' : '' }}{{ row.name }}</strong>
+                        </td>
                         <td data-label="Клиент">{{ row.client_name || (row.client_id ? '#' + row.client_id : '—') }}</td>
                         <td data-label="Маркетплейс">{{ row.marketplace }}</td>
                         <td data-label="Интеграция">#{{ row.webhook_id || '—' }}<small v-if="row.account_id" class="wrap-cell">Аккаунт #{{ row.account_id }}</small></td>
@@ -122,7 +144,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
         <div class="imports-mobile-list" aria-label="Импорты">
             <div v-if="loading" class="imports-mobile-empty">Загрузка…</div>
             <div v-else-if="rows.length === 0" class="imports-mobile-empty">Импорты ещё не запускались</div>
-            <article v-for="row in rows" v-else :key="'mobile-' + row.row_type + '-' + row.id" class="import-mobile-card" :class="{ 'stage-mobile-card': row.row_type === 'stage' }">
+            <article v-for="row in visibleRows" v-else :key="'mobile-' + row.row_type + '-' + row.id" class="import-mobile-card" :class="{ 'stage-mobile-card': row.row_type === 'stage' }">
                 <button type="button" class="import-mobile-card-head" :aria-expanded="expandedCards.has(cardKey(row))" @click="toggleCard(row)">
                     <div class="import-mobile-card-head-content">
                         <div class="import-mobile-title">
@@ -133,6 +155,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                     </div>
                     <span class="import-mobile-card-head-actions">
                         <span class="status-badge" :class="'status-' + row.status">{{ statusLabel(row.status) }}</span>
+                        <button v-if="hasChildren(row)" type="button" class="import-run-toggle-mobile-button" :aria-expanded="isRunExpanded(row)" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click.stop="toggleRun(row)">{{ isRunExpanded(row) ? '⌄' : '›' }}</button>
                         <span class="import-mobile-card-chevron" aria-hidden="true">⌄</span>
                     </span>
                 </button>
@@ -169,6 +192,9 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 .wrap-cell { max-width: 220px; white-space: normal; }
 .wrap-cell small, .error-detail { display: block; margin-top: 4px; color: #667085; font-size: 11px; overflow-wrap: anywhere; }
 .row-id { color: #667085; font-variant-numeric: tabular-nums; }
+.import-run-toggle, .import-run-toggle-mobile-button { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 5px; padding: 0; border: 1px solid #b7d8be; border-radius: 5px; background: #f3fbf4; color: #1e892f; font-size: 17px; line-height: 1; cursor: pointer; vertical-align: middle; }
+.import-run-toggle-mobile-button { flex: 0 0 22px; margin: 0; }
+.import-run-toggle:hover, .import-run-toggle-mobile-button:hover { background: #e1f3e7; }
 .empty-cell { padding: 36px 16px !important; text-align: center !important; color: #667085; }
 .import-progress { display: flex; align-items: center; gap: 8px; min-width: 130px; }
 .import-progress-track { width: 88px; height: 7px; border-radius: 5px; background: #e1f3e7; overflow: hidden; }
