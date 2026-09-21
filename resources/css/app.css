@@ -3139,8 +3139,10 @@ html body .main-panel .imports-page .import-mobile-summary-marketplace.import-ma
 html body .main-panel .imports-page .import-detail-cell .import-marketplace-badge.marketplace-other { color: #5f6b76 !important; }
 
 @media (max-width: 900px) {
-    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-marketplace.import-marketplace-badge,
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-detail-cell .import-marketplace-badge {
         background: #e1f3e7 !important;
+    }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-marketplace.import-marketplace-badge {
+        background: #fff !important;
     }
 }
