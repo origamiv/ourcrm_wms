@@ -2926,6 +2926,9 @@ td {
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell { display: flex !important; position: static !important; grid-column: 1 / -1 !important; grid-row: auto !important; top: auto !important; right: auto !important; width: 100% !important; min-height: 58px !important; flex-direction: column !important; align-items: flex-start !important; justify-content: center !important; background: #e1f3e7 !important; border-color: #a8d4a9 !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell::before { display: block !important; content: attr(data-label) !important; color: #1e892f !important; font-size: 11px !important; font-weight: 600 !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell .import-mobile-value { color: #a32626 !important; overflow-wrap: anywhere !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td[data-label="Прогресс"] .import-progress { display: flex !important; align-items: center !important; gap: 8px !important; width: 100% !important; min-width: 0 !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td[data-label="Прогресс"] .import-progress-track { flex: 1 1 auto !important; width: auto !important; min-width: 80px !important; height: 8px !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td[data-label="Прогресс"] .import-progress b { flex: 0 0 auto !important; white-space: nowrap !important; }
 
     /* Хедер раскрытой карточки остаётся таким же, как в свернутой. */
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.id-column,
