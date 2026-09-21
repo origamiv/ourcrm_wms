@@ -13,6 +13,7 @@ use App\Models\IntegrationWebhook;
 use Illuminate\Console\Command;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 final class SyncMarketplaceCatalogsCommand extends Command
 {
@@ -25,15 +26,17 @@ final class SyncMarketplaceCatalogsCommand extends Command
     protected $signature = 'integration:sync-catalogs
                             {tenant : Tenant WMS}
                             {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}
-                            {--limit= : Максимальное количество новых запусков}';
+                            {--limit= : Максимальное количество новых запусков}
+                            {--sync : Выполнять запуски последовательно, без очереди}';
 
-    protected $description = 'Поставить в очередь синхронизацию каталогов маркетплейсов tenant';
+    protected $description = 'Запустить синхронизацию каталогов маркетплейсов tenant';
 
     public function handle(): int
     {
         $tenant = (string) $this->argument('tenant');
         $marketplaceFilter = $this->option('marketplace');
         $limitOption = $this->option('limit');
+        $synchronous = (bool) $this->option('sync');
         $limit = $limitOption === null ? null : (int) $limitOption;
         if ($limitOption !== null && $limit < 1) {
             $this->components->error('Параметр --limit должен быть положительным числом.');
@@ -71,7 +74,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
             ->where('status', 1)
             ->with(['service_obj', 'client_obj'])
             ->orderBy('id')
-            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $limit, $rules, &$queued, &$duplicates, &$skipped, &$invalid): ?bool {
+            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $limit, $synchronous, $rules, &$queued, &$duplicates, &$skipped, &$invalid): ?bool {
                 if ($limit !== null && $queued >= $limit) {
                     return false;
                 }
@@ -155,15 +158,29 @@ final class SyncMarketplaceCatalogsCommand extends Command
                     return null;
                 }
 
-                SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant, $import->id)
-                    ->onConnection('redis')
-                    ->onQueue(SyncMarketplaceCatalogJob::queueForMarketplace($marketplace));
+                if ($synchronous) {
+                    try {
+                        SyncMarketplaceCatalogJob::dispatchSync(new SyncMarketplaceCatalogJob(
+                            webhookId: $webhook->id,
+                            tenant: $tenant,
+                            importId: $import->id,
+                        ));
+                        $this->components->info("Импорт #{$import->id} завершён: ".(string) $import->fresh()?->status.'.');
+                    } catch (Throwable $exception) {
+                        $this->components->warn("Импорт #{$import->id} завершён с ошибкой: ".trim($exception->getMessage()));
+                    }
+                } else {
+                    SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant, $import->id)
+                        ->onConnection('redis')
+                        ->onQueue(SyncMarketplaceCatalogJob::queueForMarketplace($marketplace));
+                }
                 $queued++;
 
                 return null;
             });
 
-        $this->components->info("В очередь поставлено: {$queued}; уже выполняется: {$duplicates}; пропущено: {$skipped}; без обязательных реквизитов: {$invalid}.");
+        $mode = $synchronous ? 'Последовательно выполнено' : 'В очередь поставлено';
+        $this->components->info("{$mode}: {$queued}; уже выполняется: {$duplicates}; пропущено: {$skipped}; без обязательных реквизитов: {$invalid}.");
 
         return self::SUCCESS;
     }
