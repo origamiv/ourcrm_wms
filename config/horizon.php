@@ -248,7 +248,7 @@ return [
             'connection' => 'redis',
             'queue' => ['imports_ozon'],
             'balance' => 'simple',
-            'maxProcesses' => 2,
+            'maxProcesses' => 1,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 256,
@@ -286,7 +286,7 @@ return [
                 'maxProcesses' => 10,
             ],
             'imports_ozon' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 1,
             ],
             'imports_yandex_market' => [
                 'maxProcesses' => 10,
@@ -304,7 +304,7 @@ return [
                 'maxProcesses' => 10,
             ],
             'imports_ozon' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 1,
             ],
             'imports_yandex_market' => [
                 'maxProcesses' => 10,
