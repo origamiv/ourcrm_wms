@@ -242,8 +242,25 @@ final class MarketplaceCatalogSyncService
     private function request(ClientAccount $account, bool $ozon = false, bool $yandex = false): PendingRequest
     {
         $isWildberries = ! $ozon && ! $yandex;
+        $marketplace = $ozon ? 'Ozon' : ($yandex ? 'Яндекс Маркет' : 'Wildberries');
         $request = Http::acceptJson()
-            ->retry([1000, 3000, 10000, 30000], 0, static function (Throwable $exception): bool {
+            ->retry([1000, 3000, 10000, 30000], 0, function (Throwable $exception) use ($marketplace): bool {
+                $context = [
+                    'marketplace' => $marketplace,
+                    'exception' => $exception::class,
+                    'error' => $exception->getMessage(),
+                ];
+                if ($exception instanceof RequestException) {
+                    $response = $exception->response;
+                    $context['http_status'] = $response->status();
+                    $context['retry_after'] = $response->header('Retry-After');
+                    $context['request_id'] = $response->header('X-Request-ID')
+                        ?? $response->header('X-Request-Id')
+                        ?? $response->header('Request-Id');
+                    $context['response_body'] = mb_substr($response->body(), 0, 1000);
+                }
+                Log::warning('Повтор сетевого запроса маркетплейса', $context);
+
                 if ($exception instanceof ConnectionException) {
                     return true;
                 }
@@ -253,25 +270,31 @@ final class MarketplaceCatalogSyncService
             })
             ->connectTimeout($isWildberries ? 5 : 10)
             ->timeout($isWildberries ? 60 : 90);
-        if ($isWildberries) {
-            $request = $request->withOptions([
-                'on_stats' => function (TransferStats $stats): void {
-                    $handlerStats = $stats->getHandlerStats();
-                    $response = $stats->getResponse();
-                    $context = [
-                        'url' => (string) $stats->getEffectiveUri(),
-                        'local_ip' => $handlerStats['local_ip'] ?? null,
-                        'remote_ip' => $handlerStats['primary_ip'] ?? null,
-                        'http_status' => $response?->getStatusCode(),
-                        'dns_ms' => isset($handlerStats['namelookup_time']) ? round((float) $handlerStats['namelookup_time'] * 1000, 1) : null,
-                        'connect_ms' => isset($handlerStats['connect_time']) ? round((float) $handlerStats['connect_time'] * 1000, 1) : null,
-                        'total_ms' => round($stats->getTransferTime() * 1000, 1),
-                    ];
+        $request = $request->withOptions([
+            'on_stats' => function (TransferStats $stats) use ($marketplace): void {
+                $handlerStats = $stats->getHandlerStats();
+                $response = $stats->getResponse();
+                $context = [
+                    'marketplace' => $marketplace,
+                    'url' => (string) $stats->getEffectiveUri(),
+                    'local_ip' => $handlerStats['local_ip'] ?? null,
+                    'remote_ip' => $handlerStats['primary_ip'] ?? null,
+                    'http_status' => $response?->getStatusCode(),
+                    'retry_after' => $response?->getHeaderLine('Retry-After') ?: null,
+                    'request_id' => $response?->getHeaderLine('X-Request-ID')
+                        ?: ($response?->getHeaderLine('X-Request-Id') ?: ($response?->getHeaderLine('Request-Id') ?: null)),
+                    'curl_errno' => $handlerStats['errno'] ?? null,
+                    'curl_error' => $handlerStats['error'] ?? null,
+                    'dns_ms' => isset($handlerStats['namelookup_time']) ? round((float) $handlerStats['namelookup_time'] * 1000, 1) : null,
+                    'connect_ms' => isset($handlerStats['connect_time']) ? round((float) $handlerStats['connect_time'] * 1000, 1) : null,
+                    'tls_ms' => isset($handlerStats['appconnect_time']) ? round((float) $handlerStats['appconnect_time'] * 1000, 1) : null,
+                    'first_byte_ms' => isset($handlerStats['starttransfer_time']) ? round((float) $handlerStats['starttransfer_time'] * 1000, 1) : null,
+                    'total_ms' => round($stats->getTransferTime() * 1000, 1),
+                ];
 
-                    Log::log($stats->hasResponse() ? 'info' : 'warning', 'Сетевой запрос к Wildberries', $context);
-                },
-            ]);
-        }
+                Log::log($stats->hasResponse() ? 'info' : 'warning', 'Сетевой запрос маркетплейса', $context);
+            },
+        ]);
         if ($yandex) {
             return $request->withHeaders(['Api-Key' => (string) $account->token, 'Content-Type' => 'application/json']);
         }
