@@ -2,12 +2,10 @@
 
 Команда `integration:sync-catalogs` без tenant-аргумента находит организации со включённой фичей `integration.marketplace_catalog_sync`, их активные аккаунты и связанные активные вебхуки. Для запуска одной площадки используется `--marketplace=wildberries`, `--marketplace=ozon` или `--marketplace=yandex_market`. За один запуск обрабатываются не более 10 вебхуков Wildberries и 100 вебхуков остальных площадок; по умолчанию выбираются вебхуки с самым старым `dat_last_run`. Запуск выполняется синхронно, без очереди. Опция `--tenant` оставлена для ручного ограничения одной организации.
 
-Cron запускает команду отдельно для каждой площадки каждые 30 минут:
+Laravel Scheduler запускает команду отдельно для каждой площадки каждые 30 минут. В системном cron достаточно оставить один вызов планировщика каждую минуту:
 
 ```cron
-*/30 * * * * php artisan integration:sync-catalogs --marketplace=wildberries
-*/30 * * * * php artisan integration:sync-catalogs --marketplace=ozon
-*/30 * * * * php artisan integration:sync-catalogs --marketplace=yandex_market
+* * * * * cd /var/www/wms.our24.ru && php artisan schedule:run
 ```
 
 Для включения фичи используется:

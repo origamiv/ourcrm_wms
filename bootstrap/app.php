@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +16,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([__DIR__.'/../app/Console'])
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('scheduler:tick')->everyMinute()->withoutOverlapping();
+        $schedule->command('integration:sync-catalogs --marketplace=wildberries')
+            ->everyThirtyMinutes()
+            ->onOneServer()
+            ->withoutOverlapping(30);
+        $schedule->command('integration:sync-catalogs --marketplace=ozon')
+            ->everyThirtyMinutes()
+            ->onOneServer()
+            ->withoutOverlapping(30);
+        $schedule->command('integration:sync-catalogs --marketplace=yandex_market')
+            ->everyThirtyMinutes()
+            ->onOneServer()
+            ->withoutOverlapping(30);
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
