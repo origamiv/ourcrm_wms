@@ -1743,6 +1743,182 @@ td {
     .table-scroll table tbody td:last-child:has(button) { grid-column: 1 / -1; justify-content: flex-end; }
 }
 
+/* Импорты: мобильная карточка с отдельным заголовком и двухколоночными деталями. */
+@media (max-width: 900px) {
+    html body .main-panel .imports-workspace .table-scroll table tbody tr {
+        display: grid !important;
+        grid-template-columns: max-content minmax(0, 1fr) max-content max-content !important;
+        align-items: stretch !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td {
+        display: none !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-status-cell {
+        display: flex !important;
+        align-items: center !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 44px !important;
+        padding: 8px 8px !important;
+        border: 0 !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        color: #0c1821 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        overflow: hidden !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-marketplace-cell {
+        grid-column: 3 !important;
+        grid-row: 1 !important;
+        justify-content: flex-end !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-status-cell {
+        grid-column: 4 !important;
+        grid-row: 1 !important;
+        justify-content: flex-end !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell .name-button {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        color: #0c1821 !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        background: #e1f3e7 !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td {
+        display: flex !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 58px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        padding: 9px 10px !important;
+        background: #e1f3e7 !important;
+        border-color: #a8d4a9 !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.id-column {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        min-height: 44px !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        background: #fff !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-name-cell {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        min-height: 44px !important;
+        align-items: center !important;
+        background: #fff !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell {
+        grid-column: 2 !important;
+        grid-row: 2 !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell:not(.import-marketplace-cell):not(.import-status-cell):not(.import-error-cell) {
+        grid-column: auto !important;
+        grid-row: auto !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell:not(.import-marketplace-cell):not(.import-status-cell):not(.import-error-cell)::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell::before {
+        display: block !important;
+        color: #1e892f !important;
+        content: attr(data-label) !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell {
+        grid-column: 1 / -1 !important;
+        min-height: 72px !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-marketplace-cell::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-status-cell::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.id-column::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-name-cell::before {
+        display: none !important;
+        content: none !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-value {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    html body .main-panel .imports-workspace .import-marketplace-badge {
+        width: auto !important;
+        padding: 3px 8px !important;
+        border-radius: 999px !important;
+        background: #d3eedb !important;
+        color: #176b2a !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        text-transform: capitalize !important;
+    }
+
+    html body .main-panel .imports-workspace .import-status-cell .import-mobile-value {
+        width: auto !important;
+    }
+
+    html body .main-panel .imports-workspace .import-error-cell .import-mobile-value {
+        color: #a32626 !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+    }
+}
+
 @media (max-width: 900px) {
     html body .main-panel .table-scroll table { display: block !important; min-width: 0 !important; }
     html body .main-panel .table-scroll table thead { display: none !important; }
@@ -2498,4 +2674,229 @@ td {
     html body .main-panel .instructions-table-wrap table.instructions-table tbody tr.instruction-mobile-card td[data-label="Действия"] button:not(:first-of-type) {
         display: none !important;
     }
+}
+
+/* Последний слой импортов: он должен перекрывать общие правила мобильных таблиц. */
+@media (max-width: 900px) {
+    html body .main-panel .imports-workspace .table-scroll table tbody tr {
+        display: grid !important;
+        grid-template-columns: max-content minmax(0, 1fr) max-content max-content !important;
+        align-items: stretch !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td {
+        display: none !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-status-cell {
+        display: flex !important;
+        align-items: center !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 44px !important;
+        padding: 8px !important;
+        border: 0 !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column { grid-column: 1 !important; grid-row: 1 !important; color: #0c1821 !important; font-size: 11px !important; font-weight: 600 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell { grid-column: 2 !important; grid-row: 1 !important; overflow: hidden !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-marketplace-cell { grid-column: 3 !important; grid-row: 1 !important; justify-content: flex-end !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-status-cell { grid-column: 4 !important; grid-row: 1 !important; justify-content: flex-end !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-error-cell { display: none !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell .name-button {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        color: #0c1821 !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        background: #e1f3e7 !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td {
+        display: flex !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 58px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        padding: 9px 10px !important;
+        background: #e1f3e7 !important;
+        border-color: #a8d4a9 !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-name-cell { background: #fff !important; border-color: #95c59d !important; min-height: 44px !important; align-items: center !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.id-column { grid-column: 1 !important; grid-row: 1 !important; justify-content: flex-start !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-name-cell { grid-column: 2 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell { grid-column: 1 !important; grid-row: 2 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell { grid-column: 2 !important; grid-row: 2 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell:not(.import-marketplace-cell):not(.import-status-cell):not(.import-error-cell) { grid-column: auto !important; grid-row: auto !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell { grid-column: 1 / -1 !important; grid-row: auto !important; min-height: 72px !important; }
+
+    /* Общие правила таблиц используют nth-child, поэтому дублируем позиции с тем же уровнем точности. */
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(1).id-column { display: flex !important; grid-column: 1 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(2).import-name-cell { display: flex !important; grid-column: 2 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(4).import-marketplace-cell { display: flex !important; grid-column: 3 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(10).import-status-cell { display: flex !important; grid-column: 4 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td:nth-child(11).import-error-cell { display: none !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td:nth-child(1).id-column { display: flex !important; grid-column: 1 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td:nth-child(2).import-name-cell { display: flex !important; grid-column: 2 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td:nth-child(4).import-marketplace-cell { display: flex !important; grid-column: 1 !important; grid-row: 2 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td:nth-child(10).import-status-cell { display: flex !important; grid-column: 2 !important; grid-row: 2 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td:nth-child(11).import-error-cell { display: flex !important; grid-column: 1 / -1 !important; grid-row: auto !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell:not(.import-marketplace-cell):not(.import-status-cell):not(.import-error-cell)::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell::before { display: block !important; color: #1e892f !important; content: attr(data-label) !important; font-size: 11px !important; font-weight: 600 !important; line-height: 1.3 !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-marketplace-cell::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-status-cell::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.id-column::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-name-cell::before { display: none !important; content: none !important; }
+
+    html body .main-panel .imports-workspace .import-mobile-value { display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; overflow-wrap: anywhere !important; }
+    html body .main-panel .imports-workspace .import-marketplace-badge { width: auto !important; padding: 3px 8px !important; border-radius: 999px !important; background: #d3eedb !important; color: #176b2a !important; font-size: 11px !important; font-weight: 700 !important; text-transform: capitalize !important; }
+    html body .main-panel .imports-workspace .import-status-cell .import-mobile-value { width: auto !important; }
+    html body .main-panel .imports-workspace .import-error-cell .import-mobile-value { color: #a32626 !important; font-size: 12px !important; line-height: 1.4 !important; }
+}
+
+/* Мобильный хедер импортов собран внутри одной ячейки, чтобы nth-child-правила таблиц его не скрывали. */
+@media (max-width: 900px) {
+    html body .main-panel .imports-workspace .table-scroll table tbody tr {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td {
+        display: none !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell {
+        display: flex !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 52px !important;
+        padding: 8px 10px !important;
+        background: #fff !important;
+        border: 0 !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell { display: none !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-name-cell {
+        display: flex !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 52px !important;
+        padding: 8px 10px !important;
+        background: #fff !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-header {
+        display: flex !important;
+        align-items: center !important;
+        gap: 7px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-header-id {
+        flex: 0 0 auto !important;
+        color: #0c1821 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-header .name-button {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        color: #0c1821 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-header .row-arrow { flex: 0 0 20px !important; width: 20px !important; margin: 0 !important; padding: 0 !important; }
+    html body .main-panel .imports-workspace .import-mobile-header-marketplace,
+    html body .main-panel .imports-workspace .import-mobile-header-status { flex: 0 0 auto !important; width: auto !important; }
+    html body .main-panel .imports-workspace .import-mobile-header-status { display: inline-flex !important; align-items: center !important; }
+    html body .main-panel .imports-workspace .import-mobile-header-marketplace { padding: 3px 7px !important; border-radius: 999px !important; background: #d3eedb !important; color: #176b2a !important; font-size: 10px !important; font-weight: 700 !important; text-transform: capitalize !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded {
+        background: #e1f3e7 !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell:not(.import-marketplace-cell):not(.import-status-cell):not(.import-error-cell) {
+        display: flex !important;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 58px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        padding: 9px 10px !important;
+        background: #e1f3e7 !important;
+        border-color: #a8d4a9 !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell:not(.import-marketplace-cell):not(.import-status-cell):not(.import-error-cell)::before,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell::before { display: block !important; color: #1e892f !important; content: attr(data-label) !important; font-size: 11px !important; font-weight: 600 !important; line-height: 1.3 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell { display: flex !important; grid-column: 1 / -1 !important; grid-row: auto !important; min-height: 72px !important; flex-direction: column !important; align-items: flex-start !important; padding: 9px 10px !important; background: #e1f3e7 !important; border-color: #a8d4a9 !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) { grid-template-columns: minmax(0, 1fr) !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell { display: none !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell { grid-column: 1 !important; grid-row: 1 !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded):has(.name-button) td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td.id-column,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td.import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td.import-status-cell { display: none !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded):has(.name-button) td.import-name-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td.import-name-cell { grid-column: 1 / -1 !important; grid-row: 1 !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td:nth-child(4).import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td:nth-child(10).import-status-cell { display: none !important; }
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell,
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell { position: absolute !important; width: 0 !important; height: 0 !important; min-height: 0 !important; overflow: hidden !important; padding: 0 !important; border: 0 !important; }
 }

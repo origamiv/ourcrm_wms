@@ -167,8 +167,13 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                         <tr v-for="row in visibleRows" v-else :key="`${row.row_type}-${row.id}`" :class="{ 'mobile-card-expanded': isMobileExpanded(row), 'stage-row': row.row_type === 'stage' }" @click="toggleMobileRow(row, $event)">
                             <td class="id-column" data-label="#">{{ row.id }}</td>
                             <td class="import-name-cell" data-label="Название импорта">
-                                <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
-                                <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
+                                <div class="import-mobile-header">
+                                    <span class="import-mobile-header-id">#{{ row.id }}</span>
+                                    <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
+                                    <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
+                                    <span class="import-mobile-header-marketplace import-marketplace-badge">{{ row.marketplace || "—" }}</span>
+                                    <span class="import-mobile-header-status"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span>
+                                </div>
                             </td>
                             <td class="import-detail-cell" data-label="Клиент"><span class="import-mobile-value">{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</span></td>
                             <td class="import-detail-cell import-marketplace-cell" data-label="Маркетплейс"><span class="import-mobile-value import-marketplace-badge">{{ row.marketplace || "—" }}</span></td>
