@@ -18,7 +18,7 @@ final class ImportRunController extends BaseApiController
         $runs = ImportRun::query()
             ->with('stages')
             ->visibleTo((string) $request->user()->tenant_id)
-            ->orderByDesc('updated_at')
+            ->orderByRaw('GREATEST(wms.import_runs.updated_at, COALESCE((SELECT MAX(stages.updated_at) FROM wms.import_run_stages AS stages WHERE stages.import_run_id = wms.import_runs.id), wms.import_runs.updated_at)) DESC')
             ->orderByDesc('id')
             ->paginate(50);
 
