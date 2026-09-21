@@ -9,6 +9,41 @@
     --font-sans: "Manrope", sans-serif;
 }
 
+/* Прогресс импорта должен оставаться видимым поверх табличных правил. */
+html body .main-panel .imports-page .progress-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+html body .main-panel .imports-page .progress-bar-track {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 80px !important;
+    height: 9px !important;
+    overflow: hidden !important;
+    border: 1px solid #9fc9aa !important;
+    border-radius: 6px !important;
+    background: #dcefe1 !important;
+    box-sizing: border-box !important;
+}
+html body .main-panel .imports-page .progress-bar-fill {
+    display: block !important;
+    height: 100% !important;
+    min-height: 7px !important;
+    border-radius: 5px !important;
+    background: linear-gradient(90deg, #1e892f, #65c98a) !important;
+}
+html body .main-panel .imports-page .progress-bar b {
+    flex: 0 0 auto !important;
+    color: #1e892f !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
 /* Фирменные бейджи маркетплейсов в карточках импортов. */
 html body .main-panel .imports-page .import-marketplace-badge {
     display: inline-flex !important;
