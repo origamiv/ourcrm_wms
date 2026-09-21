@@ -2913,7 +2913,9 @@ td {
     html body .main-panel .imports-page .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-error-cell { display: none !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr td.import-name-cell { overflow: hidden !important; }
     html body .main-panel .imports-page .import-mobile-summary { display: flex !important; align-items: center !important; width: 100% !important; min-width: 0 !important; gap: 7px !important; }
-    html body .main-panel .imports-page .import-mobile-summary .name-button { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr td.import-name-cell { height: 42px !important; min-height: 42px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
+    html body .main-panel .imports-page .import-mobile-summary { height: 26px !important; min-height: 26px !important; }
+    html body .main-panel .imports-page .import-mobile-summary .name-button { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; height: 18px !important; overflow: hidden !important; padding-top: 0 !important; padding-bottom: 0 !important; line-height: 18px !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
     html body .main-panel .imports-page .import-mobile-summary-marketplace,
     html body .main-panel .imports-page .import-mobile-summary-updated,
     html body .main-panel .imports-page .import-mobile-summary-status { display: inline-flex !important; flex: 0 0 auto !important; width: auto !important; }
