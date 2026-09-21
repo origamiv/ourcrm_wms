@@ -160,11 +160,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
                 if ($synchronous) {
                     try {
-                        SyncMarketplaceCatalogJob::dispatchSync(new SyncMarketplaceCatalogJob(
-                            webhookId: $webhook->id,
-                            tenant: $tenant,
-                            importId: $import->id,
-                        ));
+                        SyncMarketplaceCatalogJob::dispatchSync($webhook->id, $tenant, $import->id);
                         $this->components->info("Импорт #{$import->id} завершён: ".(string) $import->fresh()?->status.'.');
                     } catch (Throwable $exception) {
                         $this->components->warn("Импорт #{$import->id} завершён с ошибкой: ".trim($exception->getMessage()));
