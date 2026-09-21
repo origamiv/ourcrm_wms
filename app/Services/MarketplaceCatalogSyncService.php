@@ -131,7 +131,9 @@ final class MarketplaceCatalogSyncService
                 $response = $this->request($account, true)->post('https://api-seller.ozon.ru/v4/product/info/attributes', $payload)->throw()->json();
             } catch (RequestException $exception) {
                 if ($lastId !== null && $exception->response->status() === 404) {
-                    $checkpoint?->__invoke(null);
+                    if ($checkpoint) {
+                        $checkpoint(null);
+                    }
                     break;
                 }
 
