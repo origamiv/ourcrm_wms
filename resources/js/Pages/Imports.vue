@@ -158,11 +158,12 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                             <th scope="col">Прогресс</th>
                             <th scope="col">Обработано записей</th>
                             <th scope="col">Статус</th>
+                            <th scope="col">Детализация ошибки</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="loading"><td colspan="10" class="empty-state">Загрузка импортов…</td></tr>
-                        <tr v-else-if="!visibleRows.length"><td colspan="10" class="empty-state">Импорты ещё не запускались</td></tr>
+                        <tr v-if="loading"><td colspan="11" class="empty-state">Загрузка импортов…</td></tr>
+                        <tr v-else-if="!visibleRows.length"><td colspan="11" class="empty-state">Импорты ещё не запускались</td></tr>
                         <tr v-for="row in visibleRows" v-else :key="`${row.row_type}-${row.id}`" :class="{ 'mobile-card-expanded': isMobileExpanded(row), 'stage-row': row.row_type === 'stage' }" @click="toggleMobileRow(row, $event)">
                             <td class="id-column" data-label="#">{{ row.id }}</td>
                             <td class="import-name-cell" data-label="Название импорта">
@@ -170,13 +171,14 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                                 <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
                             </td>
                             <td class="import-detail-cell" data-label="Клиент"><span class="import-mobile-value">{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</span></td>
-                            <td class="import-detail-cell" data-label="Маркетплейс"><span class="import-mobile-value">{{ row.marketplace || "—" }}</span></td>
+                            <td class="import-detail-cell import-marketplace-cell" data-label="Маркетплейс"><span class="import-mobile-value import-marketplace-badge">{{ row.marketplace || "—" }}</span></td>
                             <td class="import-detail-cell" data-label="Интеграция"><span class="import-mobile-value">#{{ row.webhook_id || "—" }}<small v-if="row.account_id">Аккаунт #{{ row.account_id }}</small></span></td>
                             <td class="import-detail-cell" data-label="Дата и время старта"><span class="import-mobile-value">{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</span></td>
                             <td class="import-detail-cell" data-label="Текущий этап"><span class="import-mobile-value">{{ row.current_stage_number ? `${row.current_stage_number}. ${row.current_stage_name}` : "—" }}</span></td>
                             <td class="import-detail-cell" data-label="Прогресс"><span class="import-mobile-value"><span class="import-progress"><span class="import-progress-track"><i :style="{ width: `${progress(row) ?? 0}%` }"></i></span><b>{{ progressText(row) }}</b></span></span></td>
                             <td class="import-detail-cell" data-label="Обработано записей"><span class="import-mobile-value">{{ recordsText(row) }}</span></td>
-                            <td class="import-detail-cell import-status-cell" data-label="Статус"><span class="import-mobile-value"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span><small v-if="row.error_message" class="error-detail">{{ row.error_message }}</small></span></td>
+                            <td class="import-detail-cell import-status-cell" data-label="Статус"><span class="import-mobile-value"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span></td>
+                            <td class="import-detail-cell import-error-cell" data-label="Детализация ошибки"><span class="import-mobile-value">{{ row.error_message || "—" }}</span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -210,67 +212,96 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 
 @media (max-width: 900px) {
     .imports-workspace .table-scroll table tbody tr {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        min-height: 44px !important;
-        height: auto !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        align-items: stretch !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
     }
 
     .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td {
         display: none !important;
     }
 
+    .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column,
+    .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell,
+    .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-marketplace-cell,
+    .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-status-cell {
+        display: flex !important;
+        align-items: center !important;
+        min-width: 0 !important;
+        min-height: 44px !important;
+        padding: 8px 10px !important;
+        border: 0 !important;
+        background: #fff !important;
+    }
+
     .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column {
-        display: inline-flex !important;
-        order: 1 !important;
-        flex: 0 0 34px !important;
-        width: 34px !important;
-        min-height: 42px !important;
-        padding: 8px 6px 8px 0 !important;
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        width: auto !important;
+        padding-right: 4px !important;
+        color: #0c1821 !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
     }
 
     .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell {
-        display: inline-flex !important;
-        order: 2 !important;
-        flex: 1 1 auto !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
         width: auto !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        min-height: 42px !important;
-        padding: 8px 10px !important;
-        border: 0 !important;
+        margin-left: 34px !important;
+        padding-left: 4px !important;
+        padding-right: 104px !important;
     }
 
     .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-name-cell .name-button {
         display: block !important;
         width: 100% !important;
-        max-width: none !important;
         min-width: 0 !important;
+        max-width: none !important;
         overflow: hidden !important;
         padding: 0 !important;
         color: #0c1821 !important;
+        font-weight: 600 !important;
+        text-align: left !important;
         text-overflow: ellipsis !important;
         white-space: nowrap !important;
     }
 
+    .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-marketplace-cell {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        width: auto !important;
+        justify-content: flex-start !important;
+        padding-top: 0 !important;
+        padding-left: 48px !important;
+    }
+
+    .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-status-cell {
+        grid-column: 2 !important;
+        grid-row: 2 !important;
+        width: auto !important;
+        justify-content: flex-end !important;
+        padding-top: 0 !important;
+    }
+
     .imports-workspace .table-scroll table tbody tr.mobile-card-expanded {
-        display: block !important;
-        overflow: hidden !important;
         background: #e1f3e7 !important;
         border-color: #95c59d !important;
     }
 
     .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td {
         display: flex !important;
-        width: 100% !important;
+        width: auto !important;
         min-width: 0 !important;
-        min-height: 50px !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 10px !important;
+        min-height: 58px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 5px !important;
         padding: 9px 10px !important;
-        background: transparent !important;
+        background: #e1f3e7 !important;
         border-color: #a8d4a9 !important;
         box-sizing: border-box !important;
     }
@@ -282,54 +313,81 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
     }
 
     .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.id-column {
-        display: inline-flex !important;
-        width: 34px !important;
-        min-height: 42px !important;
-        padding: 8px 6px 8px 0 !important;
-        vertical-align: top !important;
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        width: auto !important;
+        min-height: 44px !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        padding-left: 10px !important;
     }
 
     .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-name-cell {
-        display: inline-flex !important;
-        width: calc(100% - 40px) !important;
-        min-height: 42px !important;
-        padding: 8px 10px !important;
-        vertical-align: top !important;
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        width: auto !important;
+        min-height: 44px !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+    }
+
+    .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell {
+        grid-column: 2 !important;
+        grid-row: 2 !important;
     }
 
     .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell {
-        display: grid !important;
-        grid-template-columns: minmax(110px, 150px) minmax(0, 1fr) !important;
-        align-items: center !important;
-        gap: 10px !important;
+        width: auto !important;
+        grid-column: auto !important;
+        grid-row: auto !important;
     }
 
     .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-detail-cell::before {
         display: block !important;
-        min-width: 0 !important;
         color: #1e892f !important;
         content: attr(data-label) !important;
-        font-size: 12px !important;
+        font-size: 11px !important;
         font-weight: 600 !important;
         line-height: 1.3 !important;
-        overflow-wrap: anywhere !important;
+    }
+
+    .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell {
+        grid-column: 1 / -1 !important;
+        min-height: 72px !important;
     }
 
     .imports-workspace .import-mobile-value {
         display: block !important;
+        width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
         overflow-wrap: anywhere !important;
     }
 
-    .imports-workspace .import-status-cell .import-mobile-value {
-        display: grid !important;
-        gap: 4px !important;
+    .imports-workspace .import-marketplace-badge {
+        width: auto !important;
+        padding: 3px 8px !important;
+        border-radius: 999px !important;
+        background: #d3eedb !important;
+        color: #176b2a !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        text-transform: capitalize !important;
     }
 
-    .imports-workspace .import-status-cell .error-detail {
-        margin-top: 0 !important;
-        white-space: normal !important;
+    .imports-workspace .import-status-cell .import-mobile-value {
+        width: auto !important;
+    }
+
+    .imports-workspace .import-error-cell .import-mobile-value {
+        color: #a32626 !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
     }
 }
 </style>
