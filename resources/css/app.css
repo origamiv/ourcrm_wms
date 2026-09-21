@@ -2993,6 +2993,7 @@ td {
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell { grid-column: 1 / -1 !important; grid-row: auto !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.id-column { position: static !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr td.import-name-cell::before { display: none !important; content: none !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr td.id-column { white-space: nowrap !important; overflow-wrap: normal !important; word-break: keep-all !important; }
 }
 
 /* Изолированная мобильная раскладка импортов: детали не зависят от td/nth-child правил таблицы. */
