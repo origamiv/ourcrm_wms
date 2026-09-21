@@ -17,6 +17,8 @@ use Throwable;
 
 final class SyncMarketplaceCatalogsCommand extends Command
 {
+    private const MAX_SYNCHRONOUS_ATTEMPTS = 5;
+
     private const RULES = [
         'wildberries' => 'wildberries_catalog',
         'ozon' => 'ozon_catalog',
@@ -160,7 +162,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
                 if ($synchronous) {
                     try {
-                        SyncMarketplaceCatalogJob::dispatchSync($webhook->id, $tenant, $import->id);
+                        $this->runSynchronously($webhook->id, $tenant, $import);
                         $this->components->info("Импорт #{$import->id} завершён: ".(string) $import->fresh()?->status.'.');
                     } catch (Throwable $exception) {
                         $this->markImportFailed($import, $exception);
@@ -243,5 +245,28 @@ final class SyncMarketplaceCatalogsCommand extends Command
             ->where('import_run_id', $import->id)
             ->whereIn('status', ['queued', 'running'])
             ->update(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()]);
+    }
+
+    private function runSynchronously(int $webhookId, string $tenant, ImportRun $import): void
+    {
+        for ($attempt = 1; $attempt <= self::MAX_SYNCHRONOUS_ATTEMPTS; $attempt++) {
+            SyncMarketplaceCatalogJob::dispatchSync($webhookId, $tenant, $import->id);
+            $status = $import->fresh();
+
+            if (! $status || ! in_array($status->status, ['queued', 'running'], true)) {
+                return;
+            }
+            if (! str_contains((string) $status->error_message, 'Временная ошибка связи')) {
+                return;
+            }
+            if ($attempt < self::MAX_SYNCHRONOUS_ATTEMPTS) {
+                $this->components->warn("Импорт #{$import->id}: повтор синхронного запуска ".($attempt + 1).' из '.self::MAX_SYNCHRONOUS_ATTEMPTS.'.');
+            }
+        }
+
+        $status = $import->fresh();
+        if ($status && in_array($status->status, ['queued', 'running'], true)) {
+            $this->markImportFailed($status, new RuntimeException('Исчерпаны повторные попытки синхронного запуска.'));
+        }
     }
 }

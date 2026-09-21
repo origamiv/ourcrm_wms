@@ -269,7 +269,7 @@ final class MarketplaceCatalogSyncService
                     && in_array($exception->response->status(), [408, 425, 429, 500, 502, 503, 504], true);
             })
             ->connectTimeout($isWildberries ? 5 : 10)
-            ->timeout($isWildberries ? 60 : 90);
+            ->timeout($isWildberries ? 60 : ($ozon ? 180 : 90));
         $request = $request->withOptions([
             'on_stats' => function (TransferStats $stats) use ($marketplace): void {
                 $handlerStats = $stats->getHandlerStats();
