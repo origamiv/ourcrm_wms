@@ -33,7 +33,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
     protected $signature = 'integration:sync-catalogs
                             {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}
-                            {--limit=100 : Максимальное количество вебхуков}
+                            {--limit= : Максимальное количество вебхуков; по умолчанию 10 для Wildberries и 100 для остальных площадок}
                             {--tenant= : Ограничить запуск одной организацией}';
 
     protected $description = 'Синхронно запустить каталоги маркетплейсов для организаций с включённой фичей';
@@ -42,7 +42,9 @@ final class SyncMarketplaceCatalogsCommand extends Command
     {
         $marketplaceFilter = $this->option('marketplace');
         $tenantFilter = $this->option('tenant');
-        $limit = (int) $this->option('limit');
+        $limit = $this->option('limit') === null
+            ? ($marketplaceFilter === 'wildberries' ? 10 : 100)
+            : (int) $this->option('limit');
 
         if ($marketplaceFilter !== null && ! array_key_exists((string) $marketplaceFilter, self::RULES)) {
             $this->components->error('Недопустимая площадка. Используйте: wildberries, ozon или yandex_market.');
