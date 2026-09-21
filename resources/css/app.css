@@ -1977,6 +1977,32 @@ td {
     }
 }
 
+/* Хедер закрытой и раскрытой карточки использует одну геометрию бейджа. */
+@media (max-width: 900px) {
+    html body .main-panel .imports-page .table-scroll table tbody tr .import-mobile-summary-marketplace.import-marketplace-badge {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 68px !important;
+        width: 68px !important;
+        min-width: 68px !important;
+        height: 22px !important;
+        min-height: 22px !important;
+        padding: 0 6px !important;
+        box-sizing: border-box !important;
+        border: 1px solid currentColor !important;
+        border-radius: 999px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        line-height: 20px !important;
+        text-transform: none !important;
+        white-space: nowrap !important;
+    }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-marketplace.import-marketplace-badge {
+        background: #fff !important;
+    }
+}
+
 @media (max-width: 900px) {
     html body .main-panel .table-scroll table { display: block !important; min-width: 0 !important; }
     html body .main-panel .table-scroll table thead { display: none !important; }
