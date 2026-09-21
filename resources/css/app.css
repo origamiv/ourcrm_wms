@@ -2903,6 +2903,28 @@ td {
     html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell { position: absolute !important; width: 0 !important; height: 0 !important; min-height: 0 !important; overflow: hidden !important; padding: 0 !important; border: 0 !important; }
 }
 
+/* Импорты используют тот же mobile-card layout, что и Clients.vue. */
+.imports-page .import-mobile-summary { display: contents; }
+.imports-page .import-mobile-summary-marketplace,
+.imports-page .import-mobile-summary-updated,
+.imports-page .import-mobile-summary-status { display: none; }
+
+@media (max-width: 900px) {
+    html body .main-panel .imports-page .table-scroll table tbody tr:not(.mobile-card-expanded) td.import-error-cell { display: none !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr td.import-name-cell { overflow: hidden !important; }
+    html body .main-panel .imports-page .import-mobile-summary { display: flex !important; align-items: center !important; width: 100% !important; min-width: 0 !important; gap: 7px !important; }
+    html body .main-panel .imports-page .import-mobile-summary .name-button { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+    html body .main-panel .imports-page .import-mobile-summary-marketplace,
+    html body .main-panel .imports-page .import-mobile-summary-updated,
+    html body .main-panel .imports-page .import-mobile-summary-status { display: inline-flex !important; flex: 0 0 auto !important; width: auto !important; }
+    html body .main-panel .imports-page .import-mobile-summary-marketplace { padding: 3px 7px !important; border-radius: 999px !important; background: #d3eedb !important; color: #176b2a !important; font-size: 10px !important; font-weight: 700 !important; text-transform: capitalize !important; }
+    html body .main-panel .imports-page .import-mobile-summary-updated { color: #71828a !important; font-size: 11px !important; font-weight: 600 !important; white-space: nowrap !important; }
+    html body .main-panel .imports-page .import-mobile-summary-status { align-items: center !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell { display: flex !important; position: static !important; grid-column: 1 / -1 !important; grid-row: auto !important; top: auto !important; right: auto !important; width: 100% !important; min-height: 58px !important; flex-direction: column !important; align-items: flex-start !important; justify-content: center !important; background: #e1f3e7 !important; border-color: #a8d4a9 !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell::before { display: block !important; content: attr(data-label) !important; color: #1e892f !important; font-size: 11px !important; font-weight: 600 !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell .import-mobile-value { color: #a32626 !important; overflow-wrap: anywhere !important; }
+}
+
 /* Изолированная мобильная раскладка импортов: детали не зависят от td/nth-child правил таблицы. */
 @media (max-width: 900px) {
     html body .main-panel .imports-workspace .table-scroll table tbody tr {

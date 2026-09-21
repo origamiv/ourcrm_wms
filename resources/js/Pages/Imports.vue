@@ -143,7 +143,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 
 <template>
     <Head title="Импорты" />
-    <div class="users-workspace imports-workspace">
+    <div class="users-workspace imports-page">
         <section class="users-list">
             <div class="content-breadcrumb">Обслуживание › Импорты</div>
             <MaintenanceTabs />
@@ -173,22 +173,12 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                         <tr v-for="row in visibleRows" v-else :key="`${row.row_type}-${row.id}`" :class="{ 'mobile-card-expanded': isMobileExpanded(row), 'stage-row': row.row_type === 'stage' }" @click="toggleMobileRow(row, $event)">
                             <td class="id-column" data-label="#">{{ row.id }}</td>
                             <td class="import-name-cell" data-label="Название импорта">
-                                <div class="import-mobile-header">
-                                    <span class="import-mobile-header-id">#{{ row.id }}</span>
+                                <div class="import-mobile-summary">
                                     <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
                                     <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
-                                    <span class="import-mobile-header-marketplace import-marketplace-badge">{{ row.marketplace || "—" }}</span>
-                                    <span class="import-mobile-header-updated">{{ updatedTime(row) }}</span>
-                                    <span class="import-mobile-header-status"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span>
-                                </div>
-                                <div class="import-mobile-details">
-                                    <div class="import-mobile-detail"><span>Клиент</span><strong>{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</strong></div>
-                                    <div class="import-mobile-detail"><span>Интеграция</span><strong>#{{ row.webhook_id || "—" }}<small v-if="row.account_id">Аккаунт #{{ row.account_id }}</small></strong></div>
-                                    <div class="import-mobile-detail"><span>Дата и время старта</span><strong>{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</strong></div>
-                                    <div class="import-mobile-detail"><span>Текущий этап</span><strong>{{ row.current_stage_number ? `${row.current_stage_number}. ${row.current_stage_name}` : "—" }}</strong></div>
-                                    <div class="import-mobile-detail"><span>Прогресс</span><strong>{{ progressText(row) }}</strong></div>
-                                    <div class="import-mobile-detail"><span>Обработано записей</span><strong>{{ recordsText(row) }}</strong></div>
-                                    <div class="import-mobile-detail import-mobile-detail-error"><span>Детализация ошибки</span><strong>{{ row.error_message || "—" }}</strong></div>
+                                    <span class="import-mobile-summary-marketplace import-marketplace-badge">{{ row.marketplace || "—" }}</span>
+                                    <span class="import-mobile-summary-updated">{{ updatedTime(row) }}</span>
+                                    <span class="import-mobile-summary-status"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span>
                                 </div>
                             </td>
                             <td class="import-detail-cell" data-label="Клиент"><span class="import-mobile-value">{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</span></td>
@@ -218,18 +208,18 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 </template>
 
 <style scoped>
-.imports-workspace .page-heading { padding-bottom: 12px; }
-.imports-workspace .sync-line { padding-bottom: 14px; }
-.imports-workspace .table-scroll { flex: 1; }
-.imports-workspace .row-arrow { width: 24px; margin-right: 4px; border: 0; background: transparent; color: #1e892f; font-size: 19px; vertical-align: middle; cursor: pointer; }
-.imports-workspace .name-button { max-width: 280px; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
-.imports-workspace td small, .imports-workspace .error-detail { display: block; margin-top: 4px; color: #667085; font-size: 10px; overflow-wrap: anywhere; }
-.imports-workspace .error-detail { color: #a32626; }
+.imports-page .page-heading { padding-bottom: 12px; }
+.imports-page .sync-line { padding-bottom: 14px; }
+.imports-page .table-scroll { flex: 1; }
+.imports-page .row-arrow { width: 24px; margin-right: 4px; border: 0; background: transparent; color: #1e892f; font-size: 19px; vertical-align: middle; cursor: pointer; }
+.imports-page .name-button { max-width: 280px; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.imports-page td small, .imports-page .error-detail { display: block; margin-top: 4px; color: #667085; font-size: 10px; overflow-wrap: anywhere; }
+.imports-page .error-detail { color: #a32626; }
 .import-progress { display: flex; align-items: center; gap: 8px; min-width: 125px; }
 .import-progress-track { display: block; width: 76px; height: 7px; overflow: hidden; border-radius: 5px; background: #e1f3e7; }
 .import-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
 .import-progress b { color: #1e892f; font-size: 11px; }
-.imports-workspace .list-footer .refresh-button { width: auto; padding: 0 8px; font-size: 12px; }
+.imports-page .list-footer .refresh-button { width: auto; padding: 0 8px; font-size: 12px; }
 
 @media (max-width: 900px) {
     .imports-workspace .table-scroll table tbody tr {
