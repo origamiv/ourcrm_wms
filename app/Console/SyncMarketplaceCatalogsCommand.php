@@ -163,6 +163,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
                         SyncMarketplaceCatalogJob::dispatchSync($webhook->id, $tenant, $import->id);
                         $this->components->info("Импорт #{$import->id} завершён: ".(string) $import->fresh()?->status.'.');
                     } catch (Throwable $exception) {
+                        $this->markImportFailed($import, $exception);
                         $this->components->warn("Импорт #{$import->id} завершён с ошибкой: ".trim($exception->getMessage()));
                     }
                 } else {
@@ -226,5 +227,21 @@ final class SyncMarketplaceCatalogsCommand extends Command
     private function importName(string $marketplace, ?string $clientName, string $webhookName): string
     {
         return 'Каталог '.$this->marketplaceName($marketplace).' — '.($clientName ?: 'Клиент не указан').' — '.$webhookName;
+    }
+
+    private function markImportFailed(ImportRun $import, Throwable $exception): void
+    {
+        $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
+        $message = 'Синхронизация каталога не выполнена: '.$reason;
+        $import->forceFill([
+            'status' => 'failed',
+            'error_class' => $exception::class,
+            'error_message' => $message,
+            'finished_at' => now(),
+        ])->save();
+        ImportRunStage::query()
+            ->where('import_run_id', $import->id)
+            ->whereIn('status', ['queued', 'running'])
+            ->update(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()]);
     }
 }
