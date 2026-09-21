@@ -2948,7 +2948,7 @@ td {
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary .name-button { height: 18px !important; padding: 0 !important; color: #0c1821 !important; font-size: 15px !important; font-weight: 600 !important; line-height: 18px !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-marketplace { background: #d3eedb !important; color: #176b2a !important; font-size: 10px !important; }
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-updated { color: #71828a !important; font-size: 11px !important; }
-    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-status { color: inherit !important; font-size: 12px !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded .import-mobile-summary-status { color: inherit !important; font-size: 12px !important; height: 22px !important; min-height: 22px !important; line-height: 22px !important; }
 
     /* Одинаковая геометрия хедера в обоих состояниях карточки. */
     html body .main-panel .imports-page .table-scroll table tbody tr:not(.mobile-card-expanded),
@@ -2956,6 +2956,9 @@ td {
         display: grid !important;
         grid-template-columns: 30px minmax(0, 1fr) !important;
         align-items: stretch !important;
+        font-size: 12px !important;
+        line-height: normal !important;
+        position: static !important;
     }
     html body .main-panel .imports-page .table-scroll table tbody tr:not(.mobile-card-expanded) td.id-column,
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.id-column {
@@ -2988,6 +2991,7 @@ td {
         width: 100% !important;
     }
     html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.import-error-cell { grid-column: 1 / -1 !important; grid-row: auto !important; }
+    html body .main-panel .imports-page .table-scroll table tbody tr.mobile-card-expanded td.id-column { position: static !important; }
 }
 
 /* Изолированная мобильная раскладка импортов: детали не зависят от td/nth-child правил таблицы. */
