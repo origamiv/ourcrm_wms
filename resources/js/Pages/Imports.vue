@@ -59,6 +59,11 @@ function recordsText(row: ImportRun): string {
     return "Записей нет";
 }
 
+function updatedTime(row: ImportRun): string {
+    const value = formatDateInTimezone(row.updated_at, "Europe/Moscow", true);
+    return value === "—" ? value : value.slice(-5);
+}
+
 function statusLabel(status: string): string {
     return { queued: "В очереди", running: "Выполняется", completed: "Завершён", failed: "Ошибка" }[status] ?? status;
 }
@@ -173,7 +178,17 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                                     <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
                                     <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
                                     <span class="import-mobile-header-marketplace import-marketplace-badge">{{ row.marketplace || "—" }}</span>
+                                    <span class="import-mobile-header-updated">{{ updatedTime(row) }}</span>
                                     <span class="import-mobile-header-status"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span>
+                                </div>
+                                <div class="import-mobile-details">
+                                    <div class="import-mobile-detail"><span>Клиент</span><strong>{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</strong></div>
+                                    <div class="import-mobile-detail"><span>Интеграция</span><strong>#{{ row.webhook_id || "—" }}<small v-if="row.account_id">Аккаунт #{{ row.account_id }}</small></strong></div>
+                                    <div class="import-mobile-detail"><span>Дата и время старта</span><strong>{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</strong></div>
+                                    <div class="import-mobile-detail"><span>Текущий этап</span><strong>{{ row.current_stage_number ? `${row.current_stage_number}. ${row.current_stage_name}` : "—" }}</strong></div>
+                                    <div class="import-mobile-detail"><span>Прогресс</span><strong>{{ progressText(row) }}</strong></div>
+                                    <div class="import-mobile-detail"><span>Обработано записей</span><strong>{{ recordsText(row) }}</strong></div>
+                                    <div class="import-mobile-detail import-mobile-detail-error"><span>Детализация ошибки</span><strong>{{ row.error_message || "—" }}</strong></div>
                                 </div>
                             </td>
                             <td class="import-detail-cell" data-label="Клиент"><span class="import-mobile-value">{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</span></td>

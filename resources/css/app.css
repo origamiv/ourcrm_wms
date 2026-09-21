@@ -2852,8 +2852,10 @@ td {
 
     html body .main-panel .imports-workspace .import-mobile-header .row-arrow { flex: 0 0 20px !important; width: 20px !important; margin: 0 !important; padding: 0 !important; }
     html body .main-panel .imports-workspace .import-mobile-header-marketplace,
-    html body .main-panel .imports-workspace .import-mobile-header-status { flex: 0 0 auto !important; width: auto !important; }
+    html body .main-panel .imports-workspace .import-mobile-header-status,
+    html body .main-panel .imports-workspace .import-mobile-header-updated { flex: 0 0 auto !important; width: auto !important; }
     html body .main-panel .imports-workspace .import-mobile-header-status { display: inline-flex !important; align-items: center !important; }
+    html body .main-panel .imports-workspace .import-mobile-header-updated { color: #71828a !important; font-size: 11px !important; font-weight: 600 !important; white-space: nowrap !important; }
     html body .main-panel .imports-workspace .import-mobile-header-marketplace { padding: 3px 7px !important; border-radius: 999px !important; background: #d3eedb !important; color: #176b2a !important; font-size: 10px !important; font-weight: 700 !important; text-transform: capitalize !important; }
 
     html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded {
@@ -2899,4 +2901,70 @@ td {
     html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded:has(.name-button) td:nth-child(10).import-status-cell { display: none !important; }
     html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-marketplace-cell,
     html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-status-cell { position: absolute !important; width: 0 !important; height: 0 !important; min-height: 0 !important; overflow: hidden !important; padding: 0 !important; border: 0 !important; }
+}
+
+/* Изолированная мобильная раскладка импортов: детали не зависят от td/nth-child правил таблицы. */
+@media (max-width: 900px) {
+    html body .main-panel .imports-workspace .table-scroll table tbody tr {
+        display: block !important;
+        width: 100% !important;
+        overflow: hidden !important;
+        background: #fff !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr:not(.mobile-card-expanded) td:not(.import-name-cell),
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td:not(.import-name-cell) { display: none !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr td.import-name-cell {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 52px !important;
+        padding: 8px 10px !important;
+        background: #fff !important;
+        border: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-header { display: flex !important; align-items: center !important; min-height: 36px !important; }
+    html body .main-panel .imports-workspace .import-mobile-details { display: none !important; }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded {
+        background: #e1f3e7 !important;
+        border-color: #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded td.import-name-cell {
+        background: #fff !important;
+        border-bottom: 1px solid #95c59d !important;
+    }
+
+    html body .main-panel .imports-workspace .table-scroll table tbody tr.mobile-card-expanded .import-mobile-details {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+        gap: 0 !important;
+        width: 100% !important;
+        margin: 0 -10px -8px !important;
+        width: calc(100% + 20px) !important;
+        background: #e1f3e7 !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-detail {
+        display: flex !important;
+        min-width: 0 !important;
+        min-height: 58px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 4px !important;
+        padding: 9px 10px !important;
+        border-bottom: 1px solid #a8d4a9 !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .main-panel .imports-workspace .import-mobile-detail > span { color: #1e892f !important; font-size: 11px !important; font-weight: 600 !important; line-height: 1.3 !important; }
+    html body .main-panel .imports-workspace .import-mobile-detail > strong { display: block !important; min-width: 0 !important; max-width: 100% !important; color: #0c1821 !important; font-size: 12px !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
+    html body .main-panel .imports-workspace .import-mobile-detail > strong small { display: block !important; margin-top: 3px !important; color: #667085 !important; font-size: 10px !important; }
+    html body .main-panel .imports-workspace .import-mobile-detail-error { grid-column: 1 / -1 !important; min-height: 76px !important; }
+    html body .main-panel .imports-workspace .import-mobile-detail-error > strong { color: #a32626 !important; line-height: 1.4 !important; }
 }
