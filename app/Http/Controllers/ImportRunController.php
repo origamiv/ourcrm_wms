@@ -48,7 +48,9 @@ final class ImportRunController extends BaseApiController
                 'account_id' => $run->options['account_id'] ?? null,
                 'marketplace' => $run->options['marketplace'] ?? $run->source_system,
             ];
-            $stages = $run->stages->map(fn (ImportRunStage $stage): array => [
+            $showStages = $run->project === 'tswms'
+                && (array) ($run->options['only'] ?? []) === [];
+            $stages = $showStages ? $run->stages->map(fn (ImportRunStage $stage): array => [
                 'row_type' => 'stage',
                 'id' => (string) $stage->id,
                 'parent_id' => (string) $run->id,
@@ -71,7 +73,7 @@ final class ImportRunController extends BaseApiController
                 'client_name' => $run->options['client_name'] ?? null,
                 'account_id' => $run->options['account_id'] ?? null,
                 'marketplace' => $run->options['marketplace'] ?? $run->source_system,
-            ])->all();
+            ])->all() : [];
 
             return [$parent, ...$stages];
         })->values();
