@@ -55,6 +55,9 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
         $run = $this->importId
             ? ImportRun::query()->where('tenant_id', $this->tenant)->findOrFail($this->importId)
             : $this->createLegacyImport($webhook, $marketplace, $marketplaceName);
+        if ($this->importId !== null && ! in_array($run->status, ['queued', 'running'], true)) {
+            return;
+        }
         $stage = ImportRunStage::query()->where('import_run_id', $run->id)->where('stage_key', 'catalog')->firstOrFail();
         $locks = null;
         $accountId = (int) (($webhook->params ?? [])['account_id'] ?? 0);
@@ -62,6 +65,27 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
         try {
             if ($accountId > 0) {
                 $locks = app(MarketplaceConcurrencyService::class)->acquire($marketplace, $this->tenant, $accountId);
+            }
+            $activeRuns = ImportRun::query()
+                ->where('tenant_id', $this->tenant)
+                ->where('project', 'marketplace')
+                ->where(function ($query) use ($webhook, $accountId): void {
+                    $query->where('source_webhook_id', $webhook->id);
+                    if ($accountId > 0) {
+                        $query->orWhere('source_account_id', $accountId);
+                    }
+                })
+                ->whereIn('status', ['queued', 'running'])
+                ->orderBy('id')
+                ->get();
+            $canonicalRun = $activeRuns->first();
+            if ($canonicalRun && (int) $canonicalRun->id !== (int) $run->id) {
+                $this->skipDuplicate($run, $stage, $canonicalRun);
+
+                return;
+            }
+            foreach ($activeRuns->skip(1) as $duplicateRun) {
+                $this->skipDuplicate($duplicateRun, $duplicateRun->stages()->where('stage_key', 'catalog')->first(), $run);
             }
             $stage->forceFill(['status' => 'running', 'started_at' => $stage->started_at ?: now()])->save();
             $run->forceFill(['status' => 'running', 'current_stage' => 'catalog', 'started_at' => $run->started_at ?: now(), 'last_job_id' => $this->job?->getJobId()])->save();
@@ -133,6 +157,18 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             ->where('import_run_id', $run->id)
             ->whereIn('status', ['queued', 'running'])
             ->update(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()]);
+    }
+
+    private function skipDuplicate(ImportRun $run, ?ImportRunStage $stage, ImportRun $canonicalRun): void
+    {
+        $message = 'Импорт пропущен: уже существует активный импорт #'.$canonicalRun->id.' для этой интеграции.';
+        $run->forceFill([
+            'status' => 'failed',
+            'error_class' => InvalidArgumentException::class,
+            'error_message' => $message,
+            'finished_at' => now(),
+        ])->save();
+        $stage?->forceFill(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()])->save();
     }
 
     private function createLegacyImport(IntegrationWebhook $webhook, string $marketplace, string $marketplaceName): ImportRun

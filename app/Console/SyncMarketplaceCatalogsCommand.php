@@ -95,6 +95,23 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 ];
                 $accountId = (int) ($options['account_id'] ?? 0) ?: null;
 
+                $activeImport = ImportRun::query()
+                    ->where('tenant_id', $tenant)
+                    ->where('project', 'marketplace')
+                    ->whereIn('status', ['queued', 'running'])
+                    ->where(function ($query) use ($webhook, $accountId): void {
+                        $query->where('source_webhook_id', $webhook->id);
+                        if ($accountId !== null) {
+                            $query->orWhere('source_account_id', $accountId);
+                        }
+                    })
+                    ->exists();
+                if ($activeImport) {
+                    $duplicates++;
+
+                    return;
+                }
+
                 try {
                     $import = DB::transaction(function () use ($tenant, $webhook, $marketplace, $accountId, $options): ImportRun {
                         $import = ImportRun::query()->create([
