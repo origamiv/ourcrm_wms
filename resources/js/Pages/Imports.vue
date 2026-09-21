@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Head } from "@inertiajs/vue3";
 import MaintenanceTabs from "../Components/MaintenanceTabs.vue";
+import ProgressBar from "../Components/ProgressBar.vue";
 import { http, HttpError } from "../lib/http";
 import { formatDateInTimezone } from "../lib/dates";
 
@@ -45,11 +46,6 @@ function progress(row: ImportRun): number | null {
     if (row.row_type === "run") return row.total_stages > 0 ? Math.min(100, Math.round(row.completed_stages / row.total_stages * 100)) : 0;
     if (row.total_records === 0) return row.status === "completed" ? 100 : null;
     return Math.min(100, Math.round(row.processed_records / row.total_records * 100));
-}
-
-function progressText(row: ImportRun): string {
-    const value = progress(row);
-    return value === null ? "—" : `${value}%`;
 }
 
 function recordsText(row: ImportRun): string {
@@ -196,7 +192,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                             <td class="import-detail-cell" data-label="Интеграция"><span class="import-mobile-value">#{{ row.webhook_id || "—" }}<small v-if="row.account_id">Аккаунт #{{ row.account_id }}</small></span></td>
                             <td class="import-detail-cell" data-label="Дата и время старта"><span class="import-mobile-value">{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</span></td>
                             <td class="import-detail-cell" data-label="Текущий этап"><span class="import-mobile-value">{{ row.current_stage_number ? `${row.current_stage_number}. ${row.current_stage_name}` : "—" }}</span></td>
-                            <td class="import-detail-cell" data-label="Прогресс"><span class="import-mobile-value"><span class="import-progress"><span class="import-progress-track"><i :style="{ width: `${progress(row) ?? 0}%` }"></i></span><b>{{ progressText(row) }}</b></span></span></td>
+                            <td class="import-detail-cell" data-label="Прогресс"><span class="import-mobile-value"><ProgressBar :value="progress(row)" /></span></td>
                             <td class="import-detail-cell" data-label="Обработано записей"><span class="import-mobile-value">{{ recordsText(row) }}</span></td>
                             <td class="import-detail-cell import-status-cell" data-label="Статус"><span class="import-mobile-value"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span></td>
                             <td class="import-detail-cell import-error-cell" data-label="Детализация ошибки"><span class="import-mobile-value">{{ row.error_message || "—" }}</span></td>
@@ -225,10 +221,6 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
 .imports-page .name-button { max-width: 280px; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .imports-page td small, .imports-page .error-detail { display: block; margin-top: 4px; color: #667085; font-size: 10px; overflow-wrap: anywhere; }
 .imports-page .error-detail { color: #a32626; }
-.import-progress { display: flex; align-items: center; gap: 8px; min-width: 125px; }
-.import-progress-track { display: block; width: 76px; height: 7px; overflow: hidden; border-radius: 5px; background: #e1f3e7; }
-.import-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
-.import-progress b { color: #1e892f; font-size: 11px; }
 .imports-page .list-footer .refresh-button { width: auto; padding: 0 8px; font-size: 12px; }
 
 @media (max-width: 900px) {
