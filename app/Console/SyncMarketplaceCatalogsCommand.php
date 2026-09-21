@@ -24,7 +24,8 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
     protected $signature = 'integration:sync-catalogs
                             {tenant : Tenant WMS}
-                            {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}';
+                            {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}
+                            {--limit= : Максимальное количество новых запусков}';
 
     protected $description = 'Поставить в очередь синхронизацию каталогов маркетплейсов tenant';
 
@@ -32,6 +33,13 @@ final class SyncMarketplaceCatalogsCommand extends Command
     {
         $tenant = (string) $this->argument('tenant');
         $marketplaceFilter = $this->option('marketplace');
+        $limitOption = $this->option('limit');
+        $limit = $limitOption === null ? null : (int) $limitOption;
+        if ($limitOption !== null && $limit < 1) {
+            $this->components->error('Параметр --limit должен быть положительным числом.');
+
+            return self::INVALID;
+        }
         if ($marketplaceFilter !== null && ! array_key_exists((string) $marketplaceFilter, self::RULES)) {
             $this->components->error('Недопустимая площадка. Используйте: wildberries, ozon или yandex_market.');
 
@@ -63,12 +71,15 @@ final class SyncMarketplaceCatalogsCommand extends Command
             ->where('status', 1)
             ->with(['service_obj', 'client_obj'])
             ->orderBy('id')
-            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $rules, &$queued, &$duplicates, &$skipped, &$invalid): void {
+            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $limit, $rules, &$queued, &$duplicates, &$skipped, &$invalid): ?bool {
+                if ($limit !== null && $queued >= $limit) {
+                    return false;
+                }
                 $marketplace = $this->marketplaceFor($webhook);
                 if ($marketplace === null || ($marketplaceFilter !== null && $marketplace !== $marketplaceFilter)) {
                     $skipped++;
 
-                    return;
+                    return null;
                 }
 
                 $rule = $rules->get(self::RULES[$marketplace]);
@@ -76,14 +87,14 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 if (! $rule || ($configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
                     $skipped++;
 
-                    return;
+                    return null;
                 }
 
                 if (! $this->credentialsConfigured($webhook, $marketplace, $tenant)) {
                     $invalid++;
                     $skipped++;
 
-                    return;
+                    return null;
                 }
 
                 $options = [
@@ -109,7 +120,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 if ($activeImport) {
                     $duplicates++;
 
-                    return;
+                    return null;
                 }
 
                 try {
@@ -141,13 +152,15 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 } catch (UniqueConstraintViolationException) {
                     $duplicates++;
 
-                    return;
+                    return null;
                 }
 
                 SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant, $import->id)
                     ->onConnection('redis')
                     ->onQueue(SyncMarketplaceCatalogJob::queueForMarketplace($marketplace));
                 $queued++;
+
+                return null;
             });
 
         $this->components->info("В очередь поставлено: {$queued}; уже выполняется: {$duplicates}; пропущено: {$skipped}; без обязательных реквизитов: {$invalid}.");
