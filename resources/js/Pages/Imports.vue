@@ -85,7 +85,8 @@ function toggleRun(row: ImportRun, event?: MouseEvent): void {
 }
 
 function toggleMobileRow(row: ImportRun, event?: MouseEvent): void {
-    if (!window.matchMedia("(max-width: 900px)").matches || (event?.detail ?? 0) > 1 || hasChildren(row)) return;
+    event?.stopPropagation();
+    if (!window.matchMedia("(max-width: 900px)").matches || (event?.detail ?? 0) > 1) return;
     const key = `${row.row_type}-${row.id}`;
     const next = new Set(expandedMobileRows.value);
     if (next.has(key)) next.delete(key);
