@@ -87,7 +87,7 @@ return [
 
     'middleware' => [
         'web',
-        \App\Http\Middleware\EnsureWmsAccess::class,
+        App\Http\Middleware\EnsureWmsAccess::class,
     ],
 
     /*
@@ -283,13 +283,13 @@ return [
                 'balanceCooldown' => 5,
             ],
             'imports_wildberries' => [
-                'maxProcesses' => 1,
+                'maxProcesses' => 10,
             ],
             'imports_ozon' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 10,
             ],
             'imports_yandex_market' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 10,
             ],
         ],
 
@@ -301,13 +301,13 @@ return [
                 'maxProcesses' => 2,
             ],
             'imports_wildberries' => [
-                'maxProcesses' => 1,
+                'maxProcesses' => 10,
             ],
             'imports_ozon' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 10,
             ],
             'imports_yandex_market' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 10,
             ],
         ],
     ],

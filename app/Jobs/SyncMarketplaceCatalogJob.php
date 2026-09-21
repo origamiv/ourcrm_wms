@@ -9,6 +9,7 @@ use App\Models\ImportRunStage;
 use App\Models\IntegrationData;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
+use App\Services\MarketplaceConcurrencyService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -26,6 +27,8 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
         'ozon' => 'imports_ozon',
         'yandex_market' => 'imports_yandex_market',
     ];
+
+    public int $tries = 1;
 
     public function __construct(public int $webhookId, public string $tenant, public ?int $importId = null) {}
 
@@ -53,8 +56,13 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             ? ImportRun::query()->where('tenant_id', $this->tenant)->findOrFail($this->importId)
             : $this->createLegacyImport($webhook, $marketplace, $marketplaceName);
         $stage = ImportRunStage::query()->where('import_run_id', $run->id)->where('stage_key', 'catalog')->firstOrFail();
+        $locks = null;
+        $accountId = (int) (($webhook->params ?? [])['account_id'] ?? 0);
 
         try {
+            if ($accountId > 0) {
+                $locks = app(MarketplaceConcurrencyService::class)->acquire($marketplace, $this->tenant, $accountId);
+            }
             $stage->forceFill(['status' => 'running', 'started_at' => $stage->started_at ?: now()])->save();
             $run->forceFill(['status' => 'running', 'current_stage' => 'catalog', 'started_at' => $run->started_at ?: now(), 'last_job_id' => $this->job?->getJobId()])->save();
             $data = new IntegrationData;
@@ -91,6 +99,10 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             $stage->forceFill(['status' => 'failed', 'finished_at' => now(), 'error_message' => $message])->save();
             $run->forceFill(['status' => 'failed', 'error_class' => $exception::class, 'error_message' => $message, 'finished_at' => now()])->save();
             throw $exception;
+        } finally {
+            if ($locks !== null) {
+                app(MarketplaceConcurrencyService::class)->release($locks);
+            }
         }
     }
 
@@ -129,6 +141,7 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             'tenant_id' => $this->tenant,
             'source_client_id' => $webhook->client_id,
             'source_webhook_id' => $webhook->id,
+            'source_account_id' => (int) (($webhook->params ?? [])['account_id'] ?? 0) ?: null,
             'source_system' => $marketplace,
             'project' => 'marketplace',
             'name' => 'Синхронизация каталога '.$marketplaceName.' — '.$webhook->name,

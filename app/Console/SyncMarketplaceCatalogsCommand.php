@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console;
 
 use App\Jobs\SyncMarketplaceCatalogJob;
+use App\Models\ClientAccount;
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
 use App\Models\IntegrationRule;
@@ -55,13 +56,14 @@ final class SyncMarketplaceCatalogsCommand extends Command
         $queued = 0;
         $duplicates = 0;
         $skipped = 0;
+        $invalid = 0;
 
         IntegrationWebhook::query()
             ->where('tenant_id', $tenant)
             ->where('status', 1)
             ->with(['service_obj', 'client_obj'])
             ->orderBy('id')
-            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $rules, &$queued, &$duplicates, &$skipped): void {
+            ->each(function (IntegrationWebhook $webhook) use ($tenant, $marketplaceFilter, $rules, &$queued, &$duplicates, &$skipped, &$invalid): void {
                 $marketplace = $this->marketplaceFor($webhook);
                 if ($marketplace === null || ($marketplaceFilter !== null && $marketplace !== $marketplaceFilter)) {
                     $skipped++;
@@ -77,6 +79,13 @@ final class SyncMarketplaceCatalogsCommand extends Command
                     return;
                 }
 
+                if (! $this->credentialsConfigured($webhook, $marketplace, $tenant)) {
+                    $invalid++;
+                    $skipped++;
+
+                    return;
+                }
+
                 $options = [
                     'webhook_id' => (int) $webhook->id,
                     'marketplace' => $marketplace,
@@ -84,13 +93,15 @@ final class SyncMarketplaceCatalogsCommand extends Command
                     'client_id' => $webhook->client_id,
                     'client_name' => $webhook->client_obj?->name,
                 ];
+                $accountId = (int) ($options['account_id'] ?? 0) ?: null;
 
                 try {
-                    $import = DB::transaction(function () use ($tenant, $webhook, $marketplace, $options): ImportRun {
+                    $import = DB::transaction(function () use ($tenant, $webhook, $marketplace, $accountId, $options): ImportRun {
                         $import = ImportRun::query()->create([
                             'tenant_id' => $tenant,
                             'source_client_id' => $webhook->client_id,
                             'source_webhook_id' => $webhook->id,
+                            'source_account_id' => $accountId,
                             'source_system' => $marketplace,
                             'project' => 'marketplace',
                             'name' => $this->importName($marketplace, $webhook->client_obj?->name, $webhook->name),
@@ -122,7 +133,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 $queued++;
             });
 
-        $this->components->info("В очередь поставлено: {$queued}; уже выполняется: {$duplicates}; пропущено: {$skipped}.");
+        $this->components->info("В очередь поставлено: {$queued}; уже выполняется: {$duplicates}; пропущено: {$skipped}; без обязательных реквизитов: {$invalid}.");
 
         return self::SUCCESS;
     }
@@ -136,6 +147,27 @@ final class SyncMarketplaceCatalogsCommand extends Command
             str_contains($service, 'yandex') && str_contains($service, 'market') => 'yandex_market',
             str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
             default => null,
+        };
+    }
+
+    private function credentialsConfigured(IntegrationWebhook $webhook, string $marketplace, string $tenant): bool
+    {
+        $accountId = (int) (($webhook->params ?? [])['account_id'] ?? 0);
+        $account = $accountId > 0
+            ? ClientAccount::query()->where('tenant_id', $tenant)->find($accountId)
+            : null;
+        if (! $account || (int) $account->status !== 1 || ($webhook->client_id !== null && (int) $account->client_id !== (int) $webhook->client_id)) {
+            return false;
+        }
+
+        $token = trim((string) $account->token);
+        $credentials = (array) ($account->src['credentials'] ?? []);
+
+        return match ($marketplace) {
+            'wildberries' => $token !== '',
+            'ozon' => $token !== '' && trim((string) ($credentials['key2'] ?? '')) !== '',
+            'yandex_market' => $token !== '' && trim((string) ($credentials['business_id'] ?? '')) !== '',
+            default => false,
         };
     }
 

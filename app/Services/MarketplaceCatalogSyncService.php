@@ -35,61 +35,69 @@ final class MarketplaceCatalogSyncService
         if ($webhook->client_id !== null && (int) $account->client_id !== (int) $webhook->client_id) {
             throw new RuntimeException('Аккаунт маркетплейса не принадлежит клиенту интеграции.');
         }
-        $items = match ($marketplace) {
-            'wildberries' => $this->loadWildberries($account),
-            'ozon' => $this->loadOzon($account),
-            'yandex_market' => $this->loadYandexMarket($webhook, $account),
-            default => throw new InvalidArgumentException('Неподдерживаемый маркетплейс: '.$marketplace),
-        };
         $autoCreate = app(TenantFeatureService::class)->enabled($tenant, TenantFeatureService::AUTO_CREATE_MARKETPLACE_GOODS);
         $maps = $this->goodMaps($tenant);
         $processed = 0;
-        if ($progress) {
-            $progress(count($items), 0);
-        }
-
-        foreach ($items as $item) {
-            DB::transaction(function () use ($webhook, $tenant, $marketplace, $item, $autoCreate, &$maps): void {
-                $row = GoodMarketplace::query()->where('tenant_id', $tenant)->where('webhook_id', $webhook->id)->where('external_id', $item['external_id'])->lockForUpdate()->first();
-                $wasExisting = $row !== null;
-                if (! $row) {
-                    $row = new GoodMarketplace;
-                    $row->forceFill(['tenant_id' => $tenant, 'webhook_id' => $webhook->id, 'integration_id' => $webhook->id, 'marketplace' => $marketplace, 'external_id' => $item['external_id']]);
-                }
-                $row->forceFill(['external_sku' => $item['external_sku'], 'offer_id' => $item['offer_id'], 'name' => $item['name'], 'barcodes' => $item['barcodes'], 'status' => $item['status'], 'raw_data' => $item['raw_data'], 'synced_at' => now()]);
-                if (! $row->good_id) {
-                    $goodId = $this->resolveGood($maps, $item);
-                    $created = false;
-                    if (! $goodId && $autoCreate) {
-                        $goodId = $this->createGood($tenant, $item);
-                        $this->addToMaps($maps, $item, $goodId);
-                        $created = true;
-                    }
-                    if ($goodId) {
-                        $row->good_id = $goodId;
-                        $row->match_type = $created ? 'created' : 'auto';
-                        $row->matched_at = now();
-                    }
-                }
-                if ($wasExisting && $row->good_id && $row->match_type === 'created') {
-                    $row->match_type = 'auto';
-                }
-                $row->save();
-            }, 3);
-            $processed++;
+        $total = 0;
+        $consume = function (array $items) use (&$maps, &$processed, &$total, $autoCreate, $marketplace, $progress, $tenant, $webhook): void {
+            $total = max($total, $processed + count($items));
             if ($progress) {
-                $progress(count($items), $processed);
+                $progress($total, $processed);
             }
-        }
+            foreach ($items as $item) {
+                $this->saveItem($webhook, $tenant, $marketplace, $item, $autoCreate, $maps);
+                $processed++;
+                if ($progress) {
+                    $progress($total, $processed);
+                }
+            }
+        };
+
+        match ($marketplace) {
+            'wildberries' => $this->syncWildberries($account, $consume),
+            'ozon' => $this->syncOzon($account, $consume),
+            'yandex_market' => $this->syncYandexMarket($account, $consume),
+            default => throw new InvalidArgumentException('Неподдерживаемый маркетплейс: '.$marketplace),
+        };
 
         $data->forceFill(['data' => ['marketplace' => $marketplace, 'processed' => $processed, 'auto_create' => $autoCreate], 'status_processing' => 1, 'status' => 1])->save();
 
         return $data;
     }
 
-    private function loadWildberries(ClientAccount $account): array
+    private function saveItem(IntegrationWebhook $webhook, string $tenant, string $marketplace, array $item, bool $autoCreate, array &$maps): void
     {
-        $items = [];
+        DB::transaction(function () use ($webhook, $tenant, $marketplace, $item, $autoCreate, &$maps): void {
+            $row = GoodMarketplace::query()->where('tenant_id', $tenant)->where('webhook_id', $webhook->id)->where('external_id', $item['external_id'])->lockForUpdate()->first();
+            $wasExisting = $row !== null;
+            if (! $row) {
+                $row = new GoodMarketplace;
+                $row->forceFill(['tenant_id' => $tenant, 'webhook_id' => $webhook->id, 'integration_id' => $webhook->id, 'marketplace' => $marketplace, 'external_id' => $item['external_id']]);
+            }
+            $row->forceFill(['external_sku' => $item['external_sku'], 'offer_id' => $item['offer_id'], 'name' => $item['name'], 'barcodes' => $item['barcodes'], 'status' => $item['status'], 'raw_data' => $item['raw_data'], 'synced_at' => now()]);
+            if (! $row->good_id) {
+                $goodId = $this->resolveGood($maps, $item);
+                $created = false;
+                if (! $goodId && $autoCreate) {
+                    $goodId = $this->createGood($tenant, $item);
+                    $this->addToMaps($maps, $item, $goodId);
+                    $created = true;
+                }
+                if ($goodId) {
+                    $row->good_id = $goodId;
+                    $row->match_type = $created ? 'created' : 'auto';
+                    $row->matched_at = now();
+                }
+            }
+            if ($wasExisting && $row->good_id && $row->match_type === 'created') {
+                $row->match_type = 'auto';
+            }
+            $row->save();
+        }, 3);
+    }
+
+    private function syncWildberries(ClientAccount $account, callable $consume): void
+    {
         $cursor = null;
         do {
             $payload = ['settings' => ['sort' => ['ascending' => true], 'cursor' => ['limit' => 100], 'filter' => ['withPhoto' => -1]]];
@@ -97,6 +105,7 @@ final class MarketplaceCatalogSyncService
                 $payload['settings']['cursor'] = [...$cursor, 'limit' => 100];
             }
             $response = $this->request($account)->post('https://content-api.wildberries.ru/content/v2/get/cards/list', $payload)->throw()->json();
+            $items = [];
             foreach ((array) ($response['cards'] ?? []) as $card) {
                 foreach ((array) ($card['sizes'] ?? []) as $size) {
                     $id = (string) ($size['chrtID'] ?? $size['chrtId'] ?? '');
@@ -106,15 +115,13 @@ final class MarketplaceCatalogSyncService
                     $items[] = ['external_id' => $id, 'external_sku' => $id, 'offer_id' => (string) ($card['vendorCode'] ?? ''), 'name' => (string) ($card['title'] ?? '').(! empty($size['techSize']) ? ' / '.$size['techSize'] : ''), 'barcodes' => array_values(array_filter(array_map('strval', (array) ($size['skus'] ?? [])))), 'status' => 1, 'raw_data' => ['card' => $card, 'size' => $size]];
                 }
             }
+            $consume($items);
             $cursor = $response['cursor'] ?? null;
         } while ($cursor && ! empty($cursor['updatedAt']) && ! empty($cursor['nmID']));
-
-        return $items;
     }
 
-    private function loadOzon(ClientAccount $account): array
+    private function syncOzon(ClientAccount $account, callable $consume): void
     {
-        $items = [];
         $lastId = null;
         do {
             $payload = ['filter' => ['visibility' => 'ALL'], 'limit' => 500];
@@ -131,55 +138,33 @@ final class MarketplaceCatalogSyncService
                 throw $exception;
             }
             $pageItems = $this->normalizeOzonPage((array) $response);
-            array_push($items, ...$pageItems);
+            $consume($pageItems);
             $lastId = $response['last_id'] ?? null;
         } while ($lastId && $pageItems !== []);
-
-        return $items;
     }
 
-    private function loadYandexMarket(IntegrationWebhook $webhook, ClientAccount $account): array
+    private function syncYandexMarket(ClientAccount $account, callable $consume): void
     {
         $credentials = (array) ($account->src['credentials'] ?? []);
         $businessId = trim((string) ($credentials['business_id'] ?? ''));
         abort_if($businessId === '' || trim((string) $account->token) === '', 422, 'Для аккаунта Яндекс Маркета не заполнены Api-Key и business_id.');
 
-        $params = (array) ($webhook->params ?? []);
-        $cursor = trim((string) ($params['yandex_market_catalog']['next_page_token'] ?? '')) ?: null;
-        $items = [];
-        $resumed = $cursor !== null;
-
+        $cursor = null;
         do {
             $url = 'https://api.partner.market.yandex.ru/businesses/'.rawurlencode($businessId).'/offer-mappings?limit=200';
             if ($cursor !== null) {
                 $url .= '&page_token='.rawurlencode($cursor);
             }
 
-            try {
-                $response = $this->request($account, false, true)->post($url, ['archived' => false])->throw()->json();
-            } catch (RequestException $exception) {
-                if ($resumed && $cursor !== null && in_array($exception->response->status(), [400, 404], true)) {
-                    $cursor = null;
-                    $resumed = false;
-                    $this->saveYandexCursor($webhook, null);
-
-                    continue;
-                }
-
-                throw $exception;
-            }
+            $response = $this->request($account, false, true)->post($url, ['archived' => false])->throw()->json();
 
             if (($response['status'] ?? null) !== 'OK') {
                 throw new RuntimeException('Яндекс Маркет вернул некорректный статус ответа.');
             }
 
-            array_push($items, ...$this->normalizeYandexPage((array) $response));
+            $consume($this->normalizeYandexPage((array) $response));
             $cursor = trim((string) ($response['result']['paging']['nextPageToken'] ?? '')) ?: null;
-            $this->saveYandexCursor($webhook, $cursor);
-            $resumed = false;
         } while ($cursor !== null);
-
-        return $items;
     }
 
     private function normalizeYandexPage(array $response): array
@@ -257,22 +242,17 @@ final class MarketplaceCatalogSyncService
     private function request(ClientAccount $account, bool $ozon = false, bool $yandex = false): PendingRequest
     {
         $isWildberries = ! $ozon && ! $yandex;
-        $request = Http::acceptJson();
-        if ($isWildberries) {
-            $request = $request
-                ->retry([1000, 3000, 10000, 30000], 0, static function (Throwable $exception): bool {
-                    if ($exception instanceof ConnectionException) {
-                        return true;
-                    }
+        $request = Http::acceptJson()
+            ->retry([1000, 3000, 10000, 30000], 0, static function (Throwable $exception): bool {
+                if ($exception instanceof ConnectionException) {
+                    return true;
+                }
 
-                    return $exception instanceof RequestException
-                        && in_array($exception->response->status(), [408, 425, 429, 500, 502, 503, 504], true);
-                })
-                ->connectTimeout(5)
-                ->timeout(60);
-        } else {
-            $request = $request->retry(3, 1000)->timeout(45);
-        }
+                return $exception instanceof RequestException
+                    && in_array($exception->response->status(), [408, 425, 429, 500, 502, 503, 504], true);
+            })
+            ->connectTimeout($isWildberries ? 5 : 10)
+            ->timeout($isWildberries ? 60 : 90);
         if ($isWildberries) {
             $request = $request->withOptions([
                 'on_stats' => function (TransferStats $stats): void {
