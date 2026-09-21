@@ -28,7 +28,9 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
         'yandex_market' => 'imports_yandex_market',
     ];
 
-    public int $tries = 1;
+    private const MAX_TRANSIENT_ATTEMPTS = 5;
+
+    public int $tries = self::MAX_TRANSIENT_ATTEMPTS;
 
     public function __construct(public int $webhookId, public string $tenant, public ?int $importId = null) {}
 
@@ -120,6 +122,26 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
         } catch (Throwable $exception) {
             $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
             $message = 'Синхронизация каталога '.$marketplaceName.' не выполнена: '.$reason;
+            if ($this->isTransient($exception) && $this->attempts() < self::MAX_TRANSIENT_ATTEMPTS) {
+                $retryMessage = 'Временная ошибка связи с '.$marketplaceName.'. Повторная попытка '
+                    .($this->attempts() + 1).' из '.self::MAX_TRANSIENT_ATTEMPTS.'.';
+                $stage->forceFill([
+                    'status' => 'queued',
+                    'started_at' => null,
+                    'error_message' => $retryMessage,
+                    'finished_at' => null,
+                ])->save();
+                $run->forceFill([
+                    'status' => 'queued',
+                    'current_stage' => 'catalog',
+                    'started_at' => null,
+                    'error_message' => $retryMessage,
+                    'finished_at' => null,
+                ])->save();
+                $this->release(min(300, 30 * (2 ** max(0, $this->attempts() - 1))));
+
+                return;
+            }
             $stage->forceFill(['status' => 'failed', 'finished_at' => now(), 'error_message' => $message])->save();
             $run->forceFill(['status' => 'failed', 'error_class' => $exception::class, 'error_message' => $message, 'finished_at' => now()])->save();
             throw $exception;
@@ -169,6 +191,16 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             'finished_at' => now(),
         ])->save();
         $stage?->forceFill(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()])->save();
+    }
+
+    private function isTransient(Throwable $exception): bool
+    {
+        if ($exception instanceof \Illuminate\Http\Client\ConnectionException) {
+            return true;
+        }
+
+        return $exception instanceof \Illuminate\Http\Client\RequestException
+            && in_array($exception->response->status(), [408, 425, 429, 500, 502, 503, 504], true);
     }
 
     private function createLegacyImport(IntegrationWebhook $webhook, string $marketplace, string $marketplaceName): ImportRun
