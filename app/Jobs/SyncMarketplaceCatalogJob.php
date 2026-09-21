@@ -10,6 +10,7 @@ use App\Models\IntegrationData;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
 use App\Services\MarketplaceConcurrencyService;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -195,7 +196,7 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
 
     private function isTransient(Throwable $exception): bool
     {
-        if ($exception instanceof \Illuminate\Http\Client\ConnectionException) {
+        if ($exception instanceof \Illuminate\Http\Client\ConnectionException || $exception instanceof LockTimeoutException) {
             return true;
         }
 
