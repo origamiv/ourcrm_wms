@@ -172,7 +172,7 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                         <tr v-else-if="!visibleRows.length"><td colspan="11" class="empty-state">Импорты ещё не запускались</td></tr>
                         <tr v-for="row in visibleRows" v-else :key="`${row.row_type}-${row.id}`" :class="{ 'mobile-card-expanded': isMobileExpanded(row), 'stage-row': row.row_type === 'stage' }" @click="toggleMobileRow(row, $event)">
                             <td class="id-column" data-label="#"><nobr>{{ row.id }}</nobr></td>
-                            <td class="import-name-cell" data-label="Название импорта">
+                            <td class="import-name-cell">
                                 <div class="import-mobile-summary">
                                     <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
                                     <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
