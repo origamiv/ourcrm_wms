@@ -11,6 +11,7 @@ interface ImportRun {
     parent_id: string | null;
     name: string;
     project: string;
+    updated_at: string | null;
     started_at: string | null;
     total_records: number;
     total_chunks: number;
@@ -50,6 +51,15 @@ function progress(row: ImportRun): number | null {
 function progressText(row: ImportRun): string {
     const value = progress(row);
     return value === null ? "—" : value + "%";
+}
+
+function recordsText(row: ImportRun): string {
+    if (row.total_records > 0 || row.processed_records > 0) {
+        return `${row.processed_records} / ${row.total_records} записей`;
+    }
+    if (row.status === "queued") return "Ожидает запуска";
+    if (row.status === "running") return "Ожидание ответа API";
+    return "Записей нет";
 }
 
 function statusLabel(status: string): string {
@@ -153,7 +163,8 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                         </div>
                         <span class="import-mobile-date">{{ cardDate(row.started_at) }}</span>
                     </div>
-                    <span class="import-mobile-card-head-actions">
+                        <span class="import-mobile-card-head-actions">
+                        <span class="import-mobile-records">{{ recordsText(row) }}</span>
                         <span class="status-badge" :class="'status-' + row.status">{{ statusLabel(row.status) }}</span>
                         <button v-if="hasChildren(row)" type="button" class="import-run-toggle-mobile-button" :aria-expanded="isRunExpanded(row)" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click.stop="toggleRun(row)">{{ isRunExpanded(row) ? '⌄' : '›' }}</button>
                         <span class="import-mobile-card-chevron" aria-hidden="true">⌄</span>
@@ -171,7 +182,8 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                         <span class="import-progress-track"><i :style="{ width: (progress(row) ?? 0) + '%' }"></i></span>
                     </div>
                     <div class="import-mobile-stats">
-                        <div><span>Записи</span><strong>{{ row.processed_records }} / {{ row.total_records }}</strong></div>
+                        <div><span>Обработано записей</span><strong>{{ recordsText(row) }}</strong></div>
+                        <div><span>Последнее обновление</span><strong>{{ formatDateInTimezone(row.updated_at, "Europe/Moscow", true) }}</strong></div>
                     </div>
                     <p v-if="row.error_message" class="error-detail">{{ row.error_message }}</p>
                 </div>
