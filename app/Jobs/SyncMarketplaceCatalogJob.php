@@ -111,11 +111,27 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
                 app($handler)->handle($data, [
                     'marketplace' => $marketplace,
                     'rule_id' => $rule->id,
+                    'ozon_last_id' => $marketplace === 'ozon' ? (($run->options ?? [])['catalog_last_id'] ?? null) : null,
+                    'initial_processed' => $marketplace === 'ozon' ? (int) $run->processed_records : 0,
                     'progress' => function (int $total, int $processed) use ($run, $stage): void {
                         $run->forceFill(['total_records' => $total, 'processed_records' => $processed])->save();
                         $stage->forceFill(['total_records' => $total, 'processed_records' => $processed])->save();
                     },
+                    'checkpoint' => $marketplace === 'ozon' ? function (?string $lastId) use ($run): void {
+                        $options = (array) ($run->options ?? []);
+                        if ($lastId === null || $lastId === '') {
+                            unset($options['catalog_last_id']);
+                        } else {
+                            $options['catalog_last_id'] = $lastId;
+                        }
+                        $run->forceFill(['options' => $options])->save();
+                    } : null,
                 ]);
+            }
+            if ($marketplace === 'ozon') {
+                $options = (array) ($run->options ?? []);
+                unset($options['catalog_last_id']);
+                $run->forceFill(['options' => $options])->save();
             }
             $processed = (int) ($data->data['processed'] ?? 0);
             $stage->forceFill(['status' => 'completed', 'finished_at' => now(), 'processed_records' => $processed, 'total_records' => max((int) $stage->total_records, $processed)])->save();

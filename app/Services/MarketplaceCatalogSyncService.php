@@ -24,7 +24,7 @@ use Throwable;
 
 final class MarketplaceCatalogSyncService
 {
-    public function sync(IntegrationWebhook $webhook, IntegrationData $data, string $marketplace, ?callable $progress = null): IntegrationData
+    public function sync(IntegrationWebhook $webhook, IntegrationData $data, string $marketplace, ?callable $progress = null, ?string $ozonLastId = null, int $initialProcessed = 0, ?callable $checkpoint = null): IntegrationData
     {
         $tenant = (string) $webhook->tenant_id;
         $accountId = (int) ($webhook->params['account_id'] ?? 0);
@@ -37,8 +37,8 @@ final class MarketplaceCatalogSyncService
         }
         $autoCreate = app(TenantFeatureService::class)->enabled($tenant, TenantFeatureService::AUTO_CREATE_MARKETPLACE_GOODS);
         $maps = $this->goodMaps($tenant);
-        $processed = 0;
-        $total = 0;
+        $processed = $initialProcessed;
+        $total = $initialProcessed;
         $consume = function (array $items) use (&$maps, &$processed, &$total, $autoCreate, $marketplace, $progress, $tenant, $webhook): void {
             $total = max($total, $processed + count($items));
             if ($progress) {
@@ -55,7 +55,7 @@ final class MarketplaceCatalogSyncService
 
         match ($marketplace) {
             'wildberries' => $this->syncWildberries($account, $consume),
-            'ozon' => $this->syncOzon($account, $consume),
+            'ozon' => $this->syncOzon($account, $consume, $ozonLastId, $checkpoint),
             'yandex_market' => $this->syncYandexMarket($account, $consume),
             default => throw new InvalidArgumentException('Неподдерживаемый маркетплейс: '.$marketplace),
         };
@@ -120,9 +120,8 @@ final class MarketplaceCatalogSyncService
         } while ($cursor && ! empty($cursor['updatedAt']) && ! empty($cursor['nmID']));
     }
 
-    private function syncOzon(ClientAccount $account, callable $consume): void
+    private function syncOzon(ClientAccount $account, callable $consume, ?string $lastId = null, ?callable $checkpoint = null): void
     {
-        $lastId = null;
         do {
             $payload = ['filter' => ['visibility' => 'ALL'], 'limit' => 500];
             if ($lastId) {
@@ -132,6 +131,7 @@ final class MarketplaceCatalogSyncService
                 $response = $this->request($account, true)->post('https://api-seller.ozon.ru/v4/product/info/attributes', $payload)->throw()->json();
             } catch (RequestException $exception) {
                 if ($lastId !== null && $exception->response->status() === 404) {
+                    $checkpoint?->__invoke(null);
                     break;
                 }
 
@@ -140,6 +140,9 @@ final class MarketplaceCatalogSyncService
             $pageItems = $this->normalizeOzonPage((array) $response);
             $consume($pageItems);
             $lastId = $response['last_id'] ?? null;
+            if ($checkpoint) {
+                $checkpoint($lastId);
+            }
         } while ($lastId && $pageItems !== []);
     }
 
