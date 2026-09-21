@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Console\ImportTswmsCommand;
 
-function invokeAcceptanceImportHelper(string $name, mixed $value): mixed
+function invokeAcceptanceImportHelper(string $name, mixed ...$arguments): mixed
 {
     $command = new ImportTswmsCommand;
     $method = (new ReflectionClass($command))->getMethod($name);
     $method->setAccessible(true);
 
-    return $method->invoke($command, $value);
+    return $method->invokeArgs($command, $arguments);
 }
 
 it('преобразует статусы приемки TSWMS в статусы WMS', function (): void {
@@ -49,4 +49,21 @@ it('сопоставляет тип интеграции с единым сер�
         ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'ozon'))->toBe(['ozon', 'Ozon'])
         ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'yandex'))->toBe(['yandex_market', 'Yandex.Market'])
         ->and(invokeAcceptanceImportHelper('clientServiceDefinition', 'DNS'))->toBe(['dns', 'DNS']);
+});
+
+it('извлекает реквизиты кабинета Яндекс Маркета из кампании', function (): void {
+    $credentials = invokeAcceptanceImportHelper('credentialsFromYandexCampaigns', [
+        'key1' => 'api-key',
+    ], [
+        'campaigns' => [[
+            'id' => 456,
+            'business' => ['id' => 123],
+        ]],
+    ]);
+
+    expect($credentials)->toBe([
+        'key1' => 'api-key',
+        'business_id' => '123',
+        'campaign_id' => '456',
+    ]);
 });

@@ -9,6 +9,7 @@ use App\Models\ImportRun;
 use App\Models\ImportRunStage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -425,7 +426,10 @@ final class ImportTswmsCommand extends Command
                 continue;
             }$type = (string) ($r->type ?? 'integration');
             $name = (string) ($r->name ?? $type);
-            $src = ['source_system' => 'tswms', 'source_table' => $table, 'source_id' => (string) $r->id, 'source_fields' => (array) $r, 'credentials' => ['key1' => $r->key1 ?? null, 'key2' => $r->key2 ?? null, 'key3' => $r->key3 ?? null]];
+            $credentials = ['key1' => $r->key1 ?? null, 'key2' => $r->key2 ?? null, 'key3' => $r->key3 ?? null];
+            $credentials = $this->existingAccountCredentials($table, (string) $r->id, $credentials);
+            $credentials = $this->enrichYandexCredentials($type, (string) ($r->token ?? $r->key1 ?? ''), $credentials);
+            $src = ['source_system' => 'tswms', 'source_table' => $table, 'source_id' => (string) $r->id, 'source_fields' => (array) $r, 'credentials' => $credentials];
             $serviceId = $this->clientServiceId($type);
             $data = ['name' => $name, 'shortname' => $this->latinShortname($type.'_'.$r->id), 'host' => $r->host ?? null, 'login' => $r->login ?? null, 'pass' => $r->pass ?? null, 'token' => $r->token ?? ($r->key1 ?? null), 'descr' => 'Доступ TSWMS: '.$type, 'status' => (int) ($r->active ?? $r->is_active ?? 1), 'src' => json_encode($src, JSON_UNESCAPED_UNICODE), 'client_id' => (int) $client, 'service_id' => $serviceId, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()];
             $this->upsert('clients.accounts', $data, $table, (string) $r->id, 'App\\Models\\ClientAccount');
@@ -455,6 +459,63 @@ final class ImportTswmsCommand extends Command
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    private function existingAccountCredentials(string $sourceTable, string $sourceId, array $credentials): array
+    {
+        $targetId = $this->mapped($sourceTable, $sourceId, 'App\\Models\\ClientAccount');
+        if (! $targetId) {
+            return $credentials;
+        }
+
+        $src = DB::table('clients.accounts')->where('id', $targetId)->value('src');
+        $existing = is_string($src) ? json_decode($src, true) : (array) $src;
+
+        return array_merge((array) ($existing['credentials'] ?? []), $credentials);
+    }
+
+    private function enrichYandexCredentials(string $type, string $token, array $credentials): array
+    {
+        if (! str_contains(mb_strtolower(trim($type)), 'yandex') || trim($token) === '') {
+            return $credentials;
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->withHeaders(['Api-Key' => $token])
+                ->connectTimeout(5)
+                ->timeout(15)
+                ->get('https://api.partner.market.yandex.ru/v2/campaigns', ['limit' => 100])
+                ->throw()
+                ->json();
+
+            return $this->credentialsFromYandexCampaigns($credentials, (array) $response);
+        } catch (Throwable $exception) {
+            $this->components->warn('Не удалось получить business_id Яндекс Маркета: '.$exception->getMessage());
+
+            return $credentials;
+        }
+    }
+
+    private function credentialsFromYandexCampaigns(array $credentials, array $response): array
+    {
+        $campaigns = (array) ($response['campaigns'] ?? $response['result']['campaigns'] ?? []);
+        foreach ($campaigns as $campaign) {
+            $campaign = (array) $campaign;
+            $businessId = trim((string) (($campaign['business']['id'] ?? null) ?: ($campaign['business_id'] ?? '')));
+            if ($businessId === '') {
+                continue;
+            }
+
+            $credentials['business_id'] = $businessId;
+            $campaignId = trim((string) ($campaign['id'] ?? $campaign['campaign_id'] ?? ''));
+            if ($campaignId !== '') {
+                $credentials['campaign_id'] = $campaignId;
+            }
+            break;
+        }
+
+        return $credentials;
     }
 
     /** @return array{string, string} */
