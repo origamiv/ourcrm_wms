@@ -171,6 +171,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
             } catch (Throwable $exception) {
                 $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
                 $processed = (int) ($import?->fresh()?->processed_records ?? 0);
+                $this->markImportFailed($import, $exception);
                 if ($this->isInvalidToken($exception)) {
                     $this->blockAccount($account, $reason);
                     $this->finishSession($session, 'blocked', $processed, $reason);
@@ -223,6 +224,31 @@ final class SyncMarketplaceCatalogsCommand extends Command
     private function setWebhookStatus(IntegrationWebhook $webhook, int $status): void
     {
         IntegrationWebhook::query()->whereKey($webhook->id)->where('tenant_id', $webhook->tenant_id)->update(['status' => $status]);
+    }
+
+    private function markImportFailed(?ImportRun $import, Throwable $exception): void
+    {
+        if (! $import) {
+            return;
+        }
+
+        $current = $import->fresh();
+        if (! $current || ! in_array($current->status, ['queued', 'running'], true)) {
+            return;
+        }
+
+        $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
+        $message = 'Синхронизация каталога не выполнена: '.$reason;
+        $current->forceFill([
+            'status' => 'failed',
+            'error_class' => $exception::class,
+            'error_message' => $message,
+            'finished_at' => now(),
+        ])->save();
+        ImportRunStage::query()
+            ->where('import_run_id', $current->id)
+            ->whereIn('status', ['queued', 'running'])
+            ->update(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()]);
     }
 
     private function blockAccount(ClientAccount $account, string $reason): void
