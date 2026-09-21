@@ -62,6 +62,18 @@ function updatedTime(row: ImportRun): string {
     return value === "—" ? value : value.slice(-5);
 }
 
+function marketplaceCode(marketplace: string): string {
+    const value = marketplace.trim().toLowerCase();
+    if (value === "wildberries" || value === "wb") return "wb";
+    if (value === "ozon") return "ozon";
+    if (value === "yandex_market" || value === "ym" || value.includes("yandex")) return "ym";
+    return "other";
+}
+
+function marketplaceLabel(marketplace: string): string {
+    return ({ wb: "WB", ozon: "Ozon", ym: "YM" }[marketplaceCode(marketplace)] ?? marketplace) || "—";
+}
+
 function statusLabel(status: string): string {
     return { queued: "В очереди", running: "Выполняется", completed: "Завершён", failed: "Ошибка" }[status] ?? status;
 }
@@ -174,13 +186,13 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                                 <div class="import-mobile-summary">
                                     <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
                                     <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
-                                    <span class="import-mobile-summary-marketplace import-marketplace-badge">{{ row.marketplace || "—" }}</span>
+                                    <span class="import-mobile-summary-marketplace import-marketplace-badge" :class="`marketplace-${marketplaceCode(row.marketplace)}`">{{ marketplaceLabel(row.marketplace) }}</span>
                                     <span class="import-mobile-summary-updated">{{ updatedTime(row) }}</span>
                                     <span class="import-mobile-summary-status"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span>
                                 </div>
                             </td>
                             <td class="import-detail-cell" data-label="Клиент"><span class="import-mobile-value">{{ row.client_name || (row.client_id ? `#${row.client_id}` : "—") }}</span></td>
-                            <td class="import-detail-cell import-marketplace-cell" data-label="Маркетплейс"><span class="import-mobile-value import-marketplace-badge">{{ row.marketplace || "—" }}</span></td>
+                            <td class="import-detail-cell import-marketplace-cell" data-label="Маркетплейс"><span class="import-mobile-value import-marketplace-badge" :class="`marketplace-${marketplaceCode(row.marketplace)}`">{{ marketplaceLabel(row.marketplace) }}</span></td>
                             <td class="import-detail-cell" data-label="Интеграция"><span class="import-mobile-value">#{{ row.webhook_id || "—" }}<small v-if="row.account_id">Аккаунт #{{ row.account_id }}</small></span></td>
                             <td class="import-detail-cell" data-label="Дата и время старта"><span class="import-mobile-value">{{ formatDateInTimezone(row.started_at, "Europe/Moscow", true) }}</span></td>
                             <td class="import-detail-cell" data-label="Текущий этап"><span class="import-mobile-value">{{ row.current_stage_number ? `${row.current_stage_number}. ${row.current_stage_name}` : "—" }}</span></td>

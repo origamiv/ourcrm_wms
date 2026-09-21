@@ -9,6 +9,29 @@
     --font-sans: "Manrope", sans-serif;
 }
 
+/* Фирменные бейджи маркетплейсов в карточках импортов. */
+html body .main-panel .imports-page .import-marketplace-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 68px !important;
+    min-width: 68px !important;
+    height: 22px !important;
+    padding: 0 6px !important;
+    box-sizing: border-box !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 22px !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+}
+
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-wb { background: #cb11ab !important; color: #fff !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-ozon { background: #005bff !important; color: #fff !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-ym { background: #ffcc00 !important; color: #111 !important; }
+html body .main-panel .imports-page .import-marketplace-badge.marketplace-other { background: #e5e7eb !important; color: #374151 !important; }
+
 /* Инструкции — самостоятельные мобильные карточки, не подчиняются карточкам таблиц справочников. */
 @media (max-width: 700px) {
     html body .main-panel .instructions-table-wrap table.instructions-table {
