@@ -53,10 +53,8 @@ function progressText(row: ImportRun): string {
 }
 
 function recordsText(row: ImportRun): string {
-    if (row.total_records > 0 || row.processed_records > 0) return `${row.processed_records} / ${row.total_records}`;
-    if (row.status === "queued") return "Ожидает запуска";
-    if (row.status === "running") return "Ожидание ответа API";
-    return "Записей нет";
+    if (row.total_records > 0) return `${row.processed_records} из ${row.total_records}`;
+    return `${row.processed_records}`;
 }
 
 function updatedTime(row: ImportRun): string {
