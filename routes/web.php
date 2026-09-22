@@ -112,6 +112,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::put('/web/{catalog}/{id}', [App\Http\Controllers\AccessCatalogController::class, 'update'])->whereIn('catalog', ['roles', 'permissions'])->whereNumber('id');
         Route::get('/web/users/sync', [WmsUserController::class, 'index']);
         Route::get('/web/imports', [App\Http\Controllers\ImportRunController::class, 'index']);
+        Route::get('/web/background_processes', App\Http\Controllers\BackgroundProcessController::class);
         Route::get('/web/scheduler', [App\Http\Controllers\SchedulerController::class, 'index']);
         Route::get('/web/scheduler/tasks', [App\Http\Controllers\SchedulerController::class, 'tasks']);
         Route::post('/web/scheduler', [App\Http\Controllers\SchedulerController::class, 'store']);

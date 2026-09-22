@@ -59,6 +59,7 @@ import RolesRights from "./Pages/RolesRights.vue";
 import Roles from "./Pages/Roles.vue";
 import Worktime from "./Pages/Worktime.vue";
 import Imports from "./Pages/Imports.vue";
+import BackgroundProcesses from "./Pages/BackgroundProcesses.vue";
 import Scheduler from "./Pages/Scheduler.vue";
 import MaintenanceReferences from "./Pages/MaintenanceReferences.vue";
 import SchedulerTasks from "./Pages/SchedulerTasks.vue";
@@ -142,6 +143,7 @@ const pages: Record<string, any> = {
     Shipments,
     Worktime,
     Imports,
+    BackgroundProcesses,
     Scheduler,
     MaintenanceReferences,
     SchedulerTasks,

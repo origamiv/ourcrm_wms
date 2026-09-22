@@ -1,0 +1,154 @@
+<?php
+
+declare(strict_types=1);
+
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
+
+beforeEach(function (): void {
+    $this->setupPostgres();
+    DB::unprepared(file_get_contents(base_path('tests/Support/integration_schema.sql')));
+    DB::statement('CREATE TABLE wms.import_runs (
+        id bigserial PRIMARY KEY,
+        tenant_id varchar(255) NOT NULL,
+        source_webhook_id bigint,
+        status varchar(20) NOT NULL,
+        created_at timestamp,
+        updated_at timestamp,
+        deleted_at timestamp
+    )');
+    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-09-22 12:34:20', 'Europe/Moscow'));
+});
+
+afterEach(function (): void {
+    CarbonImmutable::setTestNow();
+    DB::rollBack();
+});
+
+it('показывает страницу только администратору', function (): void {
+    $this->loginUser($this->makeUser());
+    $this->get('/maintenance/background_processes')->assertForbidden();
+
+    $this->loginUser($this->makeUser(['email' => 'admin@example.test'], true));
+    $this->get('/maintenance/background_processes')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('BackgroundProcesses'));
+});
+
+it('агрегирует запуски по клиентам и считает вебхуки без запусков', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Альфа', 'tenant_id' => 'tenant_a']);
+    $otherClient = DB::table('clients.clients')->insertGetId(['name' => 'Бета', 'tenant_id' => 'tenant_a']);
+    $first = webhookForStatistics('Первый', 1, 'tenant_a', $client);
+    webhookForStatistics('Без запусков', 3, 'tenant_a', $client);
+    $disabled = webhookForStatistics('Отключённый', 2, 'tenant_a', $otherClient);
+    webhookForStatistics('Без клиента', 1, 'tenant_a', null);
+    $foreign = webhookForStatistics('Чужой', 1, 'tenant_b', $client);
+    $deleted = webhookForStatistics('Удалённый', 1, 'tenant_a', $client, now());
+
+    foreach (['completed', 'failed', 'queued', 'running'] as $index => $status) {
+        runForStatistics($first, 'tenant_a', $status, now()->startOfDay()->addHours(8 + $index));
+    }
+    runForStatistics($first, 'tenant_a', 'completed', now()->subDay());
+    runForStatistics($first, 'tenant_b', 'completed', now()->startOfDay()->addHours(10));
+    runForStatistics($disabled, 'tenant_a', 'completed', now()->startOfDay()->addHours(10));
+    runForStatistics($foreign, 'tenant_b', 'completed', now()->startOfDay()->addHours(10));
+    runForStatistics($deleted, 'tenant_a', 'completed', now()->startOfDay()->addHours(10));
+
+    $this->getJson('/web/background_processes?group_by=clients&period=today')
+        ->assertOk()
+        ->assertHeader('Cache-Control', 'no-store, private')
+        ->assertJsonPath('group_by', 'clients')
+        ->assertJsonPath('bucket_unit', 'hour')
+        ->assertJsonPath('total', 1)
+        ->assertJsonPath('data.0.id', (string) $client)
+        ->assertJsonPath('data.0.total_runs', 4)
+        ->assertJsonPath('data.0.successful_runs', 1)
+        ->assertJsonPath('data.0.failed_runs', 1)
+        ->assertJsonPath('data.0.running_runs', 2)
+        ->assertJsonPath('data.0.without_runs', 1)
+        ->assertJsonCount(5, 'data.0.activity');
+});
+
+it('группирует по вебхукам и возвращает разреженную минутную активность', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Клиент', 'tenant_id' => 'tenant_a']);
+    $withRun = webhookForStatistics('Альфа', 1, 'tenant_a', $client);
+    webhookForStatistics('Бета', 3, 'tenant_a', null);
+    runForStatistics($withRun, 'tenant_a', 'running', now()->subMinutes(5));
+
+    $this->getJson('/web/background_processes?group_by=webhooks&period=minutes_15')
+        ->assertOk()
+        ->assertJsonPath('bucket_unit', 'minute')
+        ->assertJsonPath('total', 2)
+        ->assertJsonPath('data.0.id', (string) $withRun)
+        ->assertJsonPath('data.0.total_runs', 1)
+        ->assertJsonPath('data.0.running_runs', 1)
+        ->assertJsonPath('data.0.without_runs', 0)
+        ->assertJsonCount(1, 'data.0.activity')
+        ->assertJsonPath('data.1.without_runs', 1);
+});
+
+it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo, string $statisticsFrom): void {
+    $this->loginUser($this->makeUser([], true));
+
+    $this->getJson('/web/background_processes?period='.$period)
+        ->assertOk()
+        ->assertJsonPath('period', $period)
+        ->assertJsonPath('bucket_unit', $unit)
+        ->assertJsonPath('timezone', 'Europe/Moscow')
+        ->assertJsonPath('selected_from', $selectedFrom)
+        ->assertJsonPath('selected_to', $selectedTo)
+        ->assertJsonPath('statistics_from', $statisticsFrom);
+})->with([
+    ['today', 'hour', '2026-09-22T00:00:00+03:00', '2026-09-23T00:00:00+03:00', '2026-09-20T00:00:00+03:00'],
+    ['yesterday', 'hour', '2026-09-21T00:00:00+03:00', '2026-09-22T00:00:00+03:00', '2026-09-19T00:00:00+03:00'],
+    ['week', 'day', '2026-09-21T00:00:00+03:00', '2026-09-28T00:00:00+03:00', '2026-09-07T00:00:00+03:00'],
+    ['month', 'day', '2026-09-01T00:00:00+03:00', '2026-10-01T00:00:00+03:00', '2026-07-01T00:00:00+03:00'],
+    ['hours_4', 'minute', '2026-09-22T08:35:00+03:00', '2026-09-22T12:35:00+03:00', '2026-09-22T00:35:00+03:00'],
+    ['hour', 'minute', '2026-09-22T11:35:00+03:00', '2026-09-22T12:35:00+03:00', '2026-09-22T09:35:00+03:00'],
+    ['minutes_15', 'minute', '2026-09-22T12:20:00+03:00', '2026-09-22T12:35:00+03:00', '2026-09-22T11:50:00+03:00'],
+]);
+
+it('разбивает группы на страницы по пятьдесят строк', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    foreach (range(1, 51) as $number) {
+        webhookForStatistics(sprintf('Вебхук %02d', $number), 1, 'tenant_a', null);
+    }
+
+    $this->getJson('/web/background_processes?group_by=webhooks&page=2')
+        ->assertOk()
+        ->assertJsonPath('current_page', 2)
+        ->assertJsonPath('last_page', 2)
+        ->assertJsonPath('total', 51)
+        ->assertJsonCount(1, 'data');
+});
+
+it('отклоняет неизвестные параметры', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $this->getJson('/web/background_processes?group_by=projects&period=year')->assertUnprocessable();
+});
+
+function webhookForStatistics(string $name, int $status, string $tenant, ?int $client, mixed $deletedAt = null): int
+{
+    return DB::table('integration.webhooks')->insertGetId([
+        'name' => $name,
+        'status' => $status,
+        'tenant_id' => $tenant,
+        'client_id' => $client,
+        'created_at' => now(),
+        'updated_at' => now(),
+        'deleted_at' => $deletedAt,
+    ]);
+}
+
+function runForStatistics(int $webhook, string $tenant, string $status, mixed $createdAt): void
+{
+    DB::table('wms.import_runs')->insert([
+        'tenant_id' => $tenant,
+        'source_webhook_id' => $webhook,
+        'status' => $status,
+        'created_at' => $createdAt,
+        'updated_at' => $createdAt,
+    ]);
+}

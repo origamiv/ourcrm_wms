@@ -18,7 +18,7 @@ final class SectionPageController
             'goods' => ['goods' => 'Goods', 'good_cards' => 'GoodCardDetail', 'type_goods' => 'GoodTypes', 'unit_goods' => 'GoodUnits', 'kind_kiz' => 'KindKiz', 'kizes' => 'Kizes'],
             'main' => ['modules' => 'Modules', 'features' => 'Features', 'icons' => 'Icons', 'files' => 'Files', 'instructions' => 'Instructions', 'users' => 'Users', 'roles' => 'Roles', 'permissions' => 'Permissions', 'roles_rights' => 'RolesRights', 'companies' => 'Companies', 'company_contacts' => 'CompanyContacts', 'worktime' => 'Worktime'],
             'clients' => ['documents' => 'Documents', 'doc_types' => 'DocTypes', 'clients' => 'Clients', 'companies' => 'ClientCompanies', 'individuals' => 'ClientIndividuals', 'services' => 'ClientServices', 'accounts' => 'ClientAccounts', 'integrations' => 'ClientIntegrations'],
-            'maintenance' => ['imports' => 'Imports', 'scheduler' => 'Scheduler', 'references' => 'MaintenanceReferences', 'tasks' => 'SchedulerTasks'],
+            'maintenance' => ['background_processes' => 'BackgroundProcesses', 'imports' => 'Imports', 'scheduler' => 'Scheduler', 'references' => 'MaintenanceReferences', 'tasks' => 'SchedulerTasks'],
             'logistics' => ['orders' => 'Orders', 'shipments' => 'Shipments', 'references' => 'LogisticsReferences', 'order_statuses' => 'OrderStatuses', 'order_sources' => 'OrderSources', 'order_cancel_statuses' => 'OrderCancelStatuses', 'logistic_companies' => 'LogisticCompanies', 'shipment_statuses' => 'ShipmentStatuses'],
         ];
         $entity = $left === 'clients' && $top !== 'clients' ? ($top === 'integrations' ? 'integration_webhooks' : 'client_'.$top) : $top;
