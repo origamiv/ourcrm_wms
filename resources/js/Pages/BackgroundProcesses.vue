@@ -19,6 +19,8 @@ type BucketUnit = "day" | "hour" | "minute";
 interface ActivityPoint {
     start: string;
     count: number;
+    successful_count: number;
+    failed_count: number;
 }
 
 interface StatisticsRow {
@@ -34,6 +36,7 @@ interface StatisticsRow {
 }
 
 interface DisplayPoint extends ActivityPoint {
+    state: "empty" | "success" | "mixed" | "failed" | "other";
     level: number;
     title: string;
 }
@@ -92,10 +95,10 @@ const displayActivity = computed(() => {
         return [];
     }
 
-    const counts = new Map(
+    const points = new Map(
         summary.value.activity.map((point) => [
             new Date(point.start).getTime(),
-            point.count,
+            point,
         ]),
     );
     const max = Math.max(
@@ -111,15 +114,31 @@ const displayActivity = computed(() => {
         start < end;
         start += step
     ) {
-        const count = counts.get(start) ?? 0;
+        const point = points.get(start);
+        const count = point?.count ?? 0;
+        const successfulCount = point?.successful_count ?? 0;
+        const failedCount = point?.failed_count ?? 0;
+        const state =
+            count === 0
+                ? "empty"
+                : successfulCount === count
+                  ? "success"
+                  : failedCount === count
+                    ? "failed"
+                    : successfulCount > 0 && failedCount > 0
+                      ? "mixed"
+                      : "other";
         result.push({
             start: new Date(start).toISOString(),
             count,
+            successful_count: successfulCount,
+            failed_count: failedCount,
+            state,
             level:
                 count === 0 || max === 0
                     ? 0
                     : Math.max(1, Math.ceil((count / max) * 4)),
-            title: pointTitle(start, count),
+            title: `${pointTitle(start, count)} · успешно: ${successfulCount}, ошибок: ${failedCount}`,
         });
     }
 
@@ -379,6 +398,7 @@ onMounted(() => {
                                 type="button"
                                 class="activity-point"
                                 :class="[
+                                    `activity-${point.state}`,
                                     `level-${point.level}`,
                                     {
                                         selected:
@@ -394,6 +414,15 @@ onMounted(() => {
                                 @click="loadRuns(point)"
                             />
                         </div>
+                    </div>
+                    <div class="activity-legend" aria-label="Цвета календаря">
+                        <span><i class="activity-success" />Успешные</span>
+                        <span><i class="activity-mixed" />Успехи и ошибки</span>
+                        <span><i class="activity-failed" />Ошибки</span>
+                        <span
+                            ><i class="activity-other" />Без итогового
+                            результата</span
+                        >
                     </div>
                 </section>
 
@@ -619,21 +648,56 @@ onMounted(() => {
     outline: 2px solid #2274a5;
     outline-offset: 2px;
 }
-.activity-point.level-1 {
+.activity-success {
+    border-color: #1e892f;
+    background: #238f36;
+}
+.activity-success.level-1 {
     border-color: #c5e5ca;
     background: #ccebd1;
 }
-.activity-point.level-2 {
+.activity-success.level-2 {
     border-color: #8fcf99;
     background: #99d7a3;
 }
-.activity-point.level-3 {
+.activity-success.level-3 {
     border-color: #51ad62;
     background: #5fba70;
 }
-.activity-point.level-4 {
+.activity-success.level-4 {
     border-color: #1e892f;
     background: #238f36;
+}
+.activity-mixed {
+    border-color: #d69e00;
+    background: #f4c542;
+}
+.activity-failed {
+    border-color: #b42318;
+    background: #d92d20;
+}
+.activity-other {
+    border-color: #8da1aa;
+    background: #aab9bf;
+}
+.activity-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 14px;
+    margin-top: 8px;
+    color: #66756f;
+    font-size: 10px;
+}
+.activity-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.activity-legend i {
+    width: 10px;
+    height: 10px;
+    border: 1px solid;
+    border-radius: 2px;
 }
 .runs-card {
     padding: 16px;

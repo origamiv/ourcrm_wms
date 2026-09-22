@@ -193,7 +193,11 @@ final class BackgroundProcessStatisticsService
             ->whereIn('status', self::RUN_STATUSES)
             ->where('created_at', '>=', $from)
             ->where('created_at', '<', $to)
-            ->selectRaw("source_webhook_id, date_trunc('{$unit}', created_at) AS bucket, COUNT(*)::integer AS count")
+            ->selectRaw("source_webhook_id,
+                date_trunc('{$unit}', created_at) AS bucket,
+                COUNT(*)::integer AS count,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::integer AS successful_count,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END)::integer AS failed_count")
             ->groupBy('source_webhook_id')
             ->groupByRaw("date_trunc('{$unit}', created_at)")
             ->orderBy('bucket')
@@ -246,7 +250,11 @@ final class BackgroundProcessStatisticsService
 
             foreach ($activity->get((string) $webhook->id, collect()) as $point) {
                 $start = CarbonImmutable::parse((string) $point->bucket, $timezone)->toIso8601String();
-                $buckets[$start] = ($buckets[$start] ?? 0) + (int) $point->count;
+                $bucket = $buckets[$start] ?? ['count' => 0, 'successful_count' => 0, 'failed_count' => 0];
+                $bucket['count'] += (int) $point->count;
+                $bucket['successful_count'] += (int) $point->successful_count;
+                $bucket['failed_count'] += (int) $point->failed_count;
+                $buckets[$start] = $bucket;
             }
         }
 
@@ -271,7 +279,7 @@ final class BackgroundProcessStatisticsService
             'name' => $groupBy === 'clients' ? 'Все клиенты' : 'Все вебхуки',
             ...$totals,
             'without_runs' => $withoutRuns,
-            'activity' => collect($buckets)->map(fn (int $count, string $start): array => ['start' => $start, 'count' => $count])->values()->all(),
+            'activity' => collect($buckets)->map(fn (array $bucket, string $start): array => ['start' => $start, ...$bucket])->values()->all(),
         ];
     }
 }

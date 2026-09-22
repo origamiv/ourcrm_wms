@@ -165,6 +165,30 @@ it('возвращает запуски выбранного квадрата к
         ->assertJsonPath('data.0.entity_id', (string) $webhook);
 });
 
+it('возвращает состав статусов для цвета квадратов календаря', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $webhook = webhookForStatistics('Вебхук', 1, 'tenant_a', null);
+    $start = now()->startOfDay()->addHours(8);
+
+    runForStatistics($webhook, 'tenant_a', 'completed', $start->copy()->addMinutes(5));
+    runForStatistics($webhook, 'tenant_a', 'completed', $start->copy()->addMinutes(10));
+    runForStatistics($webhook, 'tenant_a', 'completed', $start->copy()->addHour()->addMinutes(5));
+    runForStatistics($webhook, 'tenant_a', 'failed', $start->copy()->addHour()->addMinutes(10));
+    runForStatistics($webhook, 'tenant_a', 'failed', $start->copy()->addHours(2)->addMinutes(5));
+
+    $this->getJson('/web/background_processes?group_by=webhooks&period=today')
+        ->assertOk()
+        ->assertJsonPath('data.0.activity.0.count', 2)
+        ->assertJsonPath('data.0.activity.0.successful_count', 2)
+        ->assertJsonPath('data.0.activity.0.failed_count', 0)
+        ->assertJsonPath('data.0.activity.1.count', 2)
+        ->assertJsonPath('data.0.activity.1.successful_count', 1)
+        ->assertJsonPath('data.0.activity.1.failed_count', 1)
+        ->assertJsonPath('data.0.activity.2.count', 1)
+        ->assertJsonPath('data.0.activity.2.successful_count', 0)
+        ->assertJsonPath('data.0.activity.2.failed_count', 1);
+});
+
 it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo): void {
     $this->loginUser($this->makeUser([], true));
 
