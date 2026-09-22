@@ -17,6 +17,9 @@ final class ImportRunService
 {
     private const STALE_AFTER_MINUTES = 15;
 
+    /** @var array<int, true>|null */
+    private ?array $queuedImportIds = null;
+
     public function failStaleRuns(): int
     {
         $updated = 0;
@@ -77,31 +80,35 @@ final class ImportRunService
 
     private function hasQueuedJob(int $importId): bool
     {
+        if ($this->queuedImportIds !== null) {
+            return isset($this->queuedImportIds[$importId]);
+        }
+
         try {
             $redis = Redis::connection();
             $queueNames = ['imports', ...array_values(SyncMarketplaceCatalogJob::QUEUES)];
-            $payloads = [];
+            $ids = [];
             foreach ($queueNames as $queueName) {
                 $payloads = [
-                    ...$payloads,
                     ...$redis->lrange('queues:'.$queueName, 0, -1),
                     ...$redis->zrange('queues:'.$queueName.':reserved', 0, -1),
                     ...$redis->zrange('queues:'.$queueName.':delayed', 0, -1),
                 ];
-            }
-            $patterns = ['importId";i:'.$importId, '"importId":'.$importId];
-
-            foreach ($payloads as $payload) {
-                foreach ($patterns as $pattern) {
-                    if (str_contains((string) $payload, $pattern)) {
-                        return true;
+                foreach ($payloads as $payload) {
+                    $job = json_decode((string) $payload, true);
+                    $command = $job['data']['command'] ?? '';
+                    if (is_string($command) && preg_match('/"importId";i:(\d+);/', $command, $matches)) {
+                        $ids[(int) $matches[1]] = true;
+                    } elseif (isset($job['data']['importId']) && is_numeric($job['data']['importId'])) {
+                        $ids[(int) $job['data']['importId']] = true;
                     }
                 }
             }
+            $this->queuedImportIds = $ids;
         } catch (Throwable) {
             return true;
         }
 
-        return false;
+        return isset($this->queuedImportIds[$importId]);
     }
 }
