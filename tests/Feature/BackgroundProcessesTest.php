@@ -14,6 +14,7 @@ beforeEach(function (): void {
         tenant_id varchar(255) NOT NULL,
         source_webhook_id bigint,
         status varchar(20) NOT NULL,
+        processed_records integer DEFAULT 0,
         created_at timestamp,
         updated_at timestamp,
         deleted_at timestamp
@@ -69,9 +70,10 @@ it('возвращает одну итоговую строку по всем д
         ->assertJsonPath('data.0.id', 'all')
         ->assertJsonPath('data.0.name', 'Все клиенты')
         ->assertJsonPath('data.0.total_runs', 4)
-        ->assertJsonPath('data.0.successful_runs', 1)
-        ->assertJsonPath('data.0.failed_runs', 1)
-        ->assertJsonPath('data.0.running_runs', 2)
+        ->assertJsonPath('data.0.successful_runs', 0)
+        ->assertJsonPath('data.0.has_successful_runs', 0)
+        ->assertJsonPath('data.0.failed_runs', 0)
+        ->assertJsonPath('data.0.running_runs', 1)
         ->assertJsonPath('data.0.without_runs', 1)
         ->assertJsonCount(4, 'data.0.activity');
 });
@@ -94,6 +96,73 @@ it('возвращает одну итоговую строку по всем д
         ->assertJsonPath('data.0.running_runs', 1)
         ->assertJsonPath('data.0.without_runs', 0)
         ->assertJsonCount(1, 'data.0.activity');
+});
+
+it('классифицирует уникальные сущности по последнему запуску', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $clients = collect(['А', 'Б', 'В', 'Г'])->map(fn (string $name): int => DB::table('clients.clients')->insertGetId([
+        'name' => $name,
+        'status' => 1,
+        'tenant_id' => 'tenant_a',
+    ]));
+    $firstWebhook = webhookForStatistics('А-1', 1, 'tenant_a', $clients[0]);
+    $latestFirstWebhook = webhookForStatistics('А-2', 1, 'tenant_a', $clients[0]);
+    $successfulWebhook = webhookForStatistics('Б', 1, 'tenant_a', $clients[1]);
+    $runningWebhook = webhookForStatistics('В', 1, 'tenant_a', $clients[2]);
+    webhookForStatistics('Г', 1, 'tenant_a', $clients[3]);
+
+    runForStatistics($firstWebhook, 'tenant_a', 'completed', now()->startOfDay()->addHours(8));
+    runForStatistics($latestFirstWebhook, 'tenant_a', 'failed', now()->startOfDay()->addHours(9));
+    runForStatistics($successfulWebhook, 'tenant_a', 'completed', now()->startOfDay()->addHours(10));
+    runForStatistics($runningWebhook, 'tenant_a', 'queued', now()->startOfDay()->addHours(11));
+
+    $this->getJson('/web/background_processes?group_by=clients&period=today')
+        ->assertOk()
+        ->assertJsonPath('data.0.successful_runs', 1)
+        ->assertJsonPath('data.0.has_successful_runs', 1)
+        ->assertJsonPath('data.0.failed_runs', 0)
+        ->assertJsonPath('data.0.running_runs', 1)
+        ->assertJsonPath('data.0.without_runs', 1);
+
+    $this->getJson('/web/background_processes?group_by=webhooks&period=today')
+        ->assertOk()
+        ->assertJsonPath('data.0.successful_runs', 2)
+        ->assertJsonPath('data.0.has_successful_runs', 0)
+        ->assertJsonPath('data.0.failed_runs', 1)
+        ->assertJsonPath('data.0.running_runs', 1)
+        ->assertJsonPath('data.0.without_runs', 1);
+});
+
+it('возвращает запуски выбранного квадрата календаря', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Клиент', 'status' => 1, 'tenant_id' => 'tenant_a']);
+    $webhook = webhookForStatistics('Вебхук', 1, 'tenant_a', $client);
+    runForStatistics($webhook, 'tenant_a', 'completed', now()->startOfDay()->addHours(10)->addMinutes(15), 12);
+    runForStatistics($webhook, 'tenant_a', 'failed', now()->startOfDay()->addHours(11)->addMinutes(15), 3);
+
+    $query = http_build_query([
+        'group_by' => 'clients',
+        'period' => 'today',
+        'bucket_start' => now()->startOfDay()->addHours(10)->toIso8601String(),
+    ]);
+
+    $this->getJson('/web/background_processes/runs?'.$query)
+        ->assertOk()
+        ->assertJsonPath('total', 1)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.entity_id', (string) $client)
+        ->assertJsonPath('data.0.status', 'completed')
+        ->assertJsonPath('data.0.processed_records', 12);
+
+    $query = http_build_query([
+        'group_by' => 'webhooks',
+        'period' => 'today',
+        'bucket_start' => now()->startOfDay()->addHours(10)->toIso8601String(),
+    ]);
+
+    $this->getJson('/web/background_processes/runs?'.$query)
+        ->assertOk()
+        ->assertJsonPath('data.0.entity_id', (string) $webhook);
 });
 
 it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo): void {
@@ -148,12 +217,13 @@ function webhookForStatistics(string $name, int $status, string $tenant, ?int $c
     ]);
 }
 
-function runForStatistics(int $webhook, string $tenant, string $status, mixed $createdAt): void
+function runForStatistics(int $webhook, string $tenant, string $status, mixed $createdAt, int $processedRecords = 0): void
 {
     DB::table('wms.import_runs')->insert([
         'tenant_id' => $tenant,
         'source_webhook_id' => $webhook,
         'status' => $status,
+        'processed_records' => $processedRecords,
         'created_at' => $createdAt,
         'updated_at' => $createdAt,
     ]);

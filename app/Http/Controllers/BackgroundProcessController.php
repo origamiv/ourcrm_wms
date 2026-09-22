@@ -9,6 +9,7 @@ use App\Services\BackgroundProcessStatisticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 final class BackgroundProcessController extends BaseApiController
 {
@@ -25,6 +26,31 @@ final class BackgroundProcessController extends BaseApiController
             (string) ($input['group_by'] ?? 'clients'),
             (string) ($input['period'] ?? 'today'),
         );
+
+        return response()->json($result)->header('Cache-Control', 'private, no-store');
+    }
+
+    /** Возвращает запуски выбранного интервала календаря. */
+    public function runs(Request $request, BackgroundProcessStatisticsService $statistics): JsonResponse
+    {
+        $input = $request->validate([
+            'group_by' => ['required', Rule::in(['clients', 'webhooks'])],
+            'period' => ['required', Rule::in(['today', 'yesterday', 'week', 'month', 'hours_4', 'hour', 'minutes_15'])],
+            'bucket_start' => ['required', 'date'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $result = $statistics->runs(
+                (string) $request->user()->tenant_id,
+                (string) $input['group_by'],
+                (string) $input['period'],
+                (string) $input['bucket_start'],
+                (int) ($input['page'] ?? 1),
+            );
+        } catch (InvalidArgumentException $exception) {
+            abort(422, $exception->getMessage());
+        }
 
         return response()->json($result)->header('Cache-Control', 'private, no-store');
     }

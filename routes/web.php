@@ -113,6 +113,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::get('/web/users/sync', [WmsUserController::class, 'index']);
         Route::get('/web/imports', [App\Http\Controllers\ImportRunController::class, 'index']);
         Route::get('/web/background_processes', App\Http\Controllers\BackgroundProcessController::class);
+        Route::get('/web/background_processes/runs', [App\Http\Controllers\BackgroundProcessController::class, 'runs']);
         Route::get('/web/scheduler', [App\Http\Controllers\SchedulerController::class, 'index']);
         Route::get('/web/scheduler/tasks', [App\Http\Controllers\SchedulerController::class, 'tasks']);
         Route::post('/web/scheduler', [App\Http\Controllers\SchedulerController::class, 'store']);

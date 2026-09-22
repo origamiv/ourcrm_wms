@@ -26,6 +26,7 @@ interface StatisticsRow {
     name: string;
     total_runs: number;
     successful_runs: number;
+    has_successful_runs: number;
     failed_runs: number;
     running_runs: number;
     without_runs: number;
@@ -35,6 +36,14 @@ interface StatisticsRow {
 interface DisplayPoint extends ActivityPoint {
     level: number;
     title: string;
+}
+
+interface RunRow {
+    id: string;
+    entity_id: string;
+    created_at: string | null;
+    status: string;
+    processed_records: number;
 }
 
 const groups: { value: GroupBy; label: string }[] = [
@@ -59,7 +68,24 @@ const error = ref("");
 const statisticsFrom = ref("");
 const statisticsTo = ref("");
 const bucketUnit = ref<BucketUnit>("hour");
+const selectedPoint = ref<DisplayPoint | null>(null);
+const runs = ref<RunRow[]>([]);
+const loadingRuns = ref(false);
+const runsPage = ref(1);
+const runsLastPage = ref(1);
+const runsTotal = ref(0);
 let loadRequest = 0;
+let runsRequest = 0;
+
+const statusLabels: Record<string, string> = {
+    queued: "В очереди",
+    running: "Выполняется",
+    completed: "Завершён",
+    failed: "Ошибка",
+};
+const entityHeading = computed(() =>
+    groupBy.value === "clients" ? "ID клиента" : "ID вебхука",
+);
 
 const displayActivity = computed(() => {
     if (!summary.value || !statisticsFrom.value || !statisticsTo.value) {
@@ -135,7 +161,13 @@ function pointTitle(start: number, count: number): string {
 
 async function load(): Promise<void> {
     const request = ++loadRequest;
+    runsRequest++;
     loading.value = true;
+    selectedPoint.value = null;
+    runs.value = [];
+    runsPage.value = 1;
+    runsLastPage.value = 1;
+    runsTotal.value = 0;
 
     try {
         const query = new URLSearchParams({
@@ -161,6 +193,49 @@ async function load(): Promise<void> {
     } finally {
         if (request === loadRequest) loading.value = false;
     }
+}
+
+async function loadRuns(point: DisplayPoint, page = 1): Promise<void> {
+    const request = ++runsRequest;
+    selectedPoint.value = point;
+    loadingRuns.value = true;
+    if (page === 1) {
+        runs.value = [];
+        runsPage.value = 1;
+        runsTotal.value = 0;
+    }
+
+    try {
+        const query = new URLSearchParams({
+            group_by: groupBy.value,
+            period: period.value,
+            bucket_start: point.start,
+            page: String(page),
+        });
+        const response = await http(
+            `/web/background_processes/runs?${query.toString()}`,
+        );
+        if (request !== runsRequest) return;
+
+        runs.value =
+            page === 1 ? response.data : [...runs.value, ...response.data];
+        runsPage.value = Number(response.current_page ?? page);
+        runsLastPage.value = Number(response.last_page ?? 1);
+        runsTotal.value = Number(response.total ?? runs.value.length);
+        error.value = "";
+    } catch (exception) {
+        if (request !== runsRequest) return;
+        error.value =
+            exception instanceof HttpError
+                ? exception.message
+                : "Не удалось загрузить запуски выбранного интервала.";
+    } finally {
+        if (request === runsRequest) loadingRuns.value = false;
+    }
+}
+
+function formatRunDate(value: string | null): string {
+    return value ? formatDateInTimezone(value, "Europe/Moscow", true) : "—";
 }
 
 function selectGroup(value: GroupBy): void {
@@ -269,6 +344,10 @@ onMounted(() => {
                         <span>Успешно</span>
                         <strong>{{ summary.successful_runs }}</strong>
                     </article>
+                    <article class="summary-metric has-success">
+                        <span>Есть успешные</span>
+                        <strong>{{ summary.has_successful_runs }}</strong>
+                    </article>
                     <article class="summary-metric failed">
                         <span>Неуспешно</span>
                         <strong>{{ summary.failed_runs }}</strong>
@@ -278,7 +357,7 @@ onMounted(() => {
                         <strong>{{ summary.running_runs }}</strong>
                     </article>
                     <article class="summary-metric without-runs">
-                        <span>Без запуска</span>
+                        <span>Без запусков</span>
                         <strong>{{ summary.without_runs }}</strong>
                     </article>
                 </div>
@@ -294,16 +373,87 @@ onMounted(() => {
                         aria-label="Активность за выбранный период"
                     >
                         <div class="activity-grid">
-                            <span
+                            <button
                                 v-for="point in displayActivity"
                                 :key="point.start"
+                                type="button"
                                 class="activity-point"
-                                :class="`level-${point.level}`"
+                                :class="[
+                                    `level-${point.level}`,
+                                    {
+                                        selected:
+                                            selectedPoint?.start ===
+                                            point.start,
+                                    },
+                                ]"
                                 :title="point.title"
                                 :aria-label="point.title"
+                                :aria-pressed="
+                                    selectedPoint?.start === point.start
+                                "
+                                @click="loadRuns(point)"
                             />
                         </div>
                     </div>
+                </section>
+
+                <section
+                    v-if="selectedPoint"
+                    class="runs-card"
+                    aria-labelledby="runs-title"
+                >
+                    <div class="runs-heading">
+                        <h2 id="runs-title">Запуски выбранного интервала</h2>
+                        <span>{{ runsTotal }}</span>
+                    </div>
+                    <p class="runs-period">{{ selectedPoint.title }}</p>
+                    <p v-if="loadingRuns && runsPage === 1" class="runs-state">
+                        Загрузка запусков…
+                    </p>
+                    <p v-else-if="!runs.length" class="runs-state">
+                        В этом интервале запусков не было.
+                    </p>
+                    <div v-else class="runs-table-scroll">
+                        <table class="runs-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">{{ entityHeading }}</th>
+                                    <th scope="col">Дата и время запуска</th>
+                                    <th scope="col">Статус</th>
+                                    <th scope="col">Обработано записей</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="run in runs" :key="run.id">
+                                    <td>{{ run.id }}</td>
+                                    <td>{{ run.entity_id }}</td>
+                                    <td>{{ formatRunDate(run.created_at) }}</td>
+                                    <td>
+                                        <span
+                                            class="run-status"
+                                            :class="`status-${run.status}`"
+                                        >
+                                            {{
+                                                statusLabels[run.status] ??
+                                                run.status
+                                            }}
+                                        </span>
+                                    </td>
+                                    <td>{{ run.processed_records }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button
+                        v-if="runsPage < runsLastPage"
+                        type="button"
+                        class="more-runs"
+                        :disabled="loadingRuns"
+                        @click="loadRuns(selectedPoint, runsPage + 1)"
+                    >
+                        Показать ещё
+                    </button>
                 </section>
             </div>
             <div v-else class="process-state">
@@ -384,7 +534,7 @@ onMounted(() => {
 }
 .summary-metrics {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
     padding: 16px;
 }
@@ -410,6 +560,9 @@ onMounted(() => {
 }
 .summary-metric.success strong {
     color: #1e892f;
+}
+.summary-metric.has-success strong {
+    color: #2274a5;
 }
 .summary-metric.failed strong {
     color: #b42318;
@@ -456,9 +609,15 @@ onMounted(() => {
     flex: 0 0 10px;
     width: 10px;
     height: 10px;
+    padding: 0;
     border: 1px solid #e0e6e3;
     border-radius: 2px;
     background: #eef2f0;
+    cursor: pointer;
+}
+.activity-point.selected {
+    outline: 2px solid #2274a5;
+    outline-offset: 2px;
 }
 .activity-point.level-1 {
     border-color: #c5e5ca;
@@ -475,6 +634,86 @@ onMounted(() => {
 .activity-point.level-4 {
     border-color: #1e892f;
     background: #238f36;
+}
+.runs-card {
+    padding: 16px;
+    border-top: 1px solid #e6eeea;
+}
+.runs-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.runs-heading h2 {
+    margin: 0;
+    color: #18251f;
+    font-size: 14px;
+}
+.runs-heading span,
+.runs-period {
+    color: #66756f;
+    font-size: 11px;
+}
+.runs-period {
+    margin: 4px 0 12px;
+}
+.runs-state {
+    margin: 14px 0 0;
+    color: #66756f;
+    font-size: 12px;
+}
+.runs-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+.runs-table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+}
+.runs-table th,
+.runs-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #e6eeea;
+    text-align: left;
+    white-space: nowrap;
+}
+.runs-table th {
+    color: #66756f;
+    font-size: 11px;
+    font-weight: 600;
+}
+.runs-table td {
+    color: #18251f;
+    font-size: 12px;
+}
+.run-status {
+    display: inline-flex;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #eef2f0;
+}
+.run-status.status-completed {
+    color: #1e892f;
+    background: #e1f3e7;
+}
+.run-status.status-failed {
+    color: #b42318;
+    background: #fdecea;
+}
+.run-status.status-queued,
+.run-status.status-running {
+    color: #a15c00;
+    background: #fff3dc;
+}
+.more-runs {
+    margin-top: 12px;
+    padding: 7px 12px;
+    border: 1px solid #bcdfe7;
+    border-radius: 7px;
+    color: #2274a5;
+    background: #fff;
 }
 
 @media (max-width: 900px) {
