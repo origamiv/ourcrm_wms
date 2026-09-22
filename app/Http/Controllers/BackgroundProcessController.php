@@ -19,12 +19,14 @@ final class BackgroundProcessController extends BaseApiController
         $input = $request->validate([
             'group_by' => ['sometimes', Rule::in(['clients', 'webhooks'])],
             'period' => ['sometimes', Rule::in(['today', 'yesterday', 'week', 'month', 'hours_4', 'hour', 'minutes_15'])],
+            'marketplace' => ['sometimes', Rule::in(['all', 'none', 'wildberries', 'ozon', 'yandex_market'])],
         ]);
 
         $result = $statistics->statistics(
             (string) $request->user()->tenant_id,
             (string) ($input['group_by'] ?? 'clients'),
             (string) ($input['period'] ?? 'today'),
+            (string) ($input['marketplace'] ?? 'all'),
         );
 
         return response()->json($result)->header('Cache-Control', 'private, no-store');
@@ -37,6 +39,7 @@ final class BackgroundProcessController extends BaseApiController
             'group_by' => ['required', Rule::in(['clients', 'webhooks'])],
             'period' => ['required', Rule::in(['today', 'yesterday', 'week', 'month', 'hours_4', 'hour', 'minutes_15'])],
             'bucket_start' => ['required', 'date'],
+            'marketplace' => ['sometimes', Rule::in(['all', 'none', 'wildberries', 'ozon', 'yandex_market'])],
             'page' => ['sometimes', 'integer', 'min:1'],
         ]);
 
@@ -45,6 +48,7 @@ final class BackgroundProcessController extends BaseApiController
                 (string) $request->user()->tenant_id,
                 (string) $input['group_by'],
                 (string) $input['period'],
+                (string) ($input['marketplace'] ?? 'all'),
                 (string) $input['bucket_start'],
                 (int) ($input['page'] ?? 1),
             );

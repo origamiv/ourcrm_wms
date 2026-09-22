@@ -64,7 +64,7 @@ it('возвращает одну итоговую строку по всем д
         ->assertOk()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertJsonPath('group_by', 'clients')
-        ->assertJsonPath('bucket_unit', 'hour')
+        ->assertJsonPath('bucket_unit', 'minutes_15')
         ->assertJsonPath('total', 1)
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', 'all')
@@ -137,8 +137,8 @@ it('возвращает запуски выбранного квадрата к
     $this->loginUser($this->makeUser([], true));
     $client = DB::table('clients.clients')->insertGetId(['name' => 'Клиент', 'status' => 1, 'tenant_id' => 'tenant_a']);
     $webhook = webhookForStatistics('Вебхук', 1, 'tenant_a', $client);
-    runForStatistics($webhook, 'tenant_a', 'completed', now()->startOfDay()->addHours(10)->addMinutes(15), 12);
-    runForStatistics($webhook, 'tenant_a', 'failed', now()->startOfDay()->addHours(11)->addMinutes(15), 3);
+    runForStatistics($webhook, 'tenant_a', 'completed', now()->startOfDay()->addHours(10)->addMinutes(5), 12);
+    runForStatistics($webhook, 'tenant_a', 'failed', now()->startOfDay()->addHours(11)->addMinutes(5), 3);
 
     $query = http_build_query([
         'group_by' => 'clients',
@@ -189,6 +189,44 @@ it('возвращает состав статусов для цвета ква�
         ->assertJsonPath('data.0.activity.2.failed_count', 1);
 });
 
+it('фильтрует статистику по маркетплейсу и записям без него', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $ozonService = DB::table('integration.services')->insertGetId([
+        'name' => 'Ozon',
+        'shortname' => 'ozon',
+        'status' => 1,
+        'tenant_id' => 'tenant_a',
+    ]);
+    $ozonWebhook = webhookForStatistics('Ozon', 1, 'tenant_a', null);
+    DB::table('integration.webhooks')->where('id', $ozonWebhook)->update(['service_id' => $ozonService]);
+    $withoutMarketplace = webhookForStatistics('Без маркетплейса', 1, 'tenant_a', null);
+    runForStatistics($ozonWebhook, 'tenant_a', 'completed', now()->startOfDay()->addHour());
+    runForStatistics($withoutMarketplace, 'tenant_a', 'failed', now()->startOfDay()->addHours(2));
+
+    $this->getJson('/web/background_processes?group_by=webhooks&period=today&marketplace=ozon')
+        ->assertOk()
+        ->assertJsonPath('marketplace', 'ozon')
+        ->assertJsonPath('data.0.successful_runs', 1)
+        ->assertJsonPath('data.0.failed_runs', 0);
+
+    $query = http_build_query([
+        'group_by' => 'webhooks',
+        'period' => 'today',
+        'marketplace' => 'ozon',
+        'bucket_start' => now()->startOfDay()->addHour()->toIso8601String(),
+    ]);
+    $this->getJson('/web/background_processes/runs?'.$query)
+        ->assertOk()
+        ->assertJsonPath('total', 1)
+        ->assertJsonPath('data.0.entity_id', (string) $ozonWebhook);
+
+    $this->getJson('/web/background_processes?group_by=webhooks&period=today&marketplace=none')
+        ->assertOk()
+        ->assertJsonPath('marketplace', 'none')
+        ->assertJsonPath('data.0.successful_runs', 0)
+        ->assertJsonPath('data.0.failed_runs', 1);
+});
+
 it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo): void {
     $this->loginUser($this->makeUser([], true));
 
@@ -201,9 +239,9 @@ it('возвращает границы и единицы всех поддер�
         ->assertJsonPath('selected_to', $selectedTo)
         ->assertJsonPath('statistics_from', $selectedFrom);
 })->with([
-    ['today', 'hour', '2026-09-22T00:00:00+03:00', '2026-09-23T00:00:00+03:00'],
-    ['yesterday', 'hour', '2026-09-21T00:00:00+03:00', '2026-09-22T00:00:00+03:00'],
-    ['week', 'day', '2026-09-21T00:00:00+03:00', '2026-09-28T00:00:00+03:00'],
+    ['today', 'minutes_15', '2026-09-22T00:00:00+03:00', '2026-09-23T00:00:00+03:00'],
+    ['yesterday', 'minutes_15', '2026-09-21T00:00:00+03:00', '2026-09-22T00:00:00+03:00'],
+    ['week', 'hour', '2026-09-21T00:00:00+03:00', '2026-09-28T00:00:00+03:00'],
     ['month', 'day', '2026-09-01T00:00:00+03:00', '2026-10-01T00:00:00+03:00'],
     ['hours_4', 'minute', '2026-09-22T08:35:00+03:00', '2026-09-22T12:35:00+03:00'],
     ['hour', 'minute', '2026-09-22T11:35:00+03:00', '2026-09-22T12:35:00+03:00'],

@@ -6,6 +6,8 @@ import { formatDateInTimezone } from "../lib/dates";
 import { http, HttpError } from "../lib/http";
 
 type GroupBy = "clients" | "webhooks";
+type MarketplaceFilter =
+    "all" | "none" | "wildberries" | "ozon" | "yandex_market";
 type Period =
     | "today"
     | "yesterday"
@@ -14,7 +16,7 @@ type Period =
     | "hours_4"
     | "hour"
     | "minutes_15";
-type BucketUnit = "day" | "hour" | "minute";
+type BucketUnit = "day" | "hour" | "minutes_15" | "minute";
 
 interface ActivityPoint {
     start: string;
@@ -62,9 +64,17 @@ const periods: { value: Period; label: string }[] = [
     { value: "hour", label: "Час" },
     { value: "minutes_15", label: "15 минут" },
 ];
+const marketplaces: { value: MarketplaceFilter; label: string }[] = [
+    { value: "all", label: "Все маркетплейсы" },
+    { value: "wildberries", label: "Wildberries" },
+    { value: "ozon", label: "Ozon" },
+    { value: "yandex_market", label: "Яндекс Маркет" },
+    { value: "none", label: "Без маркетплейса" },
+];
 
 const groupBy = ref<GroupBy>("clients");
 const period = ref<Period>("today");
+const marketplace = ref<MarketplaceFilter>("all");
 const summary = ref<StatisticsRow | null>(null);
 const loading = ref(true);
 const error = ref("");
@@ -150,7 +160,9 @@ function unitMilliseconds(): number {
         ? 86_400_000
         : bucketUnit.value === "hour"
           ? 3_600_000
-          : 60_000;
+          : bucketUnit.value === "minutes_15"
+            ? 900_000
+            : 60_000;
 }
 
 function runsWord(count: number): string {
@@ -192,6 +204,7 @@ async function load(): Promise<void> {
         const query = new URLSearchParams({
             group_by: groupBy.value,
             period: period.value,
+            marketplace: marketplace.value,
         });
         const response = await http(
             `/web/background_processes?${query.toString()}`,
@@ -228,6 +241,7 @@ async function loadRuns(point: DisplayPoint, page = 1): Promise<void> {
         const query = new URLSearchParams({
             group_by: groupBy.value,
             period: period.value,
+            marketplace: marketplace.value,
             bucket_start: point.start,
             page: String(page),
         });
@@ -343,6 +357,24 @@ onMounted(() => {
                     >
                         <option
                             v-for="item in periods"
+                            :key="item.value"
+                            :value="item.value"
+                        >
+                            {{ item.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="process-control-group">
+                    <span class="process-control-label">Маркетплейс</span>
+                    <select
+                        v-model="marketplace"
+                        class="marketplace-filter-select"
+                        aria-label="Фильтр маркетплейса"
+                        @change="load()"
+                    >
+                        <option
+                            v-for="item in marketplaces"
                             :key="item.value"
                             :value="item.value"
                         >
@@ -539,6 +571,17 @@ onMounted(() => {
 .mobile-process-select {
     display: none;
 }
+.marketplace-filter-select {
+    min-width: 170px;
+    height: 40px;
+    padding: 5px 30px 5px 10px;
+    border: 1px solid #dbe3e0;
+    border-radius: 9px;
+    background-color: #f4f7f6;
+    color: #18251f;
+    font: inherit;
+    font-size: 12px;
+}
 .process-state,
 .process-summary {
     border: 1px solid #dce7e2;
@@ -623,16 +666,18 @@ onMounted(() => {
     font-size: 11px;
 }
 .activity-scroll {
+    width: 100%;
     max-width: 100%;
-    overflow-x: auto;
+    overflow: visible;
     padding: 3px 1px 7px;
     outline-offset: 2px;
     scrollbar-width: thin;
 }
 .activity-grid {
     display: flex;
+    flex-wrap: wrap;
     gap: 3px;
-    width: max-content;
+    width: 100%;
 }
 .activity-point {
     flex: 0 0 10px;
@@ -783,7 +828,7 @@ onMounted(() => {
 @media (max-width: 900px) {
     .process-filters {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
     }
     .process-control-group {
@@ -808,6 +853,15 @@ onMounted(() => {
         color: #18251f;
         font: inherit;
         font-size: 12px;
+    }
+    .marketplace-filter-select {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        height: 34px;
+        padding: 5px 24px 5px 7px;
+        border-radius: 8px;
+        font-size: 11px;
     }
     .summary-title {
         padding: 10px 12px;

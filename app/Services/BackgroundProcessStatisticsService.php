@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Client;
 use App\Models\ImportRun;
 use App\Models\IntegrationWebhook;
+use App\Models\Marketplace;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,10 +21,10 @@ final class BackgroundProcessStatisticsService
     /**
      * @return array<string, mixed>
      */
-    public function statistics(string $tenant, string $groupBy, string $period): array
+    public function statistics(string $tenant, string $groupBy, string $period, string $marketplace): array
     {
         $range = $this->range($period);
-        $webhooks = $this->webhooks($tenant, $groupBy);
+        $webhooks = $this->webhooks($tenant, $groupBy, $marketplace);
         $webhookIds = $webhooks->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
 
         $summaries = $this->summaries($tenant, $webhookIds, $range['selected_from'], $range['selected_to']);
@@ -33,6 +34,7 @@ final class BackgroundProcessStatisticsService
         return [
             'group_by' => $groupBy,
             'period' => $period,
+            'marketplace' => $marketplace,
             'timezone' => (string) config('app.timezone', 'Europe/Moscow'),
             'selected_from' => $range['selected_from']->toIso8601String(),
             'selected_to' => $range['selected_to']->toIso8601String(),
@@ -47,7 +49,7 @@ final class BackgroundProcessStatisticsService
     /**
      * @return array<string, mixed>
      */
-    public function runs(string $tenant, string $groupBy, string $period, string $bucketStart, int $page): array
+    public function runs(string $tenant, string $groupBy, string $period, string $marketplace, string $bucketStart, int $page): array
     {
         $range = $this->range($period);
         $timezone = (string) config('app.timezone', 'Europe/Moscow');
@@ -55,11 +57,13 @@ final class BackgroundProcessStatisticsService
         $alignedStart = match ($range['bucket_unit']) {
             'day' => $start->startOfDay(),
             'hour' => $start->startOfHour(),
+            'minutes_15' => $start->startOfMinute()->subMinutes($start->minute % 15),
             default => $start->startOfMinute(),
         };
         $end = match ($range['bucket_unit']) {
             'day' => $start->addDay(),
             'hour' => $start->addHour(),
+            'minutes_15' => $start->addMinutes(15),
             default => $start->addMinute(),
         };
 
@@ -67,7 +71,7 @@ final class BackgroundProcessStatisticsService
             throw new InvalidArgumentException('Интервал не входит в выбранный период.');
         }
 
-        $webhooks = $this->webhooks($tenant, $groupBy);
+        $webhooks = $this->webhooks($tenant, $groupBy, $marketplace);
         $webhookIds = $webhooks->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
         $clientByWebhook = $webhooks->mapWithKeys(
             static fn (object $webhook): array => [(string) $webhook->id => $webhook->client_id],
@@ -107,9 +111,9 @@ final class BackgroundProcessStatisticsService
         $now = CarbonImmutable::now((string) config('app.timezone', 'Europe/Moscow'));
 
         [$from, $to, $unit] = match ($period) {
-            'today' => [$now->startOfDay(), $now->startOfDay()->addDay(), 'hour'],
-            'yesterday' => [$now->startOfDay()->subDay(), $now->startOfDay(), 'hour'],
-            'week' => [$now->startOfWeek(CarbonInterface::MONDAY), $now->startOfWeek(CarbonInterface::MONDAY)->addWeek(), 'day'],
+            'today' => [$now->startOfDay(), $now->startOfDay()->addDay(), 'minutes_15'],
+            'yesterday' => [$now->startOfDay()->subDay(), $now->startOfDay(), 'minutes_15'],
+            'week' => [$now->startOfWeek(CarbonInterface::MONDAY), $now->startOfWeek(CarbonInterface::MONDAY)->addWeek(), 'hour'],
             'month' => [$now->startOfMonth(), $now->startOfMonth()->addMonth(), 'day'],
             'hours_4' => $this->rollingRange($now, 240),
             'hour' => $this->rollingRange($now, 60),
@@ -136,9 +140,9 @@ final class BackgroundProcessStatisticsService
         return [$to->subMinutes($minutes), $to, 'minute'];
     }
 
-    private function webhooks(string $tenant, string $groupBy): Collection
+    private function webhooks(string $tenant, string $groupBy, string $marketplace): Collection
     {
-        $query = $this->activeWebhooks($tenant)->select(['id', 'client_id']);
+        $query = $this->activeWebhooks($tenant)->select(['id', 'client_id', 'service_id', 'params']);
 
         if ($groupBy === 'clients') {
             $visibleClients = Client::query()
@@ -149,7 +153,79 @@ final class BackgroundProcessStatisticsService
             $query->whereNotNull('client_id')->whereIn('client_id', $visibleClients);
         }
 
-        return $query->get();
+        $webhooks = $query->with('service_obj')->get();
+        if ($marketplace === 'all') {
+            return $webhooks;
+        }
+
+        $marketplaceIds = $webhooks
+            ->flatMap(static function (IntegrationWebhook $webhook): array {
+                $nodes = ($webhook->params ?? [])['builder']['nodes'] ?? [];
+                if (! is_array($nodes)) {
+                    return [];
+                }
+
+                return collect($nodes)
+                    ->where('type', 'catalog_sync')
+                    ->pluck('settings.marketplace_id')
+                    ->filter()
+                    ->all();
+            })
+            ->unique()
+            ->values();
+
+        $marketplaces = $marketplaceIds->isEmpty()
+            ? collect()
+            : Marketplace::query()
+                ->visibleTo($tenant)
+                ->where('status', 1)
+                ->whereIn('id', $marketplaceIds)
+                ->get(['id', 'shortname'])
+                ->keyBy(static fn (Marketplace $item): string => (string) $item->id);
+
+        return $webhooks
+            ->filter(function (IntegrationWebhook $webhook) use ($marketplace, $marketplaces): bool {
+                $webhookMarketplace = $this->marketplaceFor($webhook, $marketplaces);
+
+                return $marketplace === 'none'
+                    ? $webhookMarketplace === null
+                    : $webhookMarketplace === $marketplace;
+            })
+            ->values();
+    }
+
+    private function marketplaceFor(IntegrationWebhook $webhook, Collection $marketplaces): ?string
+    {
+        $builder = ($webhook->params ?? [])['builder'] ?? null;
+        if (is_array($builder) && ($builder['version'] ?? null) === 1 && is_array($builder['nodes'] ?? null)) {
+            foreach ($builder['nodes'] as $node) {
+                if (($node['type'] ?? null) !== 'catalog_sync' || empty($node['settings']['marketplace_id'])) {
+                    continue;
+                }
+                $shortname = mb_strtolower((string) $marketplaces->get((string) $node['settings']['marketplace_id'])?->shortname);
+
+                return $this->marketplaceFromShortname($shortname);
+            }
+        }
+
+        $service = mb_strtolower((string) ($webhook->service_obj?->shortname ?? $webhook->service_obj?->name));
+
+        return match (true) {
+            str_contains($service, 'ozon') => 'ozon',
+            str_contains($service, 'yandex') && str_contains($service, 'market') => 'yandex_market',
+            str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
+            default => null,
+        };
+    }
+
+    private function marketplaceFromShortname(string $shortname): ?string
+    {
+        return match ($shortname) {
+            'wb', 'wildberries' => 'wildberries',
+            'oz', 'ozon' => 'ozon',
+            'ym', 'yandex_market' => 'yandex_market',
+            default => null,
+        };
     }
 
     private function activeWebhooks(string $tenant): Builder
@@ -187,6 +263,10 @@ final class BackgroundProcessStatisticsService
             return collect();
         }
 
+        $bucketExpression = $unit === 'minutes_15'
+            ? "date_bin('15 minutes', created_at, TIMESTAMP '2000-01-01 00:00:00')"
+            : "date_trunc('{$unit}', created_at)";
+
         return ImportRun::query()
             ->where('tenant_id', $tenant)
             ->whereIn('source_webhook_id', $webhookIds)
@@ -194,12 +274,12 @@ final class BackgroundProcessStatisticsService
             ->where('created_at', '>=', $from)
             ->where('created_at', '<', $to)
             ->selectRaw("source_webhook_id,
-                date_trunc('{$unit}', created_at) AS bucket,
+                {$bucketExpression} AS bucket,
                 COUNT(*)::integer AS count,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::integer AS successful_count,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END)::integer AS failed_count")
             ->groupBy('source_webhook_id')
-            ->groupByRaw("date_trunc('{$unit}', created_at)")
+            ->groupByRaw($bucketExpression)
             ->orderBy('bucket')
             ->get()
             ->groupBy(static fn (object $row): string => (string) $row->source_webhook_id);
