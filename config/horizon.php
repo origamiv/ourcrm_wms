@@ -273,23 +273,23 @@ return [
     'environments' => [
         'production' => [
             'supervisor-1' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 2,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
             'imports' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 1,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 5,
             ],
             'imports_wildberries' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 1,
             ],
             'imports_ozon' => [
                 'maxProcesses' => 1,
             ],
             'imports_yandex_market' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 1,
             ],
         ],
 
