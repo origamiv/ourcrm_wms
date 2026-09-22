@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 final class SyncMarketplaceCatalogsCommand extends Command
@@ -34,7 +35,8 @@ final class SyncMarketplaceCatalogsCommand extends Command
     protected $signature = 'integration:sync-catalogs
                             {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}
                             {--limit= : Максимальное количество вебхуков; по умолчанию 10 для Wildberries и 100 для остальных площадок}
-                            {--tenant= : Ограничить запуск одной организацией}';
+                            {--tenant= : Ограничить запуск одной организацией}
+                            {--webhook-id= : Обработать один вебхук в отдельном процессе}';
 
     protected $description = 'Синхронно запустить каталоги маркетплейсов для организаций с включённой фичей';
 
@@ -57,16 +59,11 @@ final class SyncMarketplaceCatalogsCommand extends Command
             return self::INVALID;
         }
 
-        $tenants = DB::table('public.tenants')
-            ->where('status', 1)
-            ->when($tenantFilter !== null, fn ($query) => $query->where('id', (string) $tenantFilter))
-            ->whereIn('id', TenantSetting::query()
-                ->where('name', self::FEATURE)
-                ->whereRaw("value->>'enabled' = 'true'")
-                ->select('tenant_id'))
-            ->pluck('id')
-            ->map(static fn (mixed $id): string => (string) $id)
-            ->all();
+        if ($this->option('webhook-id') === null) {
+            return $this->runIsolatedBatch((string) ($marketplaceFilter ?: ''), $tenantFilter, $limit);
+        }
+
+        $tenants = $this->eligibleTenants($tenantFilter);
 
         if ($tenants === []) {
             $this->components->info('Организаций с включённой синхронизацией не найдено.');
@@ -98,6 +95,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
         $webhooks = IntegrationWebhook::query()
             ->whereIn('tenant_id', $tenants)
+            ->when($this->option('webhook-id') !== null, fn ($query) => $query->whereKey((int) $this->option('webhook-id')))
             ->where('status', 1)
             ->with(['service_obj', 'client_obj'])
             ->orderByRaw('dat_last_run ASC NULLS FIRST')
@@ -193,6 +191,90 @@ final class SyncMarketplaceCatalogsCommand extends Command
         ));
 
         return self::SUCCESS;
+    }
+
+    private function runIsolatedBatch(string $marketplaceFilter, ?string $tenantFilter, int $limit): int
+    {
+        $tenants = $this->eligibleTenants($tenantFilter);
+        if ($tenants === []) {
+            $this->components->info('Организаций с включённой синхронизацией не найдено.');
+
+            return self::SUCCESS;
+        }
+
+        IntegrationWebhook::query()
+            ->whereIn('tenant_id', $tenants)
+            ->where('status', 3)
+            ->whereNotNull('dat_last_run')
+            ->where('dat_last_run', '<=', now()->subHours(4))
+            ->update(['status' => 1]);
+
+        $webhooks = IntegrationWebhook::query()
+            ->whereIn('tenant_id', $tenants)
+            ->where('status', 1)
+            ->with('service_obj')
+            ->orderByRaw('dat_last_run ASC NULLS FIRST')
+            ->orderBy('id')
+            ->get();
+
+        $started = 0;
+        foreach ($webhooks as $webhook) {
+            $marketplace = $this->marketplaceFor($webhook);
+            if ($marketplace === null || ($marketplaceFilter !== '' && $marketplace !== $marketplaceFilter)) {
+                continue;
+            }
+
+            $process = new Process([
+                PHP_BINARY,
+                base_path('artisan'),
+                'integration:sync-catalogs',
+                '--marketplace='.$marketplace,
+                '--limit=1',
+                '--tenant='.(string) $webhook->tenant_id,
+                '--webhook-id='.(string) $webhook->id,
+                '--no-ansi',
+            ], base_path());
+            $process->setTimeout(null);
+            $process->run();
+
+            if ($process->getOutput() !== '') {
+                $this->output->write($process->getOutput());
+            }
+            if ($process->getErrorOutput() !== '') {
+                $this->output->write($process->getErrorOutput());
+            }
+            if (! $process->isSuccessful()) {
+                $this->components->warn(sprintf(
+                    'Вебхук #%d завершился с кодом %d.',
+                    $webhook->id,
+                    $process->getExitCode() ?? -1,
+                ));
+            }
+
+            $started++;
+            if ($started >= $limit) {
+                break;
+            }
+        }
+
+        $this->components->info('Запущено изолированных синхронизаций: '.$started.'.');
+
+        return self::SUCCESS;
+    }
+
+    /** @return list<string> */
+    private function eligibleTenants(?string $tenantFilter): array
+    {
+        return DB::table('public.tenants')
+            ->where('status', 1)
+            ->when($tenantFilter !== null, fn ($query) => $query->where('id', (string) $tenantFilter))
+            ->whereIn('id', TenantSetting::query()
+                ->where('name', self::FEATURE)
+                ->whereRaw("value->>'enabled' = 'true'")
+                ->select('tenant_id'))
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
     }
 
     private function claimWebhook(int $webhookId, string $tenant): ?IntegrationWebhook
