@@ -46,6 +46,18 @@ it('показывает интеграции выбранного клиент�
     $this->get('/clients/integrations/'.$otherWebhook['id'].'/edit?client_id='.$client)->assertNotFound();
     $this->get('/clients/integrations?client_id='.$foreignClient)->assertNotFound();
     $this->getJson('/web/sync/integration_webhooks')->assertOk()->assertJsonPath('changes.0.data.client_id', $client);
+    $snapshot = $this->getJson('/web/clients/'.$client.'/integrations/sync')->assertOk()
+        ->assertJsonPath('changes.0.data.client_id', $client)
+        ->assertJsonPath('changes.1.operation', 'remove')
+        ->assertJsonPath('changes.1.data', null)->json();
+    $this->getJson('/web/clients/'.$foreignClient.'/integrations/sync')->assertNotFound();
+
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], [
+        'name' => 'Перенесённый вебхук', 'status' => 1, 'client_id' => $otherClient, 'version' => $webhook['version'],
+    ])->assertOk();
+    $this->getJson('/web/clients/'.$client.'/integrations/sync?cursor='.urlencode($snapshot['cursor']))->assertOk()
+        ->assertJsonPath('changes.0.operation', 'remove')
+        ->assertJsonPath('changes.0.data', null);
 });
 
 it('проверяет ссылки и не помещает содержимое интеграций в журнал', function () {

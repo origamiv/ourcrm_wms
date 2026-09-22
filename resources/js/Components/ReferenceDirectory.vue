@@ -235,6 +235,9 @@ const warehouseScope = computed<{ id: string; name: string } | null>(() =>
 const store = createEntitySync<ReferenceRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
     props.entity,
+    isClientIntegration && clientScope.value
+        ? { cacheKey: `${props.entity}:client:${clientScope.value.id}`, syncUrl: `/web/clients/${clientScope.value.id}/integrations/sync` }
+        : undefined,
 );
 const { rows, ready, syncing, online, error, warning } = store;
 const lookupStores = Object.fromEntries(

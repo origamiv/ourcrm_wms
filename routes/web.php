@@ -33,6 +33,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::post('/web/export/pdf', [App\Http\Controllers\DataExportController::class, 'pdf']);
         Route::post('/web/import/{entity}', [App\Http\Controllers\DataImportController::class, 'store'])->where('entity', '[a-z][a-z0-9_]*');
         Route::get('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'show'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
+        Route::get('/web/clients/{clientId}/integrations/sync', App\Http\Controllers\ClientIntegrationSyncController::class)->whereNumber('clientId');
         Route::post('/web/integration/{integration_catalog}', [App\Http\Controllers\IntegrationController::class, 'store'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing']);
         Route::put('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'update'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::delete('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'destroy'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');

@@ -4,6 +4,7 @@ import { http, HttpError, sessionEnded } from "./http";
 export function createEntitySync<T extends EntityRow>(
     scope: string,
     entityType: string,
+    options?: { cacheKey?: string; syncUrl?: string },
 ) {
     const rows = shallowRef<T[]>([]),
         syncing = ref(false),
@@ -11,7 +12,7 @@ export function createEntitySync<T extends EntityRow>(
         online = ref(navigator.onLine),
         warning = ref(""),
         error = ref("");
-    const cache = new EntityCache<T>(scope, entityType, () => {
+    const cache = new EntityCache<T>(scope, options?.cacheKey ?? entityType, () => {
         warning.value =
             "Локальное хранилище недоступно. Данные сохраняются только до закрытия страницы.";
     });
@@ -49,7 +50,7 @@ export function createEntitySync<T extends EntityRow>(
                 let page: SyncPage<T>;
                 try {
                     page = await http(
-                        `/web/sync/${encodeURIComponent(entityType)}?${params}`,
+                        `${options?.syncUrl ?? `/web/sync/${encodeURIComponent(entityType)}`}?${params}`,
                     );
                 } catch (e) {
                     if (
