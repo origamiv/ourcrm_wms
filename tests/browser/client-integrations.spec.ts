@@ -312,3 +312,31 @@ test("страница конструктора прокручивается д�
         page.getByRole("button", { name: "Сохранить", exact: true }),
     ).toBeInViewport();
 });
+
+test("логи запуска показывают календарь и запуски выбранного дня", async ({
+    page,
+}) => {
+    await page.goto("/login");
+    await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
+    await page.getByLabel("Пароль", { exact: true }).fill("Test_password_123");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await page.goto("/clients/integrations?client_id=1");
+    await page
+        .getByRole("button", { name: "Логи запуска: WB интеграция" })
+        .click();
+    await expect(page).toHaveURL(
+        /\/clients\/integrations\/\d+\/logs\?client_id=1$/,
+    );
+    await expect(
+        page.getByRole("heading", { name: "Календарь активности" }),
+    ).toBeVisible();
+    const activeDay = page.getByRole("button", { name: /: 2 запусков$/ });
+    await expect(activeDay).toBeVisible();
+    await activeDay.click();
+    await expect(page.locator(".runs-table tbody tr")).toHaveCount(2);
+    await expect(page.getByText("125", { exact: true })).toBeVisible();
+    await expect(page.getByText("Ошибка", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "К списку" }).click();
+    await expect(page).toHaveURL(/\/clients\/integrations\?client_id=1$/);
+});

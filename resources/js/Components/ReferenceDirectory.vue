@@ -630,6 +630,10 @@ function editRow(row: ReferenceRow) {
     const query = clientScope.value ? `?client_id=${encodeURIComponent(clientScope.value.id)}` : "";
     router.visit(`${basePath}/${encodeURIComponent(row.id)}/edit${query}`);
 }
+function openIntegrationLogs(row: ReferenceRow) {
+    const query = clientScope.value ? `?client_id=${encodeURIComponent(clientScope.value.id)}` : "";
+    router.visit(`${basePath}/${encodeURIComponent(row.id)}/logs${query}`);
+}
 async function open(row: ReferenceRow | null, readOnly = false) {
     if (saving.value) return;
     const request = ++detailRequest;
@@ -1425,6 +1429,13 @@ useCardRoute<ReferenceRow>({
                                         :disabled="!online || !!row.deleted_at"
                                     />
                                     <button
+                                        v-if="isClientIntegration"
+                                        :aria-label="`Логи запуска: ${displayName(row)}`"
+                                        title="Логи запуска"
+                                        :disabled="!online"
+                                        @click.stop="openIntegrationLogs(row)"
+                                    ><span class="run-logs-icon" aria-hidden="true">▦</span></button>
+                                    <button
                                         :aria-label="`Просмотр: ${displayName(row)}`"
                                         title="Просмотр"
                                         @click="open(row, true)"
@@ -2211,6 +2222,15 @@ td,
     background: #e1f3e7;
     color: #1e892f;
     font-size: 10px;
+    line-height: 1;
+}
+.run-logs-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    color: #2274a5;
+    font-size: 22px;
     line-height: 1;
 }
 .table-progress { display: flex; align-items: center; gap: 8px; min-width: 130px; }

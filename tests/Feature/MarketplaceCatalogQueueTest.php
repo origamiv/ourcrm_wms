@@ -84,6 +84,26 @@ it('создаёт один импорт до постановки в очере
     Bus::assertDispatchedTimes(SyncMarketplaceCatalogJob::class, 1);
 });
 
+it('показывает календарь запусков только выбранной интеграции и организации', function (): void {
+    $this->loginUser($this->makeUser(['tenant_id' => $this->tenant], true));
+    $date = now()->toDateString();
+    foreach ([['completed', 125, $this->webhook->id, $this->tenant], ['failed', 18, $this->webhook->id, $this->tenant], ['completed', 99, $this->webhook->id + 1, $this->tenant], ['completed', 77, $this->webhook->id, '22222222-2222-4222-8222-222222222222']] as [$status, $processed, $webhookId, $tenant]) {
+        ImportRun::query()->create([
+            'tenant_id' => $tenant, 'source_webhook_id' => $webhookId,
+            'source_system' => 'ozon', 'project' => 'marketplace', 'status' => $status,
+            'processed_records' => $processed,
+        ]);
+    }
+    $this->get('/clients/integrations/'.$this->webhook->id.'/logs')->assertOk()
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('ClientIntegrationRunLogs'));
+    $this->getJson('/web/clients/integrations/'.$this->webhook->id.'/run_logs?year='.now()->year)
+        ->assertOk()->assertJsonPath('data.0.date', $date)->assertJsonPath('data.0.count', 2);
+    $this->getJson('/web/clients/integrations/'.$this->webhook->id.'/run_logs/day?date='.$date)
+        ->assertOk()->assertJsonPath('total', 2)->assertJsonPath('data.0.processed_records', 18)
+        ->assertJsonPath('data.1.processed_records', 125);
+    $this->getJson('/web/clients/integrations/999999/run_logs?year='.now()->year)->assertNotFound();
+});
+
 it('обрабатывает каталог отдельными заданиями с общим курсором и счётчиком', function (): void {
     Http::fakeSequence()->push(['result' => array_map(fn ($id) => ['id' => $id], range(1, 100)), 'last_id' => 'page2'])
         ->push(['result' => [['id' => 101, 'offer_id' => 'two']], 'last_id' => 'nonempty_final_cursor']);

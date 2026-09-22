@@ -34,6 +34,8 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         Route::post('/web/import/{entity}', [App\Http\Controllers\DataImportController::class, 'store'])->where('entity', '[a-z][a-z0-9_]*');
         Route::get('/web/integration/{integration_catalog}/{id}', [App\Http\Controllers\IntegrationController::class, 'show'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing'])->whereNumber('id');
         Route::get('/web/integration/account_options', App\Http\Controllers\ClientIntegrationAccountOptionsController::class);
+        Route::get('/web/clients/integrations/{id}/run_logs', [App\Http\Controllers\ClientIntegrationRunLogController::class, 'calendar'])->whereNumber('id');
+        Route::get('/web/clients/integrations/{id}/run_logs/day', [App\Http\Controllers\ClientIntegrationRunLogController::class, 'day'])->whereNumber('id');
         Route::get('/web/clients/{clientId}/integrations/sync', App\Http\Controllers\ClientIntegrationSyncController::class)->whereNumber('clientId');
         Route::get('/web/clients/relations', App\Http\Controllers\ClientRelationsController::class);
         Route::post('/web/integration/{integration_catalog}', [App\Http\Controllers\IntegrationController::class, 'store'])->whereIn('integration_catalog', ['webhooks', 'data', 'rules', 'services', 'type_hook', 'type_processing']);
@@ -92,7 +94,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
         }
         Route::get('/{left}/{top}/{id?}/{action?}', App\Http\Controllers\SectionPageController::class)
             ->whereIn('left', ['main', 'clients', 'goods', 'integration', 'fulfillment', 'maintenance', 'logistics'])->whereNumber('id')
-            ->whereIn('action', ['view', 'edit', 'create', 'delete', 'password']);
+            ->whereIn('action', ['view', 'edit', 'create', 'delete', 'password', 'logs']);
 
         Route::post('/web/clients', [App\Http\Controllers\ClientController::class, 'store']);
         Route::put('/web/clients/{id}', [App\Http\Controllers\ClientController::class, 'update'])->whereNumber('id');

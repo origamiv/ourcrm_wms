@@ -33,6 +33,7 @@ final class SectionPageController
         $goodId = null;
         $taskId = null;
         $clientScope = null;
+        $integrationScope = null;
         $warehouseScope = null;
         if ($left === 'clients' && in_array($top, ['companies', 'individuals', 'documents', 'accounts', 'integrations'], true) && $request->has('client_id')) {
             $input = $request->validate(['client_id' => ['sometimes', 'required', 'integer', 'min:1']]);
@@ -59,6 +60,9 @@ final class SectionPageController
             if ($top === 'users') {
                 $actions[] = 'password';
             }
+            if ($left === 'clients' && $top === 'integrations') {
+                $actions[] = 'logs';
+            }
             abort_unless(in_array($action, $actions, true), 404);
             if ($action === 'create') {
                 abort_unless($id === '0', 404);
@@ -84,6 +88,10 @@ final class SectionPageController
                 if ($left === 'clients' && $top === 'integrations' && $action === 'edit') {
                     $component = 'ClientIntegrationEdit';
                 }
+                if ($left === 'clients' && $top === 'integrations' && $action === 'logs') {
+                    $component = 'ClientIntegrationRunLogs';
+                    $integrationScope = ['id' => (string) $row->id, 'name' => $row->name ?: 'Интеграция №'.$row->id];
+                }
                 if ($top === 'company_contacts' && $request->has('company_id')) {
                     abort_unless((string) $row->company_id === (string) $request->query('company_id'), 404);
                 }
@@ -93,6 +101,6 @@ final class SectionPageController
             return app(CompanyDirectoryController::class)->contactsPage($request);
         }
 
-        return Inertia::render($component, ['clientScope' => $clientScope, 'warehouseScope' => $warehouseScope, 'goodId' => $goodId, 'taskId' => $taskId]);
+        return Inertia::render($component, ['clientScope' => $clientScope, 'integrationScope' => $integrationScope, 'warehouseScope' => $warehouseScope, 'goodId' => $goodId, 'taskId' => $taskId]);
     }
 }

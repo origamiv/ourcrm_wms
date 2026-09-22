@@ -39,6 +39,7 @@ import ClientServices from "./Pages/ClientServices.vue";
 import ClientAccounts from "./Pages/ClientAccounts.vue";
 import ClientIntegrations from "./Pages/ClientIntegrations.vue";
 import ClientIntegrationEdit from "./Pages/ClientIntegrationEdit.vue";
+import ClientIntegrationRunLogs from "./Pages/ClientIntegrationRunLogs.vue";
 import Files from "./Pages/Files.vue";
 import Icons from "./Pages/Icons.vue";
 import Features from "./Pages/Features.vue";
@@ -119,6 +120,7 @@ const pages: Record<string, any> = {
     ClientAccounts,
     ClientIntegrations,
     ClientIntegrationEdit,
+    ClientIntegrationRunLogs,
     Files,
     Icons,
     Features,

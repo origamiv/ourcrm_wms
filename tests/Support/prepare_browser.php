@@ -127,6 +127,12 @@ DB::transaction(function () {
         $service = DB::table('integration.services')->insertGetId(['name' => $name, 'shortname' => $shortname, 'status' => 1, 'tenant_id' => 'test_org']);
         DB::table('integration.webhooks')->insert(['name' => $name.' интеграция', 'status' => 1, 'client_id' => 1, 'service_id' => $service, 'tenant_id' => 'test_org']);
     }
+    DB::statement('CREATE TABLE wms.import_runs (id bigserial PRIMARY KEY, tenant_id varchar(255), source_webhook_id bigint, status varchar(20), processed_records integer DEFAULT 0, created_at timestamp, updated_at timestamp, deleted_at timestamp)');
+    DB::table('wms.import_runs')->insert([
+        ['tenant_id' => 'test_org', 'source_webhook_id' => 2, 'status' => 'completed', 'processed_records' => 125, 'created_at' => now()->startOfDay()->addHours(10), 'updated_at' => now()],
+        ['tenant_id' => 'test_org', 'source_webhook_id' => 2, 'status' => 'failed', 'processed_records' => 18, 'created_at' => now()->startOfDay()->addHours(12), 'updated_at' => now()],
+        ['tenant_id' => 'test_org', 'source_webhook_id' => 3, 'status' => 'completed', 'processed_records' => 99, 'created_at' => now()->startOfDay()->addHours(13), 'updated_at' => now()],
+    ]);
 });
 
 DB::transaction(function () {
