@@ -15,19 +15,15 @@ use InvalidArgumentException;
 
 final class BackgroundProcessStatisticsService
 {
-    private const PER_PAGE = 50;
-
     private const RUN_STATUSES = ['completed', 'failed', 'queued', 'running'];
 
     /**
      * @return array<string, mixed>
      */
-    public function statistics(string $tenant, string $groupBy, string $period, int $page): array
+    public function statistics(string $tenant, string $groupBy, string $period): array
     {
         $range = $this->range($period);
-        $paginator = $this->groups($tenant, $groupBy, $page);
-        $groups = collect($paginator->items());
-        $webhooks = $this->webhooksForGroups($tenant, $groupBy, $groups);
+        $webhooks = $this->webhooks($tenant, $groupBy);
         $webhookIds = $webhooks->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
 
         $summaries = $this->summaries($tenant, $webhookIds, $range['selected_from'], $range['selected_to']);
@@ -42,10 +38,8 @@ final class BackgroundProcessStatisticsService
             'statistics_from' => $range['statistics_from']->toIso8601String(),
             'statistics_to' => $range['statistics_to']->toIso8601String(),
             'bucket_unit' => $range['bucket_unit'],
-            'data' => $this->rows($groupBy, $groups, $webhooks, $summaries, $activity),
-            'current_page' => $paginator->currentPage(),
-            'last_page' => $paginator->lastPage(),
-            'total' => $paginator->total(),
+            'data' => [$this->row($groupBy, $webhooks, $summaries, $activity)],
+            'total' => 1,
         ];
     }
 
@@ -86,45 +80,27 @@ final class BackgroundProcessStatisticsService
         return [$to->subMinutes($minutes), $to, $to->subMinutes($minutes * 3), 'minute'];
     }
 
-    private function groups(string $tenant, string $groupBy, int $page): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    private function webhooks(string $tenant, string $groupBy): Collection
     {
-        if ($groupBy === 'clients') {
-            $webhookClients = $this->activeWebhooks($tenant)
-                ->whereNotNull('client_id')
-                ->select('client_id');
+        $query = $this->activeWebhooks($tenant)->select(['id', 'client_id']);
 
-            return Client::query()
+        if ($groupBy === 'clients') {
+            $visibleClients = Client::query()
                 ->visibleTo($tenant)
-                ->whereIn('id', $webhookClients)
-                ->orderBy('name')
-                ->orderBy('id')
-                ->paginate(self::PER_PAGE, ['id', 'name', 'shortname'], 'page', $page);
+                ->where('status', 1)
+                ->select('id');
+
+            $query->whereNotNull('client_id')->whereIn('client_id', $visibleClients);
         }
 
-        return $this->activeWebhooks($tenant)
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(self::PER_PAGE, ['id', 'name', 'shortname', 'client_id'], 'page', $page);
+        return $query->get();
     }
 
     private function activeWebhooks(string $tenant): Builder
     {
         return IntegrationWebhook::query()
             ->visibleTo($tenant)
-            ->whereIn('status', [1, 3]);
-    }
-
-    private function webhooksForGroups(string $tenant, string $groupBy, Collection $groups): Collection
-    {
-        if ($groups->isEmpty()) {
-            return collect();
-        }
-
-        $query = $this->activeWebhooks($tenant)->select(['id', 'client_id']);
-
-        return $groupBy === 'clients'
-            ? $query->whereIn('client_id', $groups->pluck('id'))->get()
-            : $query->whereIn('id', $groups->pluck('id'))->get();
+            ->where('status', 1);
     }
 
     private function summaries(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to): Collection
@@ -169,41 +145,35 @@ final class BackgroundProcessStatisticsService
             ->groupBy(static fn (object $row): string => (string) $row->source_webhook_id);
     }
 
-    private function rows(string $groupBy, Collection $groups, Collection $webhooks, Collection $summaries, Collection $activity): array
+    private function row(string $groupBy, Collection $webhooks, Collection $summaries, Collection $activity): array
     {
         $timezone = (string) config('app.timezone', 'Europe/Moscow');
+        $totals = ['total_runs' => 0, 'successful_runs' => 0, 'failed_runs' => 0, 'running_runs' => 0];
+        $withoutRuns = 0;
+        $buckets = [];
 
-        return $groups->map(function (object $group) use ($groupBy, $webhooks, $summaries, $activity, $timezone): array {
-            $groupWebhooks = $groupBy === 'clients'
-                ? $webhooks->where('client_id', $group->id)
-                : $webhooks->where('id', $group->id);
-            $totals = ['total_runs' => 0, 'successful_runs' => 0, 'failed_runs' => 0, 'running_runs' => 0];
-            $withoutRuns = 0;
-            $buckets = [];
-
-            foreach ($groupWebhooks as $webhook) {
-                $summary = $summaries->get((string) $webhook->id);
-                foreach (array_keys($totals) as $key) {
-                    $totals[$key] += (int) ($summary?->{$key} ?? 0);
-                }
-                if ((int) ($summary?->total_runs ?? 0) === 0) {
-                    $withoutRuns++;
-                }
-                foreach ($activity->get((string) $webhook->id, collect()) as $point) {
-                    $start = CarbonImmutable::parse((string) $point->bucket, $timezone)->toIso8601String();
-                    $buckets[$start] = ($buckets[$start] ?? 0) + (int) $point->count;
-                }
+        foreach ($webhooks as $webhook) {
+            $summary = $summaries->get((string) $webhook->id);
+            foreach (array_keys($totals) as $key) {
+                $totals[$key] += (int) ($summary?->{$key} ?? 0);
             }
+            if ((int) ($summary?->total_runs ?? 0) === 0) {
+                $withoutRuns++;
+            }
+            foreach ($activity->get((string) $webhook->id, collect()) as $point) {
+                $start = CarbonImmutable::parse((string) $point->bucket, $timezone)->toIso8601String();
+                $buckets[$start] = ($buckets[$start] ?? 0) + (int) $point->count;
+            }
+        }
 
-            ksort($buckets);
+        ksort($buckets);
 
-            return [
-                'id' => (string) $group->id,
-                'name' => (string) ($group->name ?: ($group->shortname ?: ($groupBy === 'clients' ? 'Клиент' : 'Вебхук').' №'.$group->id)),
-                ...$totals,
-                'without_runs' => $withoutRuns,
-                'activity' => collect($buckets)->map(fn (int $count, string $start): array => ['start' => $start, 'count' => $count])->values()->all(),
-            ];
-        })->values()->all();
+        return [
+            'id' => 'all',
+            'name' => $groupBy === 'clients' ? 'Все клиенты' : 'Все вебхуки',
+            ...$totals,
+            'without_runs' => $withoutRuns,
+            'activity' => collect($buckets)->map(fn (int $count, string $start): array => ['start' => $start, 'count' => $count])->values()->all(),
+        ];
     }
 }

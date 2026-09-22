@@ -38,8 +38,8 @@ interface DisplayPoint extends ActivityPoint {
 }
 
 const groups: { value: GroupBy; label: string }[] = [
-    { value: "clients", label: "По клиентам" },
-    { value: "webhooks", label: "По вебхукам" },
+    { value: "clients", label: "Клиенты" },
+    { value: "webhooks", label: "Вебхуки" },
 ];
 const periods: { value: Period; label: string }[] = [
     { value: "today", label: "Сегодня" },
@@ -53,24 +53,55 @@ const periods: { value: Period; label: string }[] = [
 
 const groupBy = ref<GroupBy>("clients");
 const period = ref<Period>("today");
-const rows = ref<StatisticsRow[]>([]);
+const summary = ref<StatisticsRow | null>(null);
 const loading = ref(true);
 const error = ref("");
-const currentPage = ref(1);
-const lastPage = ref(1);
-const total = ref(0);
 const statisticsFrom = ref("");
 const statisticsTo = ref("");
 const bucketUnit = ref<BucketUnit>("hour");
-const expandedRows = ref<Set<string>>(new Set());
 let loadRequest = 0;
 
-const groupHeading = computed(() =>
-    groupBy.value === "clients" ? "Клиент" : "Вебхук",
-);
 const gridRows = computed(() =>
     bucketUnit.value === "day" ? 7 : bucketUnit.value === "hour" ? 24 : 15,
 );
+const displayActivity = computed(() => {
+    if (!summary.value || !statisticsFrom.value || !statisticsTo.value) {
+        return [];
+    }
+
+    const counts = new Map(
+        summary.value.activity.map((point) => [
+            new Date(point.start).getTime(),
+            point.count,
+        ]),
+    );
+    const max = Math.max(
+        0,
+        ...summary.value.activity.map((point) => point.count),
+    );
+    const result: DisplayPoint[] = [];
+    const step = unitMilliseconds();
+
+    for (
+        let start = new Date(statisticsFrom.value).getTime(),
+            end = new Date(statisticsTo.value).getTime();
+        start < end;
+        start += step
+    ) {
+        const count = counts.get(start) ?? 0;
+        result.push({
+            start: new Date(start).toISOString(),
+            count,
+            level:
+                count === 0 || max === 0
+                    ? 0
+                    : Math.max(1, Math.ceil((count / max) * 4)),
+            title: pointTitle(start, count),
+        });
+    }
+
+    return result;
+});
 
 function unitMilliseconds(): number {
     return bucketUnit.value === "day"
@@ -101,61 +132,28 @@ function pointTitle(start: number, count: number): string {
         "Europe/Moscow",
         withTime,
     );
+
     return `${from} — ${to}: ${count} ${runsWord(count)}`;
 }
 
-function activityFor(row: StatisticsRow): DisplayPoint[] {
-    if (!statisticsFrom.value || !statisticsTo.value) return [];
-    const counts = new Map(
-        row.activity.map((point) => [
-            new Date(point.start).getTime(),
-            point.count,
-        ]),
-    );
-    const max = Math.max(0, ...row.activity.map((point) => point.count));
-    const result: DisplayPoint[] = [];
-    const step = unitMilliseconds();
-    for (
-        let start = new Date(statisticsFrom.value).getTime(),
-            end = new Date(statisticsTo.value).getTime();
-        start < end;
-        start += step
-    ) {
-        const count = counts.get(start) ?? 0;
-        result.push({
-            start: new Date(start).toISOString(),
-            count,
-            level:
-                count === 0 || max === 0
-                    ? 0
-                    : Math.max(1, Math.ceil((count / max) * 4)),
-            title: pointTitle(start, count),
-        });
-    }
-    return result;
-}
-
-async function load(page = 1): Promise<void> {
+async function load(): Promise<void> {
     const request = ++loadRequest;
     loading.value = true;
+
     try {
         const query = new URLSearchParams({
             group_by: groupBy.value,
             period: period.value,
-            page: String(page),
         });
         const response = await http(
             `/web/background_processes?${query.toString()}`,
         );
         if (request !== loadRequest) return;
-        rows.value = response.data ?? [];
+
+        summary.value = response.data?.[0] ?? null;
         statisticsFrom.value = response.statistics_from ?? "";
         statisticsTo.value = response.statistics_to ?? "";
         bucketUnit.value = response.bucket_unit ?? "hour";
-        currentPage.value = Number(response.current_page ?? page);
-        lastPage.value = Math.max(1, Number(response.last_page ?? 1));
-        total.value = Number(response.total ?? rows.value.length);
-        expandedRows.value = new Set();
         error.value = "";
     } catch (exception) {
         if (request !== loadRequest) return;
@@ -171,26 +169,13 @@ async function load(page = 1): Promise<void> {
 function selectGroup(value: GroupBy): void {
     if (groupBy.value === value) return;
     groupBy.value = value;
-    void load(1);
+    void load();
 }
 
 function selectPeriod(value: Period): void {
     if (period.value === value) return;
     period.value = value;
-    void load(1);
-}
-
-function changePage(page: number): void {
-    if (page < 1 || page > lastPage.value || page === currentPage.value) return;
-    void load(page);
-}
-
-function toggleRow(id: string): void {
-    if (!window.matchMedia("(max-width: 900px)").matches) return;
-    const next = new Set(expandedRows.value);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    expandedRows.value = next;
+    void load();
 }
 
 onMounted(() => {
@@ -209,162 +194,129 @@ onMounted(() => {
             <div class="page-heading"><h1>Фоновые процессы</h1></div>
 
             <div class="process-filters">
-                <div
-                    class="segmented-control"
-                    aria-label="Группировка статистики"
-                >
-                    <button
-                        v-for="item in groups"
-                        :key="item.value"
-                        type="button"
-                        :class="{ active: groupBy === item.value }"
-                        :aria-pressed="groupBy === item.value"
-                        @click="selectGroup(item.value)"
+                <div class="process-control-group">
+                    <span class="process-control-label">Группировка</span>
+                    <div
+                        class="segmented-control"
+                        aria-label="Группировка статистики"
                     >
-                        {{ item.label }}
-                    </button>
+                        <button
+                            v-for="item in groups"
+                            :key="item.value"
+                            type="button"
+                            :class="{ active: groupBy === item.value }"
+                            :aria-pressed="groupBy === item.value"
+                            @click="selectGroup(item.value)"
+                        >
+                            {{ item.label }}
+                        </button>
+                    </div>
+                    <select
+                        v-model="groupBy"
+                        class="mobile-process-select"
+                        aria-label="Группировка статистики"
+                        @change="load()"
+                    >
+                        <option
+                            v-for="item in groups"
+                            :key="item.value"
+                            :value="item.value"
+                        >
+                            {{ item.label }}
+                        </option>
+                    </select>
                 </div>
-                <div
-                    class="segmented-control period-control"
-                    aria-label="Период статистики"
-                >
-                    <button
-                        v-for="item in periods"
-                        :key="item.value"
-                        type="button"
-                        :class="{ active: period === item.value }"
-                        :aria-pressed="period === item.value"
-                        @click="selectPeriod(item.value)"
+
+                <div class="process-control-group">
+                    <span class="process-control-label">Период</span>
+                    <div
+                        class="segmented-control"
+                        aria-label="Период статистики"
                     >
-                        {{ item.label }}
-                    </button>
+                        <button
+                            v-for="item in periods"
+                            :key="item.value"
+                            type="button"
+                            :class="{ active: period === item.value }"
+                            :aria-pressed="period === item.value"
+                            @click="selectPeriod(item.value)"
+                        >
+                            {{ item.label }}
+                        </button>
+                    </div>
+                    <select
+                        v-model="period"
+                        class="mobile-process-select"
+                        aria-label="Период статистики"
+                        @change="load()"
+                    >
+                        <option
+                            v-for="item in periods"
+                            :key="item.value"
+                            :value="item.value"
+                        >
+                            {{ item.label }}
+                        </option>
+                    </select>
                 </div>
             </div>
 
             <p v-if="error" class="notice error" role="alert">{{ error }}</p>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th scope="col" class="id-column">#</th>
-                            <th scope="col">{{ groupHeading }}</th>
-                            <th scope="col">Всего запусков</th>
-                            <th scope="col">Успешных</th>
-                            <th scope="col">Неуспешных</th>
-                            <th scope="col">Выполняются</th>
-                            <th scope="col">Без запусков</th>
-                            <th scope="col" class="statistics-heading">
-                                Статистика
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-if="loading">
-                            <td colspan="8" class="empty-state">
-                                Загрузка статистики…
-                            </td>
-                        </tr>
-                        <tr v-else-if="!rows.length">
-                            <td colspan="8" class="empty-state">
-                                Активные фоновые процессы не найдены
-                            </td>
-                        </tr>
-                        <tr
-                            v-for="row in rows"
-                            v-else
-                            :key="row.id"
-                            :class="{
-                                'mobile-card-expanded': expandedRows.has(
-                                    row.id,
-                                ),
-                            }"
-                            @click="toggleRow(row.id)"
-                        >
-                            <td class="id-column">
-                                <nobr>{{ row.id }}</nobr>
-                            </td>
-                            <td class="process-name" :data-label="groupHeading">
-                                <button
-                                    type="button"
-                                    @click.stop="toggleRow(row.id)"
-                                >
-                                    {{ row.name }}
-                                </button>
-                            </td>
-                            <td class="metric-cell" data-label="Всего запусков">
-                                {{ row.total_runs }}
-                            </td>
-                            <td
-                                class="metric-cell success"
-                                data-label="Успешных"
-                            >
-                                {{ row.successful_runs }}
-                            </td>
-                            <td
-                                class="metric-cell failed"
-                                data-label="Неуспешных"
-                            >
-                                {{ row.failed_runs }}
-                            </td>
-                            <td
-                                class="metric-cell running"
-                                data-label="Выполняются"
-                            >
-                                {{ row.running_runs }}
-                            </td>
-                            <td
-                                class="metric-cell muted-count"
-                                data-label="Без запусков"
-                            >
-                                {{ row.without_runs }}
-                            </td>
-                            <td class="statistics-cell" data-label="Статистика">
-                                <div
-                                    class="activity-scroll"
-                                    tabindex="0"
-                                    aria-label="Активность за три периода"
-                                >
-                                    <div
-                                        class="activity-grid"
-                                        :style="{
-                                            gridTemplateRows: `repeat(${gridRows}, 10px)`,
-                                        }"
-                                    >
-                                        <span
-                                            v-for="point in activityFor(row)"
-                                            :key="point.start"
-                                            class="activity-point"
-                                            :class="`level-${point.level}`"
-                                            :title="point.title"
-                                            :aria-label="point.title"
-                                        />
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div v-if="loading" class="process-state" role="status">
+                Загрузка статистики…
             </div>
-            <footer class="list-footer">
-                <span>Найдено: {{ total }}</span>
-                <div>
-                    <button
-                        :disabled="currentPage === 1 || loading"
-                        aria-label="Предыдущая страница"
-                        @click="changePage(currentPage - 1)"
-                    >
-                        ‹
-                    </button>
-                    <span>{{ currentPage }} / {{ lastPage }}</span>
-                    <button
-                        :disabled="currentPage === lastPage || loading"
-                        aria-label="Следующая страница"
-                        @click="changePage(currentPage + 1)"
-                    >
-                        ›
-                    </button>
+            <div v-else-if="summary" class="process-summary">
+                <div class="summary-title">{{ summary.name }}</div>
+                <div class="summary-metrics">
+                    <article class="summary-metric success">
+                        <span>Успешно</span>
+                        <strong>{{ summary.successful_runs }}</strong>
+                    </article>
+                    <article class="summary-metric failed">
+                        <span>Неуспешно</span>
+                        <strong>{{ summary.failed_runs }}</strong>
+                    </article>
+                    <article class="summary-metric running">
+                        <span>Выполняются</span>
+                        <strong>{{ summary.running_runs }}</strong>
+                    </article>
+                    <article class="summary-metric without-runs">
+                        <span>Без запуска</span>
+                        <strong>{{ summary.without_runs }}</strong>
+                    </article>
                 </div>
-            </footer>
+
+                <section class="activity-card" aria-labelledby="activity-title">
+                    <div class="activity-heading">
+                        <h2 id="activity-title">Календарь активности</h2>
+                        <span>Запусков всего: {{ summary.total_runs }}</span>
+                    </div>
+                    <div
+                        class="activity-scroll"
+                        tabindex="0"
+                        aria-label="Активность за три периода"
+                    >
+                        <div
+                            class="activity-grid"
+                            :style="{
+                                gridTemplateRows: `repeat(${gridRows}, 10px)`,
+                            }"
+                        >
+                            <span
+                                v-for="point in displayActivity"
+                                :key="point.start"
+                                class="activity-point"
+                                :class="`level-${point.level}`"
+                                :title="point.title"
+                                :aria-label="point.title"
+                            />
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <div v-else class="process-state">
+                Данные фоновых процессов недоступны
+            </div>
         </section>
     </div>
 </template>
@@ -377,7 +329,17 @@ onMounted(() => {
     display: flex;
     flex-wrap: wrap;
     gap: 10px 18px;
-    padding: 0 0 16px;
+    padding-bottom: 16px;
+}
+.process-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.process-control-label {
+    color: #66756f;
+    font-size: 11px;
+    font-weight: 600;
 }
 .segmented-control {
     display: inline-flex;
@@ -403,41 +365,88 @@ onMounted(() => {
     background: #1e892f;
     box-shadow: 0 1px 3px rgba(25, 91, 43, 0.2);
 }
-.process-name button {
-    max-width: 260px;
-    overflow: hidden;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #18251f;
-    font-weight: 600;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.mobile-process-select {
+    display: none;
 }
-.metric-cell {
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    font-weight: 650;
+.process-state,
+.process-summary {
+    border: 1px solid #dce7e2;
+    border-radius: 12px;
+    background: #fff;
 }
-.metric-cell.success {
-    color: #1e892f;
-}
-.metric-cell.failed {
-    color: #b42318;
-}
-.metric-cell.running {
-    color: #a15c00;
-}
-.metric-cell.muted-count {
+.process-state {
+    display: grid;
+    min-height: 180px;
+    place-items: center;
     color: #66756f;
 }
-.statistics-heading {
-    min-width: 210px;
+.process-summary {
+    overflow: hidden;
 }
-.statistics-cell {
-    width: 36%;
-    min-width: 210px;
+.summary-title {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e6eeea;
+    color: #18251f;
+    font-size: 15px;
+    font-weight: 700;
+}
+.summary-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px;
+}
+.summary-metric {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid #dce7e2;
+    border-radius: 10px;
+    background: #f8faf9;
+}
+.summary-metric span {
+    color: #66756f;
+    font-size: 12px;
+    font-weight: 600;
+}
+.summary-metric strong {
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+}
+.summary-metric.success strong {
+    color: #1e892f;
+}
+.summary-metric.failed strong {
+    color: #b42318;
+}
+.summary-metric.running strong {
+    color: #a15c00;
+}
+.summary-metric.without-runs strong {
+    color: #66756f;
+}
+.activity-card {
+    padding: 16px;
+    border-top: 1px solid #e6eeea;
+}
+.activity-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.activity-heading h2 {
+    margin: 0;
+    color: #18251f;
+    font-size: 14px;
+}
+.activity-heading span {
+    color: #66756f;
+    font-size: 11px;
 }
 .activity-scroll {
     max-width: 100%;
@@ -479,111 +488,67 @@ onMounted(() => {
 
 @media (max-width: 900px) {
     .process-filters {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .process-control-group {
+        min-width: 0;
+        gap: 3px;
+    }
+    .process-control-label {
+        font-size: 9px;
     }
     .segmented-control {
-        width: max-content;
-        flex-wrap: nowrap;
-    }
-    .period-control {
-        margin-top: 8px;
-    }
-    .background-processes-page .table-scroll {
-        overflow-x: visible;
-    }
-    .background-processes-page table,
-    .background-processes-page tbody {
-        display: block;
-        width: 100%;
-    }
-    .background-processes-page thead {
         display: none;
     }
-    .background-processes-page tbody tr {
-        display: grid;
-        grid-template-columns: 42px minmax(0, 1fr);
-        margin-bottom: 8px;
-        overflow: hidden;
-        border: 1px solid #e0e7e4;
-        border-radius: 9px;
-        background: #fff;
-    }
-    .background-processes-page tbody tr > td {
-        display: none;
-        width: auto;
-        border: 0;
-    }
-    .background-processes-page tbody tr > td.empty-state {
+    .mobile-process-select {
         display: block;
-        grid-column: 1 / -1;
-    }
-    .background-processes-page tbody tr > .id-column,
-    .background-processes-page tbody tr > .process-name {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        padding: 11px 8px;
-    }
-    .background-processes-page tbody tr > .process-name button {
         width: 100%;
-        max-width: none;
-    }
-    .background-processes-page tbody tr.mobile-card-expanded {
-        border-color: #95c59d;
-    }
-    .background-processes-page tbody tr.mobile-card-expanded > td {
-        display: flex;
-        grid-column: 1 / -1;
-        align-items: center;
-        justify-content: space-between;
         min-width: 0;
-        padding: 10px 12px;
-        border-top: 1px solid #d8eadc;
-        background: #edf8f0;
-    }
-    .background-processes-page tbody tr.mobile-card-expanded > .id-column {
-        grid-column: 1;
-        border-top: 0;
-        background: #fff;
-    }
-    .background-processes-page tbody tr.mobile-card-expanded > .process-name {
-        grid-column: 2;
-        border-top: 0;
-        background: #fff;
-    }
-    .background-processes-page
-        tbody
-        tr.mobile-card-expanded
-        > td[data-label]::before {
-        flex: 0 0 132px;
-        color: #397047;
+        height: 34px;
+        padding: 5px 28px 5px 9px;
+        border: 1px solid #dbe3e0;
+        border-radius: 8px;
+        background-color: #f4f7f6;
+        color: #18251f;
+        font: inherit;
         font-size: 12px;
-        font-weight: 500;
-        content: attr(data-label);
     }
-    .background-processes-page
-        tbody
-        tr.mobile-card-expanded
-        > .process-name::before {
-        display: none;
+    .summary-title {
+        padding: 10px 12px;
+        font-size: 13px;
     }
-    .background-processes-page
-        tbody
-        tr.mobile-card-expanded
-        > .statistics-cell {
-        display: block;
+    .summary-metrics {
+        gap: 4px;
+        padding: 8px;
     }
-    .background-processes-page
-        tbody
-        tr.mobile-card-expanded
-        > .statistics-cell::before {
-        display: block;
+    .summary-metric {
+        min-height: 62px;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        padding: 7px 2px;
+        text-align: center;
+    }
+    .summary-metric span {
+        font-size: 8px;
+        line-height: 1.15;
+    }
+    .summary-metric strong {
+        font-size: 18px;
+    }
+    .activity-card {
+        padding: 12px 10px;
+    }
+    .activity-heading {
         margin-bottom: 9px;
     }
-    .activity-scroll {
-        max-width: 100%;
+    .activity-heading h2 {
+        font-size: 12px;
+    }
+    .activity-heading span {
+        font-size: 9px;
     }
 }
 </style>
