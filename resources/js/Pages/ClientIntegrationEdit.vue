@@ -88,6 +88,7 @@ const form = ref({
 });
 const nodes = ref<RuleNode[]>([]);
 const selectedId = ref<string | null>(null);
+const mobileInspectorOpen = ref(false);
 const advanced = ref(false);
 const baseline = ref("");
 const dragged = ref<string | null>(null);
@@ -374,6 +375,11 @@ function addNode(type: RuleType) {
     });
     selectedId.value = type;
 }
+function selectNode(id: string) {
+    selectedId.value = id;
+    if (window.matchMedia("(max-width: 600px)").matches)
+        mobileInspectorOpen.value = true;
+}
 function removeNode(node: RuleNode) {
     nodes.value = nodes.value.filter((item) => item.id !== node.id);
     if (selectedId.value === node.id)
@@ -595,7 +601,7 @@ onUnmounted(() => {
                             <div
                                 class="rule-node start-node"
                                 :class="{ selected: selectedId === 'access' }"
-                                @click="selectedId = 'access'"
+                                @click="selectNode('access')"
                             >
                                 <div class="node-title">
                                     <img
@@ -626,7 +632,7 @@ onUnmounted(() => {
                                     @dragover.prevent.stop
                                     @drop.prevent.stop="dropAt(index, $event)"
                                     @pointerup.stop="pointerDrop(index)"
-                                    @click="selectedId = node.id"
+                                    @click="selectNode(node.id)"
                                 >
                                     <div class="node-title">
                                         <span
@@ -691,8 +697,17 @@ onUnmounted(() => {
                             </p>
                         </div>
                     </div>
-                    <aside class="builder-inspector">
+                    <aside
+                        class="builder-inspector"
+                        :class="{ 'mobile-open': mobileInspectorOpen }"
+                    >
                         <div class="inspector-head">
+                            <button
+                                type="button"
+                                class="mobile-inspector-back"
+                                aria-label="Вернуться к схеме интеграции"
+                                @click="mobileInspectorOpen = false"
+                            >←</button>
                             <h2>Конфигурация</h2>
                             <button
                                 type="button"
@@ -1204,6 +1219,9 @@ onUnmounted(() => {
     align-items: center;
     color: #2274a5;
 }
+.mobile-inspector-back {
+    display: none;
+}
 .inspector-head h2 {
     font-size: 18px;
     font-weight: 500;
@@ -1380,14 +1398,67 @@ onUnmounted(() => {
     }
 }
 @media (max-width: 600px) {
+    .integration-builder-page {
+        flex: none;
+        height: auto;
+        overflow: visible;
+    }
+    .integration-builder-page .users-list {
+        height: auto;
+        overflow: visible;
+    }
     .builder-area {
         display: block;
+        min-height: 0;
+        overflow: visible;
     }
     .builder-canvas {
+        min-height: 0;
         padding: 12px;
     }
+    .node-chain {
+        min-height: 0;
+        padding: 20px 8px 28px;
+    }
     .builder-inspector {
+        display: none;
+    }
+    .builder-inspector.mobile-open {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: flex;
+        max-height: 100dvh;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
         padding: 12px;
+        border: 0;
+        background: #e1f0f3;
+    }
+    .builder-inspector.mobile-open .inspector-head {
+        position: sticky;
+        top: -12px;
+        z-index: 2;
+        margin: -12px -12px 0;
+        padding: 14px 12px;
+        border-bottom: 1px solid #bcdfe7;
+        background: #e1f0f3;
+    }
+    .mobile-inspector-back {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #bcdfe7;
+        border-radius: 6px;
+        background: #fff;
+        color: #2274a5;
+        font-size: 20px;
+    }
+    .inspector-head h2 {
+        flex: 1 1 auto;
+        margin-left: 8px;
     }
     .palette-grid {
         grid-template-columns: 1fr 1fr;
