@@ -283,13 +283,13 @@ return [
                 'balanceCooldown' => 5,
             ],
             'imports_wildberries' => [
-                'maxProcesses' => 1,
+                'maxProcesses' => 5,
             ],
             'imports_ozon' => [
-                'maxProcesses' => 1,
+                'maxProcesses' => 5,
             ],
             'imports_yandex_market' => [
-                'maxProcesses' => 1,
+                'maxProcesses' => 5,
             ],
         ],
 

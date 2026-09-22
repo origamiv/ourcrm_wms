@@ -20,6 +20,8 @@ final class OzonCatalogRule
             isset($params['ozon_last_id']) ? (string) $params['ozon_last_id'] : null,
             (int) ($params['initial_processed'] ?? 0),
             $params['checkpoint'] ?? null,
+            $params['cursor'] ?? null,
+            (bool) ($params['single_page'] ?? false),
         );
     }
 }

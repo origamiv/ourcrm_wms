@@ -6,6 +6,7 @@ namespace App\Console;
 
 use App\Jobs\SyncMarketplaceCatalogJob;
 use App\Models\IntegrationWebhook;
+use App\Services\MarketplaceCatalogDispatchService;
 use Illuminate\Console\Command;
 
 final class SyncMarketplaceCatalogCommand extends Command
@@ -18,6 +19,11 @@ final class SyncMarketplaceCatalogCommand extends Command
     {
         $webhook = IntegrationWebhook::query()->findOrFail((int) $this->argument('webhook_id'));
         $tenant = (string) ($this->option('tenant') ?: $webhook->tenant_id);
+        if ($tenant !== (string) $webhook->tenant_id) {
+            $this->error('Интеграция не принадлежит указанной организации.');
+
+            return self::INVALID;
+        }
         if ($this->option('sync')) {
             app(SyncMarketplaceCatalogJob::class, ['webhookId' => $webhook->id, 'tenant' => $tenant])->handle();
         } else {
@@ -29,9 +35,12 @@ final class SyncMarketplaceCatalogCommand extends Command
                 str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
                 default => null,
             };
-            SyncMarketplaceCatalogJob::dispatch($webhook->id, $tenant)
-                ->onConnection('redis')
-                ->onQueue(SyncMarketplaceCatalogJob::queueForMarketplace((string) $marketplace));
+            if ($marketplace === null) {
+                $this->error('Сервис интеграции не является поддерживаемым маркетплейсом.');
+
+                return self::INVALID;
+            }
+            app(MarketplaceCatalogDispatchService::class)->dispatch($webhook, $marketplace);
         }
         $this->info($this->option('sync') ? 'Синхронизация выполнена.' : 'Синхронизация поставлена в очередь.');
 

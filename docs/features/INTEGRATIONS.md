@@ -47,7 +47,7 @@ POST/PUT принимают поля соответствующей формы, 
 Для импорта каталога Яндекс Маркета создайте аккаунт с Api-Key в поле `token`
 и JSON-параметром `src.credentials.business_id`, затем создайте вебхук с
 `params.account_id` и правилом `yandex_market_catalog`. Запуск выполняется
-командой `php artisan integration:sync-catalogs TENANT_ID`. Результаты и
+командой `php artisan integration:sync-catalogs --tenant=TENANT_ID` через очередь. Результаты и
 сопоставления отображаются в разделе `/fulfillment/goods_marketplace`.
 
 При повторном импорте интеграций из TSWMS Api-Key из `key1` используется для

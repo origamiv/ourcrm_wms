@@ -24,7 +24,7 @@ use Throwable;
 
 final class MarketplaceCatalogSyncService
 {
-    public function sync(IntegrationWebhook $webhook, IntegrationData $data, string $marketplace, ?callable $progress = null, ?string $ozonLastId = null, int $initialProcessed = 0, ?callable $checkpoint = null): IntegrationData
+    public function sync(IntegrationWebhook $webhook, IntegrationData $data, string $marketplace, ?callable $progress = null, ?string $ozonLastId = null, int $initialProcessed = 0, ?callable $checkpoint = null, mixed $cursor = null, bool $singlePage = false): IntegrationData
     {
         $tenant = (string) $webhook->tenant_id;
         $accountId = (int) ($webhook->params['account_id'] ?? 0);
@@ -47,20 +47,20 @@ final class MarketplaceCatalogSyncService
             foreach ($items as $item) {
                 $this->saveItem($webhook, $tenant, $marketplace, $item, $autoCreate, $maps);
                 $processed++;
-                if ($progress) {
-                    $progress($total, $processed);
-                }
+            }
+            if ($progress) {
+                $progress($total, $processed);
             }
         };
 
-        match ($marketplace) {
-            'wildberries' => $this->syncWildberries($account, $consume),
-            'ozon' => $this->syncOzon($account, $consume, $ozonLastId, $checkpoint),
-            'yandex_market' => $this->syncYandexMarket($account, $consume),
+        $nextCursor = match ($marketplace) {
+            'wildberries' => $this->syncWildberries($account, $consume, $cursor, $singlePage),
+            'ozon' => $this->syncOzon($account, $consume, $cursor ?? $ozonLastId, $checkpoint, $singlePage),
+            'yandex_market' => $this->syncYandexMarket($account, $consume, $cursor, $singlePage),
             default => throw new InvalidArgumentException('Неподдерживаемый маркетплейс: '.$marketplace),
         };
 
-        $data->forceFill(['data' => ['marketplace' => $marketplace, 'processed' => $processed, 'auto_create' => $autoCreate], 'status_processing' => 1, 'status' => 1])->save();
+        $data->forceFill(['data' => ['marketplace' => $marketplace, 'processed' => $processed, 'auto_create' => $autoCreate, 'next_cursor' => $nextCursor], 'status_processing' => 1, 'status' => 1])->save();
 
         return $data;
     }
@@ -68,7 +68,7 @@ final class MarketplaceCatalogSyncService
     private function saveItem(IntegrationWebhook $webhook, string $tenant, string $marketplace, array $item, bool $autoCreate, array &$maps): void
     {
         DB::transaction(function () use ($webhook, $tenant, $marketplace, $item, $autoCreate, &$maps): void {
-            $row = GoodMarketplace::query()->where('tenant_id', $tenant)->where('webhook_id', $webhook->id)->where('external_id', $item['external_id'])->lockForUpdate()->first();
+            $row = GoodMarketplace::withTrashed()->where('tenant_id', $tenant)->where('webhook_id', $webhook->id)->where('external_id', $item['external_id'])->lockForUpdate()->first();
             $wasExisting = $row !== null;
             if (! $row) {
                 $row = new GoodMarketplace;
@@ -96,10 +96,10 @@ final class MarketplaceCatalogSyncService
         }, 3);
     }
 
-    private function syncWildberries(ClientAccount $account, callable $consume): void
+    private function syncWildberries(ClientAccount $account, callable $consume, ?array $cursor = null, bool $singlePage = false): ?array
     {
-        $cursor = null;
         do {
+            $previousCursor = $cursor;
             $payload = ['settings' => ['sort' => ['ascending' => true], 'cursor' => ['limit' => 100], 'filter' => ['withPhoto' => -1]]];
             if ($cursor) {
                 $payload['settings']['cursor'] = [...$cursor, 'limit' => 100];
@@ -117,45 +117,70 @@ final class MarketplaceCatalogSyncService
             }
             $consume($items);
             $cursor = $response['cursor'] ?? null;
-        } while ($cursor && ! empty($cursor['updatedAt']) && ! empty($cursor['nmID']));
+            if (empty($response['cards']) || (int) ($cursor['total'] ?? count($response['cards'])) < 100 || empty($cursor['updatedAt']) || empty($cursor['nmID'])) {
+                return null;
+            }
+            $cursor = ['updatedAt' => $cursor['updatedAt'], 'nmID' => $cursor['nmID']];
+            if ($cursor === $previousCursor) {
+                throw new RuntimeException('Wildberries вернул повторный курсор каталога.');
+            }
+        } while (! $singlePage);
+
+        return $cursor;
     }
 
-    private function syncOzon(ClientAccount $account, callable $consume, ?string $lastId = null, ?callable $checkpoint = null): void
+    private function syncOzon(ClientAccount $account, callable $consume, ?string $lastId = null, ?callable $checkpoint = null, bool $singlePage = false): ?string
     {
         do {
-            $payload = ['filter' => ['visibility' => 'ALL'], 'limit' => 500];
+            $previousCursor = $lastId;
+            $payload = ['filter' => ['visibility' => 'ALL'], 'limit' => 100];
             if ($lastId) {
                 $payload['last_id'] = $lastId;
             }
             try {
                 $response = $this->request($account, true)->post('https://api-seller.ozon.ru/v4/product/info/attributes', $payload)->throw()->json();
             } catch (RequestException $exception) {
-                if ($lastId !== null && $exception->response->status() === 404) {
+                if ($lastId !== null && $exception->response->status() === 404
+                    && (int) $exception->response->json('code') === 5
+                    && $exception->response->json('message') === 'item not found') {
                     if ($checkpoint) {
                         $checkpoint(null);
                     }
-                    break;
+
+                    return null;
                 }
 
                 throw $exception;
             }
+            $sourceItems = $response['result'] ?? $response['items'] ?? null;
+            if (! is_array($sourceItems)) {
+                throw new RuntimeException('Ozon вернул некорректную страницу каталога.');
+            }
             $pageItems = $this->normalizeOzonPage((array) $response);
             $consume($pageItems);
-            $lastId = $response['last_id'] ?? null;
+            $lastId = trim((string) ($response['last_id'] ?? '')) ?: null;
+            if (count($sourceItems) < $payload['limit']) {
+                $lastId = null;
+            }
+            if ($lastId !== null && $lastId === $previousCursor) {
+                throw new RuntimeException('Ozon вернул повторный курсор каталога.');
+            }
             if ($checkpoint) {
                 $checkpoint($lastId);
             }
-        } while ($lastId && $pageItems !== []);
+        } while ($lastId && ! $singlePage);
+
+        return $lastId;
     }
 
-    private function syncYandexMarket(ClientAccount $account, callable $consume): void
+    private function syncYandexMarket(ClientAccount $account, callable $consume, ?string $cursor = null, bool $singlePage = false): ?string
     {
         $credentials = (array) ($account->src['credentials'] ?? []);
         $businessId = trim((string) ($credentials['business_id'] ?? ''));
         abort_if($businessId === '' || trim((string) $account->token) === '', 422, 'Для аккаунта Яндекс Маркета не заполнены Api-Key и business_id.');
 
-        $cursor = null;
         do {
+            $previousCursor = $cursor;
             $url = 'https://api.partner.market.yandex.ru/businesses/'.rawurlencode($businessId).'/offer-mappings?limit=200';
             if ($cursor !== null) {
                 $url .= '&page_token='.rawurlencode($cursor);
@@ -169,7 +194,12 @@ final class MarketplaceCatalogSyncService
 
             $consume($this->normalizeYandexPage((array) $response));
             $cursor = trim((string) ($response['result']['paging']['nextPageToken'] ?? '')) ?: null;
-        } while ($cursor !== null);
+            if ($cursor !== null && $cursor === $previousCursor) {
+                throw new RuntimeException('Яндекс Маркет вернул повторный курсор каталога.');
+            }
+        } while ($cursor !== null && ! $singlePage);
+
+        return $cursor;
     }
 
     private function normalizeYandexPage(array $response): array
@@ -315,7 +345,7 @@ final class MarketplaceCatalogSyncService
     private function goodMaps(string $tenant): array
     {
         $maps = ['article' => [], 'barcode' => []];
-        foreach (Good::query()->where('tenant_id', $tenant)->get(['id', 'barcodes', 'articul']) as $good) {
+        foreach (Good::query()->visibleTo($tenant)->where('is_category', '!=', 1)->select(['id', 'barcodes', 'articul'])->lazyById(1000) as $good) {
             foreach ((array) $good->articul as $value) {
                 $key = mb_strtolower(trim((string) $value));
                 if ($key !== '') {

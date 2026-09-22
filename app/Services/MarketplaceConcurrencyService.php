@@ -13,14 +13,15 @@ final class MarketplaceConcurrencyService
 {
     private const SLOT_COUNT = 10;
 
-    private const LOCK_TTL_SECONDS = 21600;
+    private const LOCK_TTL_SECONDS = 1260;
 
-    private const LOCK_WAIT_SECONDS = 60;
+    private const LOCK_WAIT_SECONDS = 5;
 
     /** @return array{account: Lock, slot: Lock} */
-    public function acquire(string $marketplace, string $tenant, int $accountId): array
+    public function acquire(string $marketplace, string $tenant, int $accountId, bool $singlePage = false): array
     {
-        $account = Cache::store('redis')->lock($this->accountKey($tenant, $accountId), self::LOCK_TTL_SECONDS);
+        $ttl = $singlePage ? self::LOCK_TTL_SECONDS : 21600;
+        $account = Cache::store('redis')->lock($this->accountKey($tenant, $accountId), $ttl);
         $accountAcquired = false;
         try {
             $account->block(self::LOCK_WAIT_SECONDS);
@@ -28,7 +29,7 @@ final class MarketplaceConcurrencyService
             $deadline = time() + self::LOCK_WAIT_SECONDS;
             do {
                 for ($slot = 0; $slot < self::SLOT_COUNT; $slot++) {
-                    $slotLock = Cache::store('redis')->lock($this->slotKey($marketplace, $slot), self::LOCK_TTL_SECONDS);
+                    $slotLock = Cache::store('redis')->lock($this->slotKey($marketplace, $slot), $ttl);
                     if ($slotLock->get()) {
                         return ['account' => $account, 'slot' => $slotLock];
                     }

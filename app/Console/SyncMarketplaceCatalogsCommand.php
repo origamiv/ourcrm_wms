@@ -11,6 +11,7 @@ use App\Models\ImportRunStage;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
 use App\Models\TenantSetting;
+use App\Services\MarketplaceCatalogDispatchService;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
@@ -36,9 +37,10 @@ final class SyncMarketplaceCatalogsCommand extends Command
                             {--marketplace= : Фильтр площадки: wildberries, ozon или yandex_market}
                             {--limit= : Максимальное количество вебхуков; по умолчанию 10 для Wildberries и 100 для остальных площадок}
                             {--tenant= : Ограничить запуск одной организацией}
+                            {--sync : Выполнить последовательно без очереди}
                             {--webhook-id= : Обработать один вебхук в отдельном процессе}';
 
-    protected $description = 'Синхронно запустить каталоги маркетплейсов для организаций с включённой фичей';
+    protected $description = 'Поставить каталоги маркетплейсов в очередь для организаций с включённой фичей';
 
     public function handle(): int
     {
@@ -59,7 +61,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
             return self::INVALID;
         }
 
-        if ($this->option('webhook-id') === null) {
+        if ($this->option('sync') && $this->option('webhook-id') === null) {
             return $this->runIsolatedBatch((string) ($marketplaceFilter ?: ''), $tenantFilter, $limit);
         }
 
@@ -103,9 +105,9 @@ final class SyncMarketplaceCatalogsCommand extends Command
             ->orderBy('id')
             ->get();
 
-        $counters = ['completed' => 0, 'failed' => 0, 'blocked' => 0, 'skipped' => 0];
+        $counters = ['queued' => 0, 'completed' => 0, 'failed' => 0, 'blocked' => 0, 'skipped' => 0];
         foreach ($webhooks as $webhook) {
-            if ($limit <= $counters['completed'] + $counters['failed'] + $counters['blocked']) {
+            if ($limit <= $counters['queued'] + $counters['completed'] + $counters['failed'] + $counters['blocked']) {
                 break;
             }
 
@@ -136,6 +138,19 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 ->exists();
             if ($activeImport) {
                 $counters['skipped']++;
+
+                continue;
+            }
+
+            if (! $this->option('sync')) {
+                if (! $this->credentialsConfigured($account, $marketplace)) {
+                    $this->components->warn('Аккаунт #'.$account->id.': не заполнены обязательные реквизиты.');
+                    $counters['skipped']++;
+
+                    continue;
+                }
+                app(MarketplaceCatalogDispatchService::class)->dispatch($webhook, $marketplace);
+                $counters['queued']++;
 
                 continue;
             }
@@ -184,7 +199,8 @@ final class SyncMarketplaceCatalogsCommand extends Command
         }
 
         $this->components->info(sprintf(
-            'Завершено: %d; ошибки: %d; заблокировано аккаунтов: %d; пропущено: %d.',
+            'В очереди: %d; завершено: %d; ошибки: %d; заблокировано аккаунтов: %d; пропущено: %d.',
+            $counters['queued'],
             $counters['completed'],
             $counters['failed'],
             $counters['blocked'],
@@ -253,6 +269,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
                 PHP_BINARY,
                 base_path('artisan'),
                 'integration:sync-catalogs',
+                '--sync',
                 '--marketplace='.$marketplace,
                 '--limit=1',
                 '--tenant='.(string) $webhook->tenant_id,
