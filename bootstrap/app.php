@@ -16,15 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([__DIR__.'/../app/Console'])
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('scheduler:tick')->everyMinute()->withoutOverlapping();
-        $schedule->command('integration:sync-catalogs --marketplace=wildberries')
-            ->everyThirtyMinutes()
-            ->onOneServer()
-            ->withoutOverlapping(30);
         $schedule->command('integration:sync-catalogs --marketplace=ozon')
-            ->everyThirtyMinutes()
-            ->onOneServer()
-            ->withoutOverlapping(30);
-        $schedule->command('integration:sync-catalogs --marketplace=yandex_market')
             ->everyThirtyMinutes()
             ->onOneServer()
             ->withoutOverlapping(30);
