@@ -15,6 +15,8 @@ interface ClientRow extends EntityRow {
     status: number | null;
     deleted_at: string | null;
 }
+type Relation = "documents" | "accounts" | "integrations" | "companies" | "individuals";
+type RelationFlags = Record<Relation, boolean>;
 const page = usePage<any>();
 const columnFields = [
     { key: "name", label: "Название" },
@@ -26,6 +28,9 @@ const store = createEntitySync<ClientRow>(
     "clients",
 );
 const { rows, ready, syncing, online, error, warning } = store;
+const relations = ref<Record<string, RelationFlags>>({});
+const relationError = ref("");
+let relationRequest = 0;
 const query = ref(""),
     shortQuery = ref(""),
     statusFilter = ref("all"),
@@ -85,6 +90,26 @@ const pages = computed(() =>
 const visible = computed(() =>
     filtered.value.slice((currentPage.value - 1) * 25, currentPage.value * 25),
 );
+async function refreshRelations(): Promise<void> {
+    const ids = visible.value.map((row) => String(row.id));
+    const request = ++relationRequest;
+    if (!ids.length) return;
+    const params = new URLSearchParams();
+    ids.forEach((id) => params.append("ids[]", id));
+    relationError.value = "";
+    try {
+        const response = await http(`/web/clients/relations?${params}`);
+        if (request === relationRequest) relations.value = { ...relations.value, ...response.data };
+    } catch {
+        if (request === relationRequest) relationError.value = "Не удалось проверить связанные записи клиентов.";
+    }
+}
+function relationDisabled(row: ClientRow, relation: Relation): boolean {
+    if (saving.value || !!row.deleted_at) return true;
+    const flags = relations.value[String(row.id)];
+    return flags ? !flags[relation] : !relationError.value;
+}
+watch(visible, () => { void refreshRelations(); }, { immediate: true });
 watch([query, shortQuery, statusFilter], () => (currentPage.value = 1));
 watch(
     pages,
@@ -197,8 +222,14 @@ async function confirmDelete() {
     deleting.value = null;
     await save(true);
 }
-onMounted(store.start);
-onUnmounted(store.stop);
+onMounted(() => {
+    void store.start();
+    window.addEventListener("focus", refreshRelations);
+});
+onUnmounted(() => {
+    store.stop();
+    window.removeEventListener("focus", refreshRelations);
+});
 
 useCardRoute<ClientRow>({
     base: "/clients/clients",
@@ -257,6 +288,7 @@ useCardRoute<ClientRow>({
             <p v-if="error || warning" class="notice" role="alert">
                 {{ error || warning }}
             </p>
+            <p v-if="relationError" class="notice" role="alert">{{ relationError }}</p>
             <div class="table-scroll">
                 <table>
                     <thead>
@@ -337,7 +369,7 @@ useCardRoute<ClientRow>({
                                     <button
                                         :aria-label="`Документы: ${displayName(row)}`"
                                         title="Документы"
-                                        :disabled="saving || !!row.deleted_at"
+                                        :disabled="relationDisabled(row, 'documents')"
                                         @click="openDocuments(row)"
                                     >
                                         <img src="/design/crm/documents.svg" alt="" />
@@ -345,7 +377,7 @@ useCardRoute<ClientRow>({
                                     <button
                                         :aria-label="`Доступы: ${displayName(row)}`"
                                         title="Доступы"
-                                        :disabled="saving || !!row.deleted_at"
+                                        :disabled="relationDisabled(row, 'accounts')"
                                         @click="openAccounts(row)"
                                     >
                                         <img src="/design/crm/key.svg" alt="" />
@@ -353,7 +385,7 @@ useCardRoute<ClientRow>({
                                     <button
                                         :aria-label="`Интеграции: ${displayName(row)}`"
                                         title="Интеграции"
-                                        :disabled="saving || !!row.deleted_at"
+                                        :disabled="relationDisabled(row, 'integrations')"
                                         @click="openIntegrations(row)"
                                     >
                                         <img src="/design/crm/integrations.svg" alt="" />
@@ -361,7 +393,7 @@ useCardRoute<ClientRow>({
                                     <button
                                         :aria-label="`Юрлица: ${displayName(row)}`"
                                         title="Юрлица"
-                                        :disabled="saving || !!row.deleted_at"
+                                        :disabled="relationDisabled(row, 'companies')"
                                         @click="openParties(row, 'companies')"
                                     >
                                         <img
@@ -372,7 +404,7 @@ useCardRoute<ClientRow>({
                                     <button
                                         :aria-label="`Физлица: ${displayName(row)}`"
                                         title="Физлица"
-                                        :disabled="saving || !!row.deleted_at"
+                                        :disabled="relationDisabled(row, 'individuals')"
                                         @click="openParties(row, 'individuals')"
                                     >
                                         <img
@@ -572,6 +604,13 @@ useCardRoute<ClientRow>({
 }
 .name-button {
     text-align: left;
+}
+.row-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+.row-actions button:disabled img {
+    filter: grayscale(1);
 }
 td,
 .editor h2 {

@@ -6,16 +6,31 @@ test("кнопка интеграций видна в действиях кли�
     await page.getByLabel("Пароль", { exact: true }).fill("Test_password_123");
     await page.getByRole("button", { name: "Войти", exact: true }).click();
     await expect(page).toHaveURL("/");
+    const relationsLoaded = page.waitForResponse((response) => response.url().includes("/web/clients/relations") && response.status() === 200);
     await page.goto("/clients/clients");
+    await relationsLoaded;
 
     const row = page.locator("tbody tr").filter({ has: page.getByRole("button", { name: "Тестовый клиент", exact: true }) }).first();
     const action = row.getByRole("button", { name: "Интеграции: Тестовый клиент" });
     await expect(action).toBeVisible();
+    await expect(action).toBeEnabled();
+    await expect(row.getByRole("button", { name: "Документы: Тестовый клиент" })).toBeEnabled();
+    const disabledAccount = row.getByRole("button", { name: "Доступы: Тестовый клиент" });
+    await expect(disabledAccount).toBeDisabled();
+    await expect(disabledAccount).toHaveCSS("opacity", "0.45");
+    await expect(disabledAccount.locator("img")).toHaveCSS("filter", "grayscale(1)");
+    await expect(row.getByRole("button", { name: "Юрлица: Тестовый клиент" })).toBeEnabled();
+    await expect(row.getByRole("button", { name: "Физлица: Тестовый клиент" })).toBeEnabled();
+    const otherRow = page.locator("tbody tr").filter({ has: page.getByRole("button", { name: "Другой клиент", exact: true }) }).first();
+    await expect(otherRow.getByRole("button", { name: "Документы: Другой клиент" })).toBeDisabled();
+    await expect(otherRow.getByRole("button", { name: "Интеграции: Другой клиент" })).toBeDisabled();
     await action.click();
     await expect(page).toHaveURL(/\/clients\/integrations\?client_id=1$/);
 
     await page.setViewportSize({ width: 390, height: 844 });
+    const mobileRelationsLoaded = page.waitForResponse((response) => response.url().includes("/web/clients/relations") && response.status() === 200);
     await page.goto("/clients/clients");
+    await mobileRelationsLoaded;
     await expect(action).toBeVisible();
     await action.click();
     await expect(page).toHaveURL(/\/clients\/integrations\?client_id=1$/);

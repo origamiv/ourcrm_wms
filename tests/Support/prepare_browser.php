@@ -13,7 +13,7 @@ if (DB::selectOne('select current_database() as name')->name !== 'wms_browser_te
     throw new RuntimeException('Неверная тестовая БД');
 }
 DB::transaction(function () {
-    DB::unprepared('DROP SCHEMA IF EXISTS integration CASCADE; DROP SCHEMA IF EXISTS goods CASCADE; DROP SCHEMA IF EXISTS clients CASCADE; DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
+    DB::unprepared('DROP SCHEMA IF EXISTS integration CASCADE; DROP SCHEMA IF EXISTS goods CASCADE; DROP SCHEMA IF EXISTS clients CASCADE; DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens; DROP TABLE IF EXISTS public.tenants;');
     DB::unprepared(file_get_contents(__DIR__.'/schema.sql'));
     DB::unprepared(file_get_contents(database_path('sql/user_sync.sql')));
     (require database_path('migrations/2026_09_10_000003_create_shared_entity_changes.php'))->up();
@@ -111,10 +111,15 @@ DB::transaction(function () {
 });
 
 DB::transaction(function () {
+    DB::statement('CREATE TABLE clients.accounts (id bigserial PRIMARY KEY, name varchar(255), client_id bigint, tenant_id varchar(255), deleted_at timestamp)');
+});
+
+DB::transaction(function () {
     DB::unprepared(file_get_contents(__DIR__.'/integration_schema.sql'));
     (require database_path('migrations/2026_09_10_000024_sync_integrations.php'))->up();
     (require database_path('migrations/2026_09_19_000001_add_client_to_integration_webhooks.php'))->up();
     DB::table('integration.services')->insert(['name' => 'Тестовый сервис', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('integration.webhooks')->insert(['name' => 'Интеграция тестового клиента', 'status' => 1, 'client_id' => 1, 'tenant_id' => 'test_org']);
 });
 
 DB::transaction(function () {
