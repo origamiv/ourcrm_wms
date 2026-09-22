@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'entities' => [
-        'integration_webhooks' => ['entity' => App\Models\IntegrationWebhook::class, 'table' => 'integration.webhooks', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'service_id', 'type_hook_id', 'rules_id', 'cnt', 'dat_last_run']],
+        'integration_webhooks' => ['entity' => App\Models\IntegrationWebhook::class, 'table' => 'integration.webhooks', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'client_id', 'service_id', 'type_hook_id', 'rules_id', 'cnt', 'dat_last_run']],
         'integration_data' => ['entity' => App\Models\IntegrationData::class, 'table' => 'integration.data', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'webhook_id', 'service_id', 'status_processing']],
         'integration_rules' => ['entity' => App\Models\IntegrationRule::class, 'table' => 'integration.rules', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at', 'type_processing_id']],
         'integration_services' => ['entity' => App\Models\IntegrationService::class, 'table' => 'integration.services', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],

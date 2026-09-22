@@ -31,6 +31,23 @@ it('открывает шесть разделов и сохраняет зап�
     $this->get('/integration/unknown')->assertNotFound();
 });
 
+it('показывает интеграции выбранного клиента в клиентском разделе', function () {
+    (require database_path('migrations/2026_09_19_000001_add_client_to_integration_webhooks.php'))->up();
+    $this->loginUser($this->makeUser([], true));
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Первый', 'tenant_id' => 'tenant_a']);
+    $otherClient = DB::table('clients.clients')->insertGetId(['name' => 'Второй', 'tenant_id' => 'tenant_a']);
+    $foreignClient = DB::table('clients.clients')->insertGetId(['name' => 'Чужой', 'tenant_id' => 'tenant_b']);
+    $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Первый вебхук', 'status' => 1, 'client_id' => $client])->assertCreated()->json('data');
+    $otherWebhook = $this->postJson('/web/integration/webhooks', ['name' => 'Второй вебхук', 'status' => 1, 'client_id' => $otherClient])->assertCreated()->json('data');
+
+    $this->get('/clients/integrations')->assertOk()->assertInertia(fn (Assert $page) => $page->component('ClientIntegrations'));
+    $this->get('/clients/integrations?client_id='.$client)->assertOk()->assertInertia(fn (Assert $page) => $page->component('ClientIntegrations')->where('clientScope.id', (string) $client));
+    $this->get('/clients/integrations/'.$webhook['id'].'/edit?client_id='.$client)->assertOk();
+    $this->get('/clients/integrations/'.$otherWebhook['id'].'/edit?client_id='.$client)->assertNotFound();
+    $this->get('/clients/integrations?client_id='.$foreignClient)->assertNotFound();
+    $this->getJson('/web/sync/integration_webhooks')->assertOk()->assertJsonPath('changes.0.data.client_id', $client);
+});
+
 it('проверяет ссылки и не помещает содержимое интеграций в журнал', function () {
     $this->loginUser($this->makeUser([], true));
     $service = $this->postJson('/web/integration/services', ['name' => 'Сервис', 'status' => 1])->assertCreated()->json('data');

@@ -113,6 +113,7 @@ DB::transaction(function () {
 DB::transaction(function () {
     DB::unprepared(file_get_contents(__DIR__.'/integration_schema.sql'));
     (require database_path('migrations/2026_09_10_000024_sync_integrations.php'))->up();
+    (require database_path('migrations/2026_09_19_000001_add_client_to_integration_webhooks.php'))->up();
     DB::table('integration.services')->insert(['name' => 'Тестовый сервис', 'status' => 1, 'tenant_id' => 'test_org']);
 });
 

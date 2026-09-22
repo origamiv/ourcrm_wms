@@ -32,7 +32,7 @@ interface ReferenceRow extends EntityRow {
     status: number | null;
     deleted_at: string | null;
 }
-const props = defineProps<{ entity: keyof typeof references; taskView?: "table" | "kanban" }>();
+const props = defineProps<{ entity: keyof typeof references; taskView?: "table" | "kanban"; clientSection?: boolean }>();
 const emit = defineEmits<{ toggleTaskView: [] }>();
 const definition = references[props.entity];
 const columnSettings = ref<ColumnSettings>({ order: [], hidden: [] });
@@ -160,6 +160,8 @@ function taskSkuCount(row: ReferenceRow): string {
     return `${Number.isFinite(sku) ? sku : 0} / ${Number.isFinite(count) ? count : 0}`;
 }
 const isIntegration = props.entity.startsWith("integration_");
+const isClientIntegration = props.clientSection === true && props.entity === "integration_webhooks";
+const displayTitle = isClientIntegration ? "Интеграции" : definition.title;
 const isMaintenance = ["scheduler_tasks", "scheduler"].includes(props.entity);
 const isScheduler = props.entity === "scheduler";
 const editorFields = computed(() =>
@@ -198,12 +200,14 @@ const isGoodsSection =
     isGood ||
     ["type_goods", "unit_goods", "kind_kiz", "kizes"].includes(props.entity);
 const isIndividual = props.entity === "client_individuals";
-const isClientScoped = ["client_individuals", "client_companies", "client_documents", "client_accounts"].includes(props.entity);
+const isClientScoped = isClientIntegration || ["client_individuals", "client_companies", "client_documents", "client_accounts"].includes(props.entity);
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
 const isClientCatalog = ["client_services", "client_accounts"].includes(props.entity);
-const isClientSection = isIndividual || isDocument || isDocType || isClientCatalog;
-const basePath = isIntegration
+const isClientSection = isClientIntegration || isIndividual || isDocument || isDocType || isClientCatalog;
+const basePath = isClientIntegration
+    ? "/clients/integrations"
+    : isIntegration
     ? `/integration/${props.entity.replace("integration_", "")}`
     : isFulfillment
       ? `/fulfillment/${props.entity}`
@@ -216,7 +220,7 @@ const basePath = isIntegration
         : isMaintenance
           ? props.entity === "scheduler" ? "/scheduler" : "/scheduler_tasks"
           : `/main/${props.entity}`;
-const endpoint = isIndividual ? null : basePath.replace("/main/", "/");
+const endpoint = isIndividual ? null : isClientIntegration ? "/integration/webhooks" : basePath.replace("/main/", "/");
 const clientFilter = ref("");
 const docTypeFilter = ref("");
 const dateFilter = ref("");
@@ -628,7 +632,7 @@ async function open(row: ReferenceRow | null, readOnly = false) {
     }
     detailLoading.value = true;
     try {
-        const response = await http(`/web${basePath}/${row.id}`);
+        const response = await http(`/web${isClientIntegration ? "/integration/webhooks" : basePath}/${row.id}`);
         if (
             request !== detailRequest ||
             !editing.value ||
@@ -904,12 +908,14 @@ useCardRoute<ReferenceRow>({
 });
 </script>
 <template>
-    <Head :title="definition.title" />
+    <Head :title="displayTitle" />
     <div class="users-workspace" :class="{ 'has-editor': editing || conductingAcceptance }">
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
-                    isIntegration
+                    isClientSection
+                        ? "Клиенты"
+                        : isIntegration
                         ? "Интеграции"
                         : isFulfillment
                         ? "Фулфилмент › Справочники"
@@ -919,13 +925,11 @@ useCardRoute<ReferenceRow>({
                           ? "Товары"
                         : isMaintenance
                           ? "Обслуживание › Справочники"
-                        : isClientSection
-                            ? "Клиенты"
                             : "Администрирование › Справочники"
                 }}
-                › {{ definition.title }}
+                › {{ displayTitle }}
             </div>
-            <IntegrationTabs v-if="isIntegration" /><FulfillmentTabs
+            <ClientTabs v-if="isClientIntegration" /><IntegrationTabs v-else-if="isIntegration" /><FulfillmentTabs
                 v-else-if="isFulfillment"
             /><LogisticsTabs v-else-if="isLogistics" /><GoodsTabs
                 v-else-if="isGoodsSection"
@@ -936,7 +940,7 @@ useCardRoute<ReferenceRow>({
             </p>
             <div class="page-heading">
                 <div class="heading-title-group">
-                    <h1>{{ warehouseScope ? `${definition.title} для склада ${warehouseScope.name}` : clientScope ? `${definition.title} для клиента ${clientScope.name}` : definition.title }}</h1>
+                    <h1>{{ warehouseScope ? `${displayTitle} для склада ${warehouseScope.name}` : clientScope ? `${displayTitle} для клиента ${clientScope.name}` : displayTitle }}</h1>
                     <button v-if="props.entity === 'tasks'" type="button" class="task-view-toggle" @click="emit('toggleTaskView')">
                         <img :src="props.taskView === 'kanban' ? '/design/crm/table.svg' : '/design/crm/kanban.svg'" alt="" />
                         <span>{{ props.taskView === 'kanban' ? 'Таблица' : 'Канбан' }}</span>
@@ -1395,6 +1399,7 @@ useCardRoute<ReferenceRow>({
                                     <template v-if="isClients">
                                         <button :aria-label="`Документы клиента: ${displayName(row)}`" title="Документы" @click.stop="router.visit(`/clients/documents?client_id=${row.id}`)"><img src="/design/crm/documents.svg" alt="" /></button>
                                         <button :aria-label="`Доступы клиента: ${displayName(row)}`" title="Доступы" @click.stop="router.visit(`/clients/accounts?client_id=${row.id}`)"><img src="/design/crm/administration.svg" alt="" /></button>
+                                        <button :aria-label="`Интеграции клиента: ${displayName(row)}`" title="Интеграции" @click.stop="router.visit(`/clients/integrations?client_id=${row.id}`)"><img src="/design/crm/administration.svg" alt="" /></button>
                                     </template>
                                     <button
                                         v-if="isAcceptance"

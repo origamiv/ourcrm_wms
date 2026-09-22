@@ -32,6 +32,12 @@ const tabs = [
         icon: "administration",
     },
     {
+        label: "Интеграции",
+        url: "/clients/integrations",
+        component: "ClientIntegrations",
+        icon: "administration",
+    },
+    {
         label: "Справочники",
         url: "/clients/references",
         component: "",
