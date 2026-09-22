@@ -96,6 +96,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
         $webhooks = IntegrationWebhook::query()
             ->whereIn('tenant_id', $tenants)
             ->when($this->option('webhook-id') !== null, fn ($query) => $query->whereKey((int) $this->option('webhook-id')))
+            ->whereRaw("COALESCE(params->>'account_id', '') ~ '^[1-9][0-9]*$'")
             ->where('status', 1)
             ->with(['service_obj', 'client_obj'])
             ->orderByRaw('dat_last_run ASC NULLS FIRST')
@@ -211,6 +212,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
         $webhooks = IntegrationWebhook::query()
             ->whereIn('tenant_id', $tenants)
+            ->whereRaw("COALESCE(params->>'account_id', '') ~ '^[1-9][0-9]*$'")
             ->where('status', 1)
             ->with('service_obj')
             ->orderByRaw('dat_last_run ASC NULLS FIRST')
