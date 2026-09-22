@@ -39,6 +39,25 @@ abstract class IntegrationRequest extends BaseRequest
         if (isset($rules['rules_id'])) {
             $rules['rules_id.*'] = ['required', 'integer', 'min:1', 'distinct'];
         }
+        if ($catalog === 'webhooks') {
+            // Сохраняем существующие ключи params, не перечисленные в схеме конструктора.
+            $rules['params.*'] = ['nullable'];
+            $rules['params.builder'] = ['sometimes', 'array:version,nodes'];
+            $rules['params.account_id'] = ['sometimes', 'integer', 'min:1'];
+            $rules['params.builder.version'] = ['required_with:params.builder', 'integer', 'in:1'];
+            $rules['params.builder.nodes'] = ['present_with:params.builder', 'array', 'list', 'max:4'];
+            $rules['params.builder.nodes.*'] = ['required', 'array:id,type,settings'];
+            $rules['params.builder.nodes.*.id'] = ['required', 'string', 'regex:/^[a-z][a-z0-9_]{0,39}$/', 'distinct'];
+            $rules['params.builder.nodes.*.type'] = ['required', 'string', 'in:catalog_sync,stock_export,orders_import,shipment', 'distinct'];
+            $rules['params.builder.nodes.*.settings'] = ['present', 'array:schedule_hours,sync_prices,discount,category_mappings'];
+            $rules['params.builder.nodes.*.settings.schedule_hours'] = ['sometimes', 'integer', 'in:1,2,4,6,12,24'];
+            $rules['params.builder.nodes.*.settings.sync_prices'] = ['sometimes', 'boolean'];
+            $rules['params.builder.nodes.*.settings.discount'] = ['sometimes', 'boolean'];
+            $rules['params.builder.nodes.*.settings.category_mappings'] = ['sometimes', 'array', 'list', 'max:100'];
+            $rules['params.builder.nodes.*.settings.category_mappings.*'] = ['required', 'array:crm,marketplace'];
+            $rules['params.builder.nodes.*.settings.category_mappings.*.crm'] = ['required', 'string', 'max:255'];
+            $rules['params.builder.nodes.*.settings.category_mappings.*.marketplace'] = ['required', 'string', 'max:255'];
+        }
 
         return $rules;
     }

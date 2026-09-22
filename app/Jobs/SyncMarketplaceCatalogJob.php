@@ -9,6 +9,7 @@ use App\Models\ImportRunStage;
 use App\Models\IntegrationData;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
+use App\Services\IntegrationBuilder;
 use App\Services\MarketplaceCatalogDispatchService;
 use App\Services\MarketplaceConcurrencyService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -74,6 +75,13 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             return;
         }
         $stage = ImportRunStage::query()->where('import_run_id', $run->id)->where('stage_key', 'catalog')->firstOrFail();
+        if (IntegrationBuilder::hasSchema($webhook) && ! IntegrationBuilder::hasCatalog($webhook)) {
+            $message = 'Блок синхронизации каталога удалён из интеграции.';
+            $stage->forceFill(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()])->save();
+            $run->forceFill(['status' => 'failed', 'error_message' => $message, 'finished_at' => now()])->save();
+
+            return;
+        }
         $locks = null;
         $accountId = (int) (($webhook->params ?? [])['account_id'] ?? 0);
 
@@ -111,7 +119,7 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
             $data = new IntegrationData;
             $data->forceFill(['name' => $webhook->name, 'shortname' => 'catalog_'.str_replace('-', '', (string) \Illuminate\Support\Str::uuid()), 'webhook_id' => $webhook->id, 'service_id' => $webhook->service_id, 'status' => 0, 'status_processing' => 0, 'tenant_id' => $this->tenant, 'src' => ['webhook_id' => $webhook->id]])->save();
             $ruleIds = array_values(array_filter((array) $webhook->rules_id));
-            if ($ruleIds === []) {
+            if ($ruleIds === [] || IntegrationBuilder::hasSchema($webhook)) {
                 $ruleIds = [IntegrationRule::query()->where('shortname', match ($marketplace) {
                     'ozon' => 'ozon_catalog',
                     'yandex_market' => 'yandex_market_catalog',

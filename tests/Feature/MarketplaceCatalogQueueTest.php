@@ -204,3 +204,30 @@ it('массовая команда ставит задания в очеред�
     Bus::assertDispatchedTimes(SyncMarketplaceCatalogJob::class, 1);
     Http::assertNothingSent();
 });
+
+it('учитывает расписание конструктора и не запускает каталог без его блока', function (): void {
+    DB::table('public.tenants')->insert(['id' => $this->tenant, 'status' => 1]);
+    DB::table('main.tenant_settings')->insert(['tenant_id' => $this->tenant, 'name' => 'integration.marketplace_catalog_sync', 'value' => '{"enabled":true}']);
+    $typeId = DB::table('integration.type_processing')->insertGetId(['shortname' => 'marketplace_catalog', 'status' => 1]);
+    DB::table('integration.rules')->update(['type_processing_id' => $typeId]);
+    $this->webhook->forceFill([
+        'params' => ['account_id' => $this->account->id, 'builder' => ['version' => 1, 'nodes' => [
+            ['id' => 'catalog_sync', 'type' => 'catalog_sync', 'settings' => ['schedule_hours' => 2]],
+        ]]],
+        'dat_last_run' => now()->subMinutes(90),
+        'rules_id' => [999999], // Конструктор исполняет штатное правило каталога, не старый список правил.
+    ])->save();
+    $this->artisan('integration:sync-catalogs', ['--marketplace' => 'ozon'])->assertSuccessful();
+    Bus::assertNotDispatched(SyncMarketplaceCatalogJob::class);
+    $this->webhook->forceFill(['dat_last_run' => now()->subMinutes(121)])->save();
+    $this->artisan('integration:sync-catalogs', ['--marketplace' => 'ozon'])->assertSuccessful();
+    Bus::assertDispatchedTimes(SyncMarketplaceCatalogJob::class, 1);
+    $this->webhook->forceFill([
+        'params' => ['account_id' => $this->account->id, 'builder' => ['version' => 1, 'nodes' => [
+            ['id' => 'stock_export', 'type' => 'stock_export', 'settings' => []],
+        ]]],
+        'dat_last_run' => now()->subDay(),
+    ])->save();
+    $this->artisan('integration:sync-catalogs', ['--marketplace' => 'ozon'])->assertSuccessful();
+    Bus::assertDispatchedTimes(SyncMarketplaceCatalogJob::class, 1);
+});

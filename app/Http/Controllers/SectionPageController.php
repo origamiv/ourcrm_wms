@@ -81,6 +81,9 @@ final class SectionPageController
                     $taskId = (string) $row->id;
                     $component = 'TaskDetail';
                 }
+                if ($left === 'clients' && $top === 'integrations' && $action === 'edit') {
+                    $component = 'ClientIntegrationEdit';
+                }
                 if ($top === 'company_contacts' && $request->has('company_id')) {
                     abort_unless((string) $row->company_id === (string) $request->query('company_id'), 404);
                 }

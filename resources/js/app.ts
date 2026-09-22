@@ -38,6 +38,7 @@ import ClientCompanies from "./Pages/ClientCompanies.vue";
 import ClientServices from "./Pages/ClientServices.vue";
 import ClientAccounts from "./Pages/ClientAccounts.vue";
 import ClientIntegrations from "./Pages/ClientIntegrations.vue";
+import ClientIntegrationEdit from "./Pages/ClientIntegrationEdit.vue";
 import Files from "./Pages/Files.vue";
 import Icons from "./Pages/Icons.vue";
 import Features from "./Pages/Features.vue";
@@ -117,6 +118,7 @@ const pages: Record<string, any> = {
     ClientServices,
     ClientAccounts,
     ClientIntegrations,
+    ClientIntegrationEdit,
     Files,
     Icons,
     Features,

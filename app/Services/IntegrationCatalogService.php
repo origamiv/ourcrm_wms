@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\ClientAccount;
 use App\Models\IntegrationData;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
@@ -68,6 +69,15 @@ final class IntegrationCatalogService
                     }
                 }
                 if ($catalog === 'webhooks') {
+                    $params = array_key_exists('params', $data) ? ($data['params'] ?? []) : ($row->params ?? []);
+                    $accountId = $params['account_id'] ?? null;
+                    $clientId = array_key_exists('client_id', $data) ? $data['client_id'] : $row->client_id;
+                    if ($accountId !== null && ! ClientAccount::visibleTo($tenant)
+                        ->whereKey($accountId)
+                        ->when($clientId !== null, fn ($query) => $query->where('client_id', $clientId))
+                        ->exists()) {
+                        throw ValidationException::withMessages(['params.account_id' => 'Выберите доступный кабинет клиента.']);
+                    }
                     foreach ((array_key_exists('rules_id', $data) ? ($data['rules_id'] ?? []) : ($row->rules_id ?? [])) as $rule) {
                         if (! IntegrationRule::visibleTo($tenant)->whereKey($rule)->exists()) {
                             throw ValidationException::withMessages(['rules_id' => 'Выберите доступные правила.']);

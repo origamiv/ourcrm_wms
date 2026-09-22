@@ -57,3 +57,58 @@ test("интеграции клиента: меню, создание и фил�
     await page.goto("/clients/integrations?client_id=2");
     await expect(page.getByRole("button", { name: "Вебхук первого клиента", exact: true })).toHaveCount(0);
 });
+
+test("редактирование интеграции открывает отдельный конструктор", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
+    await page.getByLabel("Пароль", { exact: true }).fill("Test_password_123");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await page.goto("/clients/integrations?client_id=1");
+    await page.getByRole("button", { name: "Редактировать: Интеграция тестового клиента" }).click();
+    await expect(page).toHaveURL(/\/clients\/integrations\/\d+\/edit\?client_id=1$/);
+    await expect(page.getByRole("heading", { name: /Редактирование интеграции/ })).toBeVisible();
+    await expect(page.getByText("Доступ (Start)")).toBeVisible();
+    await expect(page.getByText("Для этого вебхука доступных блоков нет.")).toBeVisible();
+    await page.getByRole("button", { name: "Свойства интеграции" }).click();
+    await page.getByLabel("Название *").fill("Обновлённая интеграция");
+    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await expect(page.getByText("Изменения сохранены")).toBeVisible();
+    await page.getByRole("button", { name: "К списку" }).click();
+    await expect(page).toHaveURL(/\/clients\/integrations\?client_id=1$/);
+    await expect(page.getByRole("button", { name: "Обновлённая интеграция", exact: true }).first()).toBeVisible();
+});
+
+test("конструктор WB сохраняет цепочку и расписание", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
+    await page.getByLabel("Пароль", { exact: true }).fill("Test_password_123");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await page.goto("/clients/integrations?client_id=1");
+    await page.getByRole("button", { name: "Редактировать: WB интеграция" }).click();
+    await expect(page.locator(".rule-node").getByText("Синхронизация каталога")).toBeVisible();
+    await page.getByLabel("Расписание").selectOption("2");
+    await page.getByRole("button", { name: /Отправка остатков/ }).click();
+    await expect(page.locator(".rule-node")).toHaveCount(3);
+    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await expect(page.getByText("Изменения сохранены")).toBeVisible();
+    await page.reload();
+    await expect(page.locator(".rule-node")).toHaveCount(3);
+    await expect(page.getByText("Отправка остатков").last()).toBeVisible();
+    await expect(page.getByLabel("Расписание")).toHaveValue("2");
+});
+
+test("конструктор доступен для Ozon и Яндекс Маркета", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
+    await page.getByLabel("Пароль", { exact: true }).fill("Test_password_123");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    for (const name of ["Ozon", "Яндекс Маркет"]) {
+        await page.goto("/clients/integrations?client_id=1");
+        await page.getByRole("button", { name: `Редактировать: ${name} интеграция` }).click();
+        await expect(page.locator(".palette-rule")).toHaveCount(4);
+        await expect(page.getByLabel("Расписание")).toHaveValue("4");
+    }
+});

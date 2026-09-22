@@ -622,6 +622,14 @@ function openTaskDetail(row: ReferenceRow) {
     if (online.value) router.visit(url);
     else router.push({ url, component: "TaskDetail", props: { ...page.props, taskId: row.id } });
 }
+function editRow(row: ReferenceRow) {
+    if (!isClientIntegration) {
+        void open(row);
+        return;
+    }
+    const query = clientScope.value ? `?client_id=${encodeURIComponent(clientScope.value.id)}` : "";
+    router.visit(`${basePath}/${encodeURIComponent(row.id)}/edit${query}`);
+}
 async function open(row: ReferenceRow | null, readOnly = false) {
     if (saving.value) return;
     const request = ++detailRequest;
@@ -1440,7 +1448,7 @@ useCardRoute<ReferenceRow>({
                                             saving ||
                                             !!row.deleted_at
                                         "
-                                        @click="open(row)"
+                                        @click="editRow(row)"
                                     >
                                         <img
                                             src="/design/crm/edit.svg"

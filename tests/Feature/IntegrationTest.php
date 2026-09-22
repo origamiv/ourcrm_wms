@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\IntegrationService;
 use App\Services\EntitySyncService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
@@ -42,7 +43,8 @@ it('показывает интеграции выбранного клиент�
 
     $this->get('/clients/integrations')->assertOk()->assertInertia(fn (Assert $page) => $page->component('ClientIntegrations'));
     $this->get('/clients/integrations?client_id='.$client)->assertOk()->assertInertia(fn (Assert $page) => $page->component('ClientIntegrations')->where('clientScope.id', (string) $client));
-    $this->get('/clients/integrations/'.$webhook['id'].'/edit?client_id='.$client)->assertOk();
+    $this->get('/clients/integrations/'.$webhook['id'].'/edit?client_id='.$client)->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('ClientIntegrationEdit')->where('clientScope.id', (string) $client));
     $this->get('/clients/integrations/'.$otherWebhook['id'].'/edit?client_id='.$client)->assertNotFound();
     $this->get('/clients/integrations?client_id='.$foreignClient)->assertNotFound();
     $this->getJson('/web/sync/integration_webhooks')->assertOk()->assertJsonPath('changes.0.data.client_id', $client);
@@ -58,6 +60,55 @@ it('показывает интеграции выбранного клиент�
     $this->getJson('/web/clients/'.$client.'/integrations/sync?cursor='.urlencode($snapshot['cursor']))->assertOk()
         ->assertJsonPath('changes.0.operation', 'remove')
         ->assertJsonPath('changes.0.data', null);
+});
+
+it('сохраняет схему конструктора в приватных параметрах вебхука', function () {
+    $this->loginUser($this->makeUser([], true));
+    $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Конструктор', 'status' => 1, 'params' => ['existing' => 'secret-value']])->assertCreated()->json('data');
+    $builder = ['version' => 1, 'nodes' => [
+        ['id' => 'catalog_sync', 'type' => 'catalog_sync', 'settings' => ['schedule_hours' => 2, 'sync_prices' => true, 'discount' => false, 'category_mappings' => [['crm' => 'Одежда', 'marketplace' => 'Женщинам/Одежда']]]],
+        ['id' => 'stock_export', 'type' => 'stock_export', 'settings' => []],
+    ]];
+    $updated = $this->putJson('/web/integration/webhooks/'.$webhook['id'], [
+        'name' => 'Конструктор', 'status' => 1, 'params' => ['existing' => 'secret-value', 'builder' => $builder], 'version' => $webhook['version'],
+    ])->assertOk()->json('data');
+    expect($updated)->not->toHaveKey('params');
+    $this->getJson('/web/integration/webhooks/'.$webhook['id'])->assertOk()
+        ->assertJsonPath('details.params.existing', 'secret-value')
+        ->assertJsonPath('details.params.builder.nodes.0.settings.schedule_hours', 2);
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], [
+        'name' => 'Конструктор', 'status' => 1, 'params' => ['builder' => ['version' => 1, 'nodes' => [
+            ['id' => 'catalog_sync', 'type' => 'catalog_sync', 'settings' => ['schedule_hours' => 3]],
+        ]]], 'version' => $updated['version'],
+    ])->assertUnprocessable();
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], [
+        'name' => 'Конструктор', 'status' => 1, 'params' => ['builder' => $builder], 'version' => $webhook['version'],
+    ])->assertConflict();
+    expect(DB::table('public.entity_changes')->where('data', 'like', '%secret-value%')->exists())->toBeFalse();
+});
+
+it('не привязывает кабинет другого клиента к интеграции', function () {
+    Schema::create('clients.accounts', function ($table): void {
+        $table->id();
+        $table->string('name')->nullable();
+        $table->string('shortname')->nullable();
+        $table->integer('status')->nullable();
+        $table->string('token')->nullable();
+        $table->string('tenant_id');
+        $table->unsignedBigInteger('client_id')->nullable();
+        $table->timestamp('deleted_at')->nullable();
+    });
+    $this->loginUser($this->makeUser([], true));
+    $client = DB::table('clients.clients')->insertGetId(['name' => 'Первый', 'tenant_id' => 'tenant_a']);
+    $otherClient = DB::table('clients.clients')->insertGetId(['name' => 'Второй', 'tenant_id' => 'tenant_a']);
+    $account = DB::table('clients.accounts')->insertGetId(['name' => 'Чужой кабинет', 'status' => 1, 'token' => 'private-token', 'tenant_id' => 'tenant_a', 'client_id' => $otherClient]);
+    $options = $this->getJson('/web/integration/account_options')->assertOk()->assertHeader('Cache-Control', 'no-store, private')->json();
+    expect($options['data'][0]['id'])->toBe($account);
+    expect(json_encode($options))->not->toContain('private-token');
+    $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Вебхук', 'status' => 1, 'client_id' => $client])->assertCreated()->json('data');
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], [
+        'name' => 'Вебхук', 'status' => 1, 'client_id' => $client, 'params' => ['account_id' => $account], 'version' => $webhook['version'],
+    ])->assertUnprocessable()->assertJsonValidationErrors('params.account_id');
 });
 
 it('проверяет ссылки и не помещает содержимое интеграций в журнал', function () {

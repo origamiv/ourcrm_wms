@@ -11,6 +11,7 @@ use App\Models\ImportRunStage;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
 use App\Models\TenantSetting;
+use App\Services\IntegrationBuilder;
 use App\Services\MarketplaceCatalogDispatchService;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\RequestException;
@@ -107,6 +108,9 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
         $counters = ['queued' => 0, 'completed' => 0, 'failed' => 0, 'blocked' => 0, 'skipped' => 0];
         foreach ($webhooks as $webhook) {
+            if (! IntegrationBuilder::isDue($webhook)) {
+                continue;
+            }
             if ($limit <= $counters['queued'] + $counters['completed'] + $counters['failed'] + $counters['blocked']) {
                 break;
             }
@@ -118,7 +122,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
             $rule = $rules->get(self::RULES[$marketplace]);
             $configuredRuleIds = array_map('intval', array_filter((array) $webhook->rules_id));
-            if (! $rule || ($configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
+            if (! $rule || (! IntegrationBuilder::hasSchema($webhook) && $configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
                 continue;
             }
 
@@ -250,6 +254,9 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
         $started = 0;
         foreach ($webhooks as $webhook) {
+            if (! IntegrationBuilder::isDue($webhook)) {
+                continue;
+            }
             $marketplace = $this->marketplaceFor($webhook);
             if ($marketplace === null || ($marketplaceFilter !== '' && $marketplace !== $marketplaceFilter)) {
                 continue;
@@ -261,7 +268,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
             if (! $account || ($webhook->client_id !== null && (int) $account->client_id !== (int) $webhook->client_id)) {
                 continue;
             }
-            if (! $rule || ($configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
+            if (! $rule || (! IntegrationBuilder::hasSchema($webhook) && $configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
                 continue;
             }
 

@@ -28,6 +28,8 @@ GET-запросы не изменяют записи. Прямые ссылки
 
 Лента «Клиенты»: «Клиенты» (`/clients/clients`), «Юр.лица» (`/clients/companies`), «Физ.лица» (`/clients/individuals`), «Документы» (`/clients/documents`), «Доступы» (`/clients/accounts`), «Интеграции» (`/clients/integrations`). Ссылка из строки клиента открывает его интеграции с `?client_id={id}`; прямые карточки в этом режиме проверяют принадлежность клиенту.
 
+Редактирование клиентской интеграции по `/clients/integrations/{id}/edit` открывает отдельную страницу конструктора вместо боковой карточки. Возврат к списку сохраняет `client_id`.
+
 Лента «Интеграции»: «Вебхуки» (`/integration/webhooks`), «Данные»
 (`/integration/data`), «Справочники» → «Правила» (`/integration/rules`),
 «Сервисы» (`/integration/services`), «Типы хуков» (`/integration/type_hook`),

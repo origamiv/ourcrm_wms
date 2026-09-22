@@ -111,7 +111,7 @@ DB::transaction(function () {
 });
 
 DB::transaction(function () {
-    DB::statement('CREATE TABLE clients.accounts (id bigserial PRIMARY KEY, name varchar(255), client_id bigint, tenant_id varchar(255), deleted_at timestamp)');
+    DB::statement('CREATE TABLE clients.accounts (id bigserial PRIMARY KEY, name varchar(255), shortname varchar(255), status integer, client_id bigint, tenant_id varchar(255), deleted_at timestamp)');
 });
 
 DB::transaction(function () {
@@ -120,6 +120,12 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_19_000001_add_client_to_integration_webhooks.php'))->up();
     DB::table('integration.services')->insert(['name' => 'Тестовый сервис', 'status' => 1, 'tenant_id' => 'test_org']);
     DB::table('integration.webhooks')->insert(['name' => 'Интеграция тестового клиента', 'status' => 1, 'client_id' => 1, 'tenant_id' => 'test_org']);
+    $wildberries = DB::table('integration.services')->insertGetId(['name' => 'Wildberries', 'shortname' => 'wildberries', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('integration.webhooks')->insert(['name' => 'WB интеграция', 'status' => 1, 'client_id' => 1, 'service_id' => $wildberries, 'tenant_id' => 'test_org']);
+    foreach (['ozon' => 'Ozon', 'yandex_market' => 'Яндекс Маркет'] as $shortname => $name) {
+        $service = DB::table('integration.services')->insertGetId(['name' => $name, 'shortname' => $shortname, 'status' => 1, 'tenant_id' => 'test_org']);
+        DB::table('integration.webhooks')->insert(['name' => $name.' интеграция', 'status' => 1, 'client_id' => 1, 'service_id' => $service, 'tenant_id' => 'test_org']);
+    }
 });
 
 DB::transaction(function () {
