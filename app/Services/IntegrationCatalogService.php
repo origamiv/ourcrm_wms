@@ -8,10 +8,12 @@ use App\Models\ClientAccount;
 use App\Models\IntegrationData;
 use App\Models\IntegrationRule;
 use App\Models\IntegrationWebhook;
+use App\Models\Marketplace;
 use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use stdClass;
 
 final class IntegrationCatalogService
 {
@@ -70,6 +72,22 @@ final class IntegrationCatalogService
                 }
                 if ($catalog === 'webhooks') {
                     $params = array_key_exists('params', $data) ? ($data['params'] ?? []) : ($row->params ?? []);
+                    foreach (($params['builder']['nodes'] ?? []) as $node) {
+                        $marketplaceId = $node['settings']['marketplace_id'] ?? null;
+                        if ($marketplaceId !== null && ! Marketplace::visibleTo($tenant)->whereKey($marketplaceId)->where('status', 1)->exists()) {
+                            throw ValidationException::withMessages(['params.builder.nodes' => 'Выберите доступный маркетплейс.']);
+                        }
+                        $ruleId = $node['settings']['rule_id'] ?? null;
+                        if ($ruleId !== null && ! IntegrationRule::visibleTo($tenant)->whereKey($ruleId)->exists()) {
+                            throw ValidationException::withMessages(['params.builder.nodes' => 'Выберите доступное правило.']);
+                        }
+                        if (($node['type'] ?? null) === 'other' && isset($node['settings']['json'])) {
+                            $settings = json_decode($node['settings']['json']);
+                            if (! $settings instanceof stdClass) {
+                                throw ValidationException::withMessages(['params.builder.nodes' => 'Настройки JSON должны содержать объект.']);
+                            }
+                        }
+                    }
                     $accountId = $params['account_id'] ?? null;
                     $clientId = array_key_exists('client_id', $data) ? $data['client_id'] : $row->client_id;
                     if ($accountId !== null && ! ClientAccount::visibleTo($tenant)

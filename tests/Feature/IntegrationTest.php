@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\IntegrationService;
 use App\Services\EntitySyncService;
+use App\Services\IntegrationBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -85,6 +86,70 @@ it('сохраняет схему конструктора в приватных
         'name' => 'Конструктор', 'status' => 1, 'params' => ['builder' => $builder], 'version' => $webhook['version'],
     ])->assertConflict();
     expect(DB::table('public.entity_changes')->where('data', 'like', '%secret-value%')->exists())->toBeFalse();
+});
+
+it('проверяет правило и JSON блока Прочее', function () {
+    $this->loginUser($this->makeUser([], true));
+    $rule = DB::table('integration.rules')->insertGetId(['name' => 'Доступное правило', 'status' => 1, 'tenant_id' => 'tenant_a']);
+    $foreign = DB::table('integration.rules')->insertGetId(['name' => 'Чужое правило', 'status' => 1, 'tenant_id' => 'tenant_b']);
+    $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Блок Прочее', 'status' => 1])->assertCreated()->json('data');
+    $payload = fn ($ruleId, $json) => [
+        'name' => 'Блок Прочее', 'status' => 1, 'version' => $webhook['version'],
+        'params' => ['builder' => ['version' => 1, 'nodes' => [
+            ['id' => 'other', 'type' => 'other', 'settings' => ['rule_id' => $ruleId, 'json' => $json]],
+        ]]],
+    ];
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], $payload($foreign, '{}'))
+        ->assertUnprocessable()->assertJsonValidationErrors('params.builder.nodes');
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], $payload($rule, '[]'))
+        ->assertUnprocessable()->assertJsonValidationErrors('params.builder.nodes');
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], $payload($rule, '{"key":"value"}'))
+        ->assertOk();
+    $this->getJson('/web/integration/webhooks/'.$webhook['id'])->assertJsonPath('details.params.builder.nodes.0.settings.rule_id', $rule)
+        ->assertJsonPath('details.params.builder.nodes.0.settings.json', '{"key":"value"}');
+});
+
+it('сохраняет режимы выгрузки остатков и расписание блока', function () {
+    $this->loginUser($this->makeUser([], true));
+    $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Остатки', 'status' => 1])->assertCreated()->json('data');
+    $node = ['id' => 'stock_export', 'type' => 'stock_export', 'settings' => [
+        'export_stocks' => true, 'stock_formula' => 'fixed', 'stock_fixed' => 25,
+        'trigger_mode' => 'schedule', 'trigger_hours' => 6,
+    ]];
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], [
+        'name' => 'Остатки', 'status' => 1, 'version' => $webhook['version'],
+        'params' => ['builder' => ['version' => 1, 'nodes' => [$node]]],
+    ])->assertOk();
+    $this->getJson('/web/integration/webhooks/'.$webhook['id'])
+        ->assertJsonPath('details.params.builder.nodes.0.settings.stock_fixed', 25)
+        ->assertJsonPath('details.params.builder.nodes.0.settings.trigger_hours', 6);
+});
+
+it('использует выбранный маркетплейс блока каталога вместо имени сервиса', function () {
+    DB::statement('CREATE SCHEMA IF NOT EXISTS wms');
+    Schema::create('wms.marketplaces', function ($table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('shortname');
+        $table->integer('status');
+        $table->string('tenant_id')->nullable();
+        $table->timestamp('deleted_at')->nullable();
+    });
+    $this->loginUser($this->makeUser([], true));
+    $wildberries = DB::table('wms.marketplaces')->insertGetId(['name' => 'Wildberries', 'shortname' => 'wb', 'status' => 1, 'tenant_id' => 'tenant_a']);
+    $foreign = DB::table('wms.marketplaces')->insertGetId(['name' => 'Ozon другой организации', 'shortname' => 'oz', 'status' => 1, 'tenant_id' => 'tenant_b']);
+    $service = DB::table('integration.services')->insertGetId(['name' => 'Ozon', 'shortname' => 'ozon', 'status' => 1, 'tenant_id' => 'tenant_a']);
+    $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Каталог', 'status' => 1, 'service_id' => $service])->assertCreated()->json('data');
+    $payload = fn ($marketplaceId) => [
+        'name' => 'Каталог', 'status' => 1, 'service_id' => $service, 'version' => $webhook['version'],
+        'params' => ['builder' => ['version' => 1, 'nodes' => [
+            ['id' => 'catalog_sync', 'type' => 'catalog_sync', 'settings' => ['marketplace_id' => $marketplaceId]],
+        ]]],
+    ];
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], $payload($foreign))
+        ->assertUnprocessable()->assertJsonValidationErrors('params.builder.nodes');
+    $this->putJson('/web/integration/webhooks/'.$webhook['id'], $payload($wildberries))->assertOk();
+    expect(IntegrationBuilder::marketplaceFor(App\Models\IntegrationWebhook::findOrFail($webhook['id'])))->toBe('wildberries');
 });
 
 it('не привязывает кабинет другого клиента к интеграции', function () {

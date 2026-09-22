@@ -8,13 +8,22 @@ import { http, HttpError } from "../lib/http";
 import { formatDate } from "../lib/dates";
 import type { EntityRow } from "../lib/cache";
 
-type RuleType = "catalog_sync" | "stock_export" | "orders_import" | "shipment";
+type RuleType =
+    "catalog_sync" | "stock_export" | "orders_import" | "shipment" | "other";
 type Mapping = { crm: string; marketplace: string };
 type RuleNode = {
     id: string;
     type: RuleType;
     settings: {
         schedule_hours?: number;
+        marketplace_id?: string | number | null;
+        rule_id?: string | number | null;
+        json?: string;
+        export_stocks?: boolean;
+        stock_formula?: "real-fbs-fbo" | "real-fbs" | "fixed";
+        stock_fixed?: number | null;
+        trigger_mode?: "events" | "schedule";
+        trigger_hours?: number;
         sync_prices?: boolean;
         discount?: boolean;
         category_mappings?: Mapping[];
@@ -54,7 +63,8 @@ const services = createEntitySync<LookupRow>(scope, "integration_services");
 const hookTypes = createEntitySync<LookupRow>(scope, "integration_type_hook");
 const clients = createEntitySync<LookupRow>(scope, "clients");
 const rules = createEntitySync<LookupRow>(scope, "integration_rules");
-const stores = [services, hookTypes, clients, rules];
+const marketplaces = createEntitySync<LookupRow>(scope, "marketplaces");
+const stores = [services, hookTypes, clients, rules, marketplaces];
 const accountRows = ref<LookupRow[]>([]);
 const loading = ref(true);
 const saving = ref(false);
@@ -85,7 +95,7 @@ const dragged = ref<string | null>(null);
 const ruleTypes: { type: RuleType; title: string; description: string }[] = [
     {
         type: "catalog_sync",
-        title: "Синхронизация каталога",
+        title: "Товары МП",
         description: "Импорт карточек товаров",
     },
     {
@@ -102,6 +112,11 @@ const ruleTypes: { type: RuleType; title: string; description: string }[] = [
         type: "shipment",
         title: "Отгрузка",
         description: "Статусы логистики и курьеров",
+    },
+    {
+        type: "other",
+        title: "Прочее",
+        description: "Правило и настройки JSON",
     },
 ];
 const selected = computed(
@@ -124,6 +139,83 @@ const marketplace = computed(() => {
         return "Wildberries";
     return null;
 });
+const marketplaceOptions = computed(() =>
+    marketplaces.rows.value
+        .filter((row) => row.status === 1)
+        .map((row) => {
+            const code = String(
+                row.shortname || row.name || "МП",
+            ).toLowerCase();
+            const brand =
+                code === "wb"
+                    ? { badge: "WB", badgeColor: "#8b2bb7" }
+                    : code === "oz"
+                      ? { badge: "OZ", badgeColor: "#005bff" }
+                      : code === "ym"
+                        ? { badge: "ЯМ", badgeColor: "#e51c23" }
+                        : {
+                              badge: code.slice(0, 2).toUpperCase(),
+                              badgeColor: "#64748b",
+                          };
+            return {
+                id: String(row.id),
+                label: `#${row.id} ${row.name || row.shortname || "Маркетплейс"}`,
+                ...brand,
+            };
+        }),
+);
+const defaultMarketplaceId = computed(() => {
+    const code =
+        marketplace.value === "Wildberries"
+            ? "wb"
+            : marketplace.value === "Ozon"
+              ? "oz"
+              : marketplace.value === "Яндекс Маркет"
+                ? "ym"
+                : "";
+    return (
+        marketplaces.rows.value.find((row) => row.shortname === code)?.id ??
+        null
+    );
+});
+const availableRuleTypes = computed(() =>
+    ruleTypes.filter((rule) => marketplace.value || rule.type === "other"),
+);
+function nodeDescription(node: RuleNode): string {
+    if (node.type === "catalog_sync") {
+        return (
+            marketplaces.rows.value.find(
+                (row) =>
+                    String(row.id) === String(node.settings.marketplace_id),
+            )?.name ||
+            marketplace.value ||
+            "Маркетплейс"
+        );
+    }
+    if (node.type === "other") {
+        return (
+            rules.rows.value.find(
+                (row) => String(row.id) === String(node.settings.rule_id),
+            )?.name || "Правило не выбрано"
+        );
+    }
+    return marketplace.value || "Интеграция";
+}
+function marketplaceBadge(node: RuleNode): { text: string; color: string } {
+    const row = marketplaces.rows.value.find(
+        (item) => String(item.id) === String(node.settings.marketplace_id),
+    );
+    const code = String(row?.shortname || "").toLowerCase();
+    if (code === "wb") return { text: "WB", color: "#8b2bb7" };
+    if (code === "oz") return { text: "OZ", color: "#005bff" };
+    if (code === "ym") return { text: "ЯМ", color: "#e51c23" };
+    return {
+        text: String(row?.shortname || "МП")
+            .slice(0, 2)
+            .toUpperCase(),
+        color: "#64748b",
+    };
+}
 const lookupOptions = (rows: LookupRow[]) =>
     rows
         .filter((row) => row.status !== 2)
@@ -138,7 +230,13 @@ const accountOptions = computed(() =>
                 !form.value.client_id ||
                 String(row.client_id) === form.value.client_id,
         ),
-    ),
+    ).map((row) => ({
+        ...row,
+        label:
+            row.label === `№${row.id}`
+                ? `#${row.id}`
+                : `#${row.id} ${row.label}`,
+    })),
 );
 const snapshot = computed(() =>
     JSON.stringify({ form: form.value, nodes: nodes.value }),
@@ -204,16 +302,23 @@ function loadForm(
         extra_params: JSON.stringify(params, null, 2),
     };
     nodes.value = parseNodes(builder);
+    for (const node of nodes.value) {
+        if (node.type === "catalog_sync" && !node.settings.marketplace_id)
+            node.settings.marketplace_id = defaultMarketplaceId.value;
+    }
     // До появления схемы у маркетплейсного вебхука действует прежняя синхронизация каталога.
     if (!builder && marketplace.value)
         nodes.value = [
             {
                 id: "catalog_sync",
                 type: "catalog_sync",
-                settings: { schedule_hours: 4 },
+                settings: {
+                    schedule_hours: 4,
+                    marketplace_id: defaultMarketplaceId.value,
+                },
             },
         ];
-    selectedId.value = nodes.value[0]?.id ?? null;
+    selectedId.value = nodes.value[0]?.id ?? "access";
     baseline.value = snapshot.value;
 }
 async function load() {
@@ -238,7 +343,10 @@ async function load() {
     }
 }
 function addNode(type: RuleType) {
-    if (!marketplace.value || nodes.value.some((node) => node.type === type))
+    if (
+        (type !== "other" && !marketplace.value) ||
+        nodes.value.some((node) => node.type === type)
+    )
         return;
     nodes.value.push({
         id: type,
@@ -247,18 +355,29 @@ function addNode(type: RuleType) {
             type === "catalog_sync"
                 ? {
                       schedule_hours: 4,
+                      marketplace_id: defaultMarketplaceId.value,
                       sync_prices: false,
                       discount: false,
                       category_mappings: [],
                   }
-                : {},
+                : type === "stock_export"
+                  ? {
+                        export_stocks: false,
+                        stock_formula: "real-fbs-fbo",
+                        stock_fixed: null,
+                        trigger_mode: "events",
+                        trigger_hours: 4,
+                    }
+                  : type === "other"
+                    ? { rule_id: null, json: "{}" }
+                    : {},
     });
     selectedId.value = type;
 }
 function removeNode(node: RuleNode) {
     nodes.value = nodes.value.filter((item) => item.id !== node.id);
     if (selectedId.value === node.id)
-        selectedId.value = nodes.value[0]?.id ?? null;
+        selectedId.value = nodes.value[0]?.id ?? "access";
 }
 function moveNode(index: number, direction: number) {
     const target = index + direction;
@@ -272,14 +391,17 @@ function dragStart(value: string, event: DragEvent) {
     event.dataTransfer?.setData("text/plain", value);
     if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
 }
-function dropAt(index: number) {
-    const value = dragged.value;
+function pointerDrop(index: number) {
+    if (dragged.value) dropAt(index);
+}
+function dropAt(index: number, event?: DragEvent) {
+    const value = dragged.value || event?.dataTransfer?.getData("text/plain");
     dragged.value = null;
     if (!value) return;
     if (value.startsWith("new:")) {
         const type = value.slice(4) as RuleType;
         if (
-            !marketplace.value ||
+            (type !== "other" && !marketplace.value) ||
             nodes.value.some((node) => node.type === type)
         )
             return;
@@ -304,6 +426,11 @@ function addMapping() {
         marketplace: "",
     });
 }
+function setStockFixed(event: Event) {
+    if (!selected.value || selected.value.type !== "stock_export") return;
+    const value = (event.target as HTMLInputElement).value;
+    selected.value.settings.stock_fixed = value === "" ? null : Number(value);
+}
 function back() {
     router.visit(listUrl.value);
 }
@@ -325,6 +452,19 @@ async function save() {
     if (form.value.account_id)
         params.account_id = Number(form.value.account_id);
     else delete params.account_id;
+    for (const node of nodes.value) {
+        if (node.type !== "other") continue;
+        try {
+            const value = JSON.parse(node.settings.json || "{}");
+            if (!value || typeof value !== "object" || Array.isArray(value))
+                throw new Error();
+        } catch {
+            error.value =
+                "Настройки JSON блока «Прочее» должны содержать объект.";
+            selectedId.value = node.id;
+            return;
+        }
+    }
     params.builder = { version: 1, nodes: nodes.value };
     saving.value = true;
     try {
@@ -440,21 +580,28 @@ onUnmounted(() => {
                     <div
                         class="builder-canvas"
                         @dragover.prevent
-                        @drop.prevent="dropAt(nodes.length)"
+                        @drop.prevent="dropAt(nodes.length, $event)"
+                        @pointerup="pointerDrop(nodes.length)"
                     >
                         <p class="canvas-hint">
                             Перетащите правила из правой панели и свяжите их
                         </p>
-                        <div class="node-chain">
+                        <div
+                            class="node-chain"
+                            @dragover.prevent.stop
+                            @drop.prevent.stop="dropAt(nodes.length, $event)"
+                            @pointerup.stop="pointerDrop(nodes.length)"
+                        >
                             <div
                                 class="rule-node start-node"
-                                @click="advanced = true"
+                                :class="{ selected: selectedId === 'access' }"
+                                @click="selectedId = 'access'"
                             >
                                 <div class="node-title">
                                     <img
                                         src="/design/integration_builder/lock.svg"
                                         alt=""
-                                    />Доступ (Start)
+                                    />Доступы (Start)
                                 </div>
                                 <span>Учетные данные CRM</span
                                 ><small>Подключено</small>
@@ -477,12 +624,27 @@ onUnmounted(() => {
                                     draggable="true"
                                     @dragstart="dragStart(node.id, $event)"
                                     @dragover.prevent.stop
-                                    @drop.prevent.stop="dropAt(index)"
+                                    @drop.prevent.stop="dropAt(index, $event)"
+                                    @pointerup.stop="pointerDrop(index)"
                                     @click="selectedId = node.id"
                                 >
                                     <div class="node-title">
+                                        <span
+                                            v-if="node.type === 'catalog_sync'"
+                                            class="marketplace-avatar"
+                                            :style="{
+                                                backgroundColor:
+                                                    marketplaceBadge(node)
+                                                        .color,
+                                            }"
+                                            aria-hidden="true"
+                                            >{{
+                                                marketplaceBadge(node).text
+                                            }}</span
+                                        >
                                         <img
-                                            :src="`/design/integration_builder/${node.type === 'catalog_sync' && selectedId === node.id ? 'catalog_sync_active' : node.type}.svg`"
+                                            v-else
+                                            :src="`/design/integration_builder/${node.type === 'other' ? 'settings' : node.type}.svg`"
                                             alt=""
                                         />{{
                                             ruleTypes.find(
@@ -491,9 +653,7 @@ onUnmounted(() => {
                                             )?.title
                                         }}
                                     </div>
-                                    <span>{{
-                                        marketplace || "Интеграция"
-                                    }}</span
+                                    <span>{{ nodeDescription(node) }}</span
                                     ><small v-if="selectedId === node.id"
                                         >Выделено</small
                                     >
@@ -549,9 +709,9 @@ onUnmounted(() => {
                         <div class="palette">
                             <h3>Доступные правила</h3>
                             <p>Выберите правило для редактирования</p>
-                            <div v-if="marketplace" class="palette-grid">
+                            <div class="palette-grid">
                                 <button
-                                    v-for="rule in ruleTypes"
+                                    v-for="rule in availableRuleTypes"
                                     :key="rule.type"
                                     type="button"
                                     class="palette-rule"
@@ -561,6 +721,8 @@ onUnmounted(() => {
                                         )
                                     "
                                     draggable="true"
+                                    @pointerdown="dragged = `new:${rule.type}`"
+                                    @pointerup="dragged = null"
                                     @dragstart="
                                         dragStart(`new:${rule.type}`, $event)
                                     "
@@ -568,50 +730,37 @@ onUnmounted(() => {
                                 >
                                     <span
                                         ><img
-                                            :src="`/design/integration_builder/${rule.type}.svg`"
+                                            :src="`/design/integration_builder/${rule.type === 'other' ? 'settings' : rule.type}.svg`"
                                             alt=""
                                         />{{ rule.title }}</span
                                     ><small>{{ rule.description }}</small>
                                 </button>
                             </div>
-                            <p v-else class="empty-palette">
-                                Для этого вебхука доступных блоков нет.
-                            </p>
                         </div>
                         <div class="inspector-fields">
+                            <template v-if="selectedId === 'access'">
+                                <SearchableSelect
+                                    v-model="form.account_id"
+                                    :options="accountOptions"
+                                    label="Доступ"
+                                />
+                            </template>
                             <template
-                                v-if="
+                                v-else-if="
                                     selected && selected.type === 'catalog_sync'
                                 "
                             >
-                                <label
-                                    >Маркетплейс<input
-                                        :value="marketplace || '—'"
-                                        disabled
-                                /></label>
-                                <label
-                                    >Кабинет<SearchableSelect
-                                        v-model="form.account_id"
-                                        :options="accountOptions"
-                                        label="Кабинет"
-                                /></label>
-                                <label
-                                    >Расписание<select
-                                        v-model.number="
-                                            selected.settings.schedule_hours
-                                        "
-                                    >
-                                        <option
-                                            v-for="hours in [
-                                                1, 2, 4, 6, 12, 24,
-                                            ]"
-                                            :key="hours"
-                                            :value="hours"
-                                        >
-                                            Каждые {{ hours }} ч
-                                        </option>
-                                    </select></label
-                                >
+                                <SearchableSelect
+                                    :model-value="
+                                        selected.settings.marketplace_id ?? null
+                                    "
+                                    @update:model-value="
+                                        selected.settings.marketplace_id =
+                                            $event
+                                    "
+                                    :options="marketplaceOptions"
+                                    label="Маркетплейс"
+                                />
                                 <label class="switch-line"
                                     >Синхронизировать цены
                                     <input
@@ -623,14 +772,6 @@ onUnmounted(() => {
                                             : "Нет"
                                     }}</span></label
                                 >
-                                <label
-                                    v-if="selected.settings.sync_prices"
-                                    class="switch-line"
-                                    >Со скидкой
-                                    <input
-                                        v-model="selected.settings.discount"
-                                        type="checkbox"
-                                /></label>
                                 <div class="mapping-editor">
                                     <div class="mapping-head">
                                         Сопоставление категорий
@@ -669,6 +810,127 @@ onUnmounted(() => {
                                         </button>
                                     </div>
                                 </div>
+                            </template>
+                            <template
+                                v-else-if="
+                                    selected && selected.type === 'stock_export'
+                                "
+                            >
+                                <label
+                                    >Выгружать остатки
+                                    <select
+                                        v-model="
+                                            selected.settings.export_stocks
+                                        "
+                                    >
+                                        <option :value="false">
+                                            Не выгружать
+                                        </option>
+                                        <option :value="true">Выгружать</option>
+                                    </select>
+                                </label>
+                                <template
+                                    v-if="selected.settings.export_stocks"
+                                >
+                                    <label
+                                        >Формула расчёта
+                                        <select
+                                            v-model="
+                                                selected.settings.stock_formula
+                                            "
+                                        >
+                                            <option value="real-fbs-fbo">
+                                                Реальный остаток с резервами FBS
+                                                и FBO
+                                            </option>
+                                            <option value="real-fbs">
+                                                Реальный остаток с резервами FBS
+                                            </option>
+                                            <option value="fixed">
+                                                Фиксированный остаток
+                                            </option>
+                                        </select>
+                                    </label>
+                                    <label
+                                        v-if="
+                                            selected.settings.stock_formula ===
+                                            'fixed'
+                                        "
+                                        >Выгружать фикс.
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="2000000000"
+                                            step="1"
+                                            :value="
+                                                selected.settings.stock_fixed ??
+                                                ''
+                                            "
+                                            @input="setStockFixed"
+                                        />
+                                    </label>
+                                    <label
+                                        >Запуск выгрузки
+                                        <select
+                                            v-model="
+                                                selected.settings.trigger_mode
+                                            "
+                                        >
+                                            <option value="events">
+                                                По событиям
+                                            </option>
+                                            <option value="schedule">
+                                                По расписанию
+                                            </option>
+                                        </select>
+                                    </label>
+                                    <label
+                                        v-if="
+                                            selected.settings.trigger_mode ===
+                                            'schedule'
+                                        "
+                                        >Расписание
+                                        <select
+                                            v-model.number="
+                                                selected.settings.trigger_hours
+                                            "
+                                        >
+                                            <option
+                                                v-for="hours in [
+                                                    1, 2, 4, 6, 12, 24,
+                                                ]"
+                                                :key="hours"
+                                                :value="hours"
+                                            >
+                                                Каждые {{ hours }} ч
+                                            </option>
+                                        </select>
+                                    </label>
+                                </template>
+                            </template>
+                            <template
+                                v-else-if="
+                                    selected && selected.type === 'other'
+                                "
+                            >
+                                <SearchableSelect
+                                    :model-value="
+                                        selected.settings.rule_id ?? null
+                                    "
+                                    @update:model-value="
+                                        selected.settings.rule_id = $event
+                                    "
+                                    :options="lookupOptions(rules.rows.value)"
+                                    label="Правило"
+                                />
+                                <label
+                                    >Настройки JSON
+                                    <textarea
+                                        v-model="selected.settings.json"
+                                        rows="8"
+                                        spellcheck="false"
+                                    />
+                                </label>
                             </template>
                             <template v-else-if="selected"
                                 ><h3>{{ selectedType?.title }}</h3>
@@ -720,12 +982,6 @@ onUnmounted(() => {
                                         label="Тип хука"
                                 /></label>
                                 <label
-                                    >Кабинет<SearchableSelect
-                                        v-model="form.account_id"
-                                        :options="accountOptions"
-                                        label="Кабинет"
-                                /></label>
-                                <label
                                     >Статус<select v-model.number="form.status">
                                         <option :value="0">Новый</option>
                                         <option :value="1">Активен</option>
@@ -763,22 +1019,6 @@ onUnmounted(() => {
                                         rows="5"
                                     />
                                 </label>
-                                <fieldset class="rules-choice">
-                                    <legend>Правила обработки</legend>
-                                    <label
-                                        v-for="rule in rules.rows.value"
-                                        :key="rule.id"
-                                        ><input
-                                            v-model="form.rules_id"
-                                            type="checkbox"
-                                            :value="Number(rule.id)"
-                                        />{{
-                                            rule.name ||
-                                            rule.shortname ||
-                                            `№${rule.id}`
-                                        }}</label
-                                    >
-                                </fieldset>
                             </div>
                         </div>
                         <div class="inspector-footer">
@@ -798,8 +1038,16 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.integration-builder-page {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+}
 .integration-builder-page .users-list {
+    display: block;
+    align-self: flex-start;
     min-width: 0;
+    width: 100%;
 }
 .integration-builder-page .page-heading {
     display: flex;
@@ -878,6 +1126,18 @@ onUnmounted(() => {
     width: 20px;
     height: 20px;
     flex: none;
+}
+.marketplace-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
 }
 .rule-node > span {
     display: block;
@@ -1003,9 +1263,9 @@ onUnmounted(() => {
     text-overflow: ellipsis;
 }
 .inspector-fields {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    flex: none;
+    min-height: auto;
+    overflow: visible;
     display: flex;
     flex-direction: column;
     gap: 12px;

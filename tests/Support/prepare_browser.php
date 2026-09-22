@@ -119,6 +119,7 @@ DB::transaction(function () {
     (require database_path('migrations/2026_09_10_000024_sync_integrations.php'))->up();
     (require database_path('migrations/2026_09_19_000001_add_client_to_integration_webhooks.php'))->up();
     DB::table('integration.services')->insert(['name' => 'Тестовый сервис', 'status' => 1, 'tenant_id' => 'test_org']);
+    DB::table('integration.rules')->insert(['name' => 'Тестовое правило', 'status' => 1, 'tenant_id' => 'test_org']);
     DB::table('integration.webhooks')->insert(['name' => 'Интеграция тестового клиента', 'status' => 1, 'client_id' => 1, 'tenant_id' => 'test_org']);
     $wildberries = DB::table('integration.services')->insertGetId(['name' => 'Wildberries', 'shortname' => 'wildberries', 'status' => 1, 'tenant_id' => 'test_org']);
     DB::table('integration.webhooks')->insert(['name' => 'WB интеграция', 'status' => 1, 'client_id' => 1, 'service_id' => $wildberries, 'tenant_id' => 'test_org']);

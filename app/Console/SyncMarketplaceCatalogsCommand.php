@@ -497,14 +497,7 @@ final class SyncMarketplaceCatalogsCommand extends Command
 
     private function marketplaceFor(IntegrationWebhook $webhook): ?string
     {
-        $service = mb_strtolower((string) ($webhook->service_obj?->shortname ?? $webhook->service_obj?->name));
-
-        return match (true) {
-            str_contains($service, 'ozon') => 'ozon',
-            str_contains($service, 'yandex') && str_contains($service, 'market') => 'yandex_market',
-            str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
-            default => null,
-        };
+        return IntegrationBuilder::marketplaceFor($webhook);
     }
 
     private function marketplaceName(string $marketplace): string

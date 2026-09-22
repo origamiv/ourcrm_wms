@@ -52,13 +52,8 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
     {
         $singlePage = $this->job !== null && ! ($this->job instanceof SyncJob);
         $webhook = IntegrationWebhook::query()->where('tenant_id', $this->tenant)->with(['service_obj', 'client_obj'])->findOrFail($this->webhookId);
-        $service = mb_strtolower((string) ($webhook->service_obj?->shortname ?? $webhook->service_obj?->name));
-        $marketplace = match (true) {
-            str_contains($service, 'ozon') => 'ozon',
-            str_contains($service, 'yandex') && str_contains($service, 'market') => 'yandex_market',
-            str_contains($service, 'wildberries') || preg_match('/(^|_)wb($|_)/', $service) === 1 => 'wildberries',
-            default => throw new InvalidArgumentException('Сервис интеграции не является поддерживаемым маркетплейсом: '.$service),
-        };
+        $marketplace = IntegrationBuilder::marketplaceFor($webhook)
+            ?? throw new InvalidArgumentException('Маркетплейс интеграции не поддерживает синхронизацию каталога.');
         $marketplaceName = match ($marketplace) {
             'wildberries' => 'Wildberries',
             'ozon' => 'Ozon',

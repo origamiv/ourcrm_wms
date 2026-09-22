@@ -3,7 +3,13 @@ import { computed, nextTick, ref, useId } from "vue";
 
 const props = defineProps<{
     modelValue: string | number | null;
-    options: { id: string; label: string; search?: string }[];
+    options: {
+        id: string;
+        label: string;
+        search?: string;
+        badge?: string;
+        badgeColor?: string;
+    }[];
     label: string;
     disabled?: boolean;
 }>();
@@ -85,6 +91,13 @@ function blur(event: FocusEvent) {
     <div ref="root" class="searchable-select" @focusout="blur">
         <label :for="id">{{ label }}</label>
         <div class="select-control">
+            <span
+                v-if="selected?.badge && !opened"
+                class="select-badge selected-badge"
+                :style="{ backgroundColor: selected.badgeColor || '#64748b' }"
+                aria-hidden="true"
+                >{{ selected.badge }}</span
+            >
             <input
                 :id="id"
                 role="combobox"
@@ -123,6 +136,15 @@ function blur(event: FocusEvent) {
                     @click="select(option.id)"
                     @mousemove="active = index"
                 >
+                    <span
+                        v-if="'badge' in option && option.badge"
+                        class="select-badge"
+                        :style="{
+                            backgroundColor: option.badgeColor || '#64748b',
+                        }"
+                        aria-hidden="true"
+                        >{{ option.badge }}</span
+                    >
                     {{ option.label }}
                 </li>
             </ul>
@@ -147,6 +169,31 @@ function blur(event: FocusEvent) {
     width: 100%;
     border-color: #a8d4a9;
     padding-right: 30px;
+}
+.select-control:has(.selected-badge) input {
+    padding-left: 40px;
+}
+.select-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin-right: 7px;
+    border-radius: 5px;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+.selected-badge {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 9px;
+    transform: translateY(-50%);
+    pointer-events: none;
 }
 .select-arrow {
     position: absolute;
