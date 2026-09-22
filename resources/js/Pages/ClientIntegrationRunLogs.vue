@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Head, router, usePage } from "@inertiajs/vue3";
 import ClientTabs from "../Components/ClientTabs.vue";
 import { formatDate } from "../lib/dates";
@@ -42,7 +42,6 @@ const error = ref("");
 const pageNumber = ref(1);
 const lastPage = ref(1);
 const total = ref(0);
-const mobileMonthsScroll = ref<HTMLElement | null>(null);
 let calendarRequest = 0;
 let dayRequest = 0;
 
@@ -111,6 +110,21 @@ const mobileMonths = computed(() =>
         };
     }),
 );
+const firstMobileMonth = computed(() =>
+    year.value === Number(today.slice(0, 4))
+        ? Math.max(0, Number(today.slice(5, 7)) - 4)
+        : 0,
+);
+const lastMobileMonth = computed(() =>
+    year.value === Number(today.slice(0, 4))
+        ? Math.min(11, Number(today.slice(5, 7)) + 2)
+        : 11,
+);
+const visibleMobileMonths = computed(() =>
+    mobileMonths.value
+        .map((month, index) => ({ ...month, index }))
+        .filter((month) => month.index >= firstMobileMonth.value && month.index <= lastMobileMonth.value),
+);
 const statusLabels: Record<string, string> = {
     queued: "В очереди",
     running: "Выполняется",
@@ -170,23 +184,9 @@ function changeYear(direction: number) {
     void loadCalendar(next);
     void loadDay(next === Number(today.slice(0, 4)) ? today : `${next}-01-01`);
 }
-function scrollToStartMonth() {
-    const container = mobileMonthsScroll.value;
-    if (!container) return;
-    const monthIndex = year.value === Number(today.slice(0, 4))
-        ? Math.max(0, new Date().getUTCMonth() - 3)
-        : 0;
-    const month = container.querySelector<HTMLElement>(`[data-month-index="${monthIndex}"]`);
-    if (month) container.scrollTop = month.offsetTop;
-}
-watch(year, async () => {
-    await nextTick();
-    scrollToStartMonth();
-});
 onMounted(() => {
     void loadCalendar(year.value);
     void loadDay(selectedDate.value);
-    void nextTick(scrollToStartMonth);
 });
 </script>
 
@@ -289,12 +289,11 @@ onMounted(() => {
                             </div>
                         </div>
                     </div>
-                    <div ref="mobileMonthsScroll" class="mobile-months">
+                    <div class="mobile-months">
                         <section
-                            v-for="(month, index) in mobileMonths"
-                            :key="index"
+                            v-for="month in visibleMobileMonths"
+                            :key="month.index"
                             class="mobile-month"
-                            :data-month-index="index"
                             :aria-label="`${month.label} ${year}`"
                         >
                             <h3>{{ month.label }}</h3>
@@ -647,6 +646,11 @@ h2 {
     color: #a12020;
 }
 @media (max-width: 767px) {
+    .run-logs-page {
+        flex: none;
+        height: auto;
+        overflow: visible;
+    }
     .activity-card,
     .day-card {
         padding: 14px;
@@ -659,12 +663,10 @@ h2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: start;
         gap: 20px 12px;
-        position: relative;
-        max-height: min(60dvh, 650px);
-        overflow-y: auto;
-        overscroll-behavior-y: contain;
         margin-top: 20px;
-        padding-right: 6px;
+    }
+    .runs-table-scroll {
+        max-height: none;
     }
     .mobile-month h3 {
         margin: 0 0 8px;
