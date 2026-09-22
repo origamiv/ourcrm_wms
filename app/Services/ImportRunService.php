@@ -29,7 +29,7 @@ final class ImportRunService
                     return;
                 }
 
-                $message = 'Импорт остановлен: обработчик очереди завершил пакет заданий без завершения импорта. Проверьте worker очереди imports.';
+                $message = 'Импорт остановлен: процесс внезапно завершился.';
                 $import->forceFill([
                     'status' => 'failed',
                     'error_class' => RuntimeException::class,
