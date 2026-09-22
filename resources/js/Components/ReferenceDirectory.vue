@@ -1402,7 +1402,6 @@ useCardRoute<ReferenceRow>({
                                     <template v-if="isClients">
                                         <button :aria-label="`Документы клиента: ${displayName(row)}`" title="Документы" @click.stop="router.visit(`/clients/documents?client_id=${row.id}`)"><img src="/design/crm/documents.svg" alt="" /></button>
                                         <button :aria-label="`Доступы клиента: ${displayName(row)}`" title="Доступы" @click.stop="router.visit(`/clients/accounts?client_id=${row.id}`)"><img src="/design/crm/administration.svg" alt="" /></button>
-                                        <button :aria-label="`Интеграции клиента: ${displayName(row)}`" title="Интеграции" @click.stop="router.visit(`/clients/integrations?client_id=${row.id}`)"><img src="/design/crm/administration.svg" alt="" /></button>
                                     </template>
                                     <button
                                         v-if="isAcceptance"

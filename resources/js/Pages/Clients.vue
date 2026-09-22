@@ -135,6 +135,11 @@ function openAccounts(row: ClientRow) {
     const url = `/clients/accounts?client_id=${encodeURIComponent(row.id)}`;
     router.visit(url);
 }
+function openIntegrations(row: ClientRow) {
+    if (saving.value || row.deleted_at) return;
+    const url = `/clients/integrations?client_id=${encodeURIComponent(row.id)}`;
+    router.visit(url);
+}
 function open(row: ClientRow | null, readOnly = false) {
     if (saving.value) return;
     selected.value = row;
@@ -344,6 +349,14 @@ useCardRoute<ClientRow>({
                                         @click="openAccounts(row)"
                                     >
                                         <img src="/design/crm/key.svg" alt="" />
+                                    </button>
+                                    <button
+                                        :aria-label="`Интеграции: ${displayName(row)}`"
+                                        title="Интеграции"
+                                        :disabled="saving || !!row.deleted_at"
+                                        @click="openIntegrations(row)"
+                                    >
+                                        <img src="/design/crm/integrations.svg" alt="" />
                                     </button>
                                     <button
                                         :aria-label="`Юрлица: ${displayName(row)}`"

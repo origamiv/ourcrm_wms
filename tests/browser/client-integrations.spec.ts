@@ -1,5 +1,26 @@
 import { test, expect } from "@playwright/test";
 
+test("кнопка интеграций видна в действиях клиента", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
+    await page.getByLabel("Пароль", { exact: true }).fill("Test_password_123");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await page.goto("/clients/clients");
+
+    const row = page.locator("tbody tr").filter({ has: page.getByRole("button", { name: "Тестовый клиент", exact: true }) }).first();
+    const action = row.getByRole("button", { name: "Интеграции: Тестовый клиент" });
+    await expect(action).toBeVisible();
+    await action.click();
+    await expect(page).toHaveURL(/\/clients\/integrations\?client_id=1$/);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/clients/clients");
+    await expect(action).toBeVisible();
+    await action.click();
+    await expect(page).toHaveURL(/\/clients\/integrations\?client_id=1$/);
+});
+
 test("интеграции клиента: меню, создание и фильтр по клиенту", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
