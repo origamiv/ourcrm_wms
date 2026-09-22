@@ -10,6 +10,7 @@ use App\Models\IntegrationData;
 use App\Models\IntegrationWebhook;
 use App\Services\MarketplaceCatalogDispatchService;
 use App\Services\MarketplaceCatalogSyncService;
+use App\Services\MarketplaceConcurrencyService;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -114,7 +115,8 @@ it('повторяет временный сбой той же страницы 
     $job = catalogQueueJob($this->webhook, $run->id);
     $job->job->shouldReceive('release')->once()->with(30);
     $job->handle();
-    expect($run->fresh()->status)->toBe('queued')->and($run->fresh()->options['catalog_cursor'])->toBe('page2');
+    expect($run->fresh()->status)->toBe('queued')->and($run->fresh()->options['catalog_cursor'])->toBe('page2')
+        ->and($run->fresh()->options['catalog_network_attempts'])->toBe(1);
     $disconnected = false;
     catalogQueueJob($this->webhook, $run->id, 2)->handle();
     expect($run->fresh()->status)->toBe('completed')->and($run->fresh()->processed_records)->toBe(101)
@@ -140,6 +142,20 @@ it('не выдаёт произвольную ошибку 404 Ozon за усп
 it('не допускает преждевременную повторную выдачу зарезервированного задания', function (): void {
     expect(config('queue.connections.redis.retry_after'))->toBeGreaterThan(1800)
         ->and((new SyncMarketplaceCatalogJob(1, $this->tenant))->timeout)->toBeLessThan(1260);
+});
+
+it('не ожидает глобальные слоты при обработке одной страницы', function (): void {
+    $slots = [];
+    for ($index = 0; $index < 10; $index++) {
+        $slots[] = Illuminate\Support\Facades\Cache::store('redis')->lock('marketplace-catalog:slot:ozon:'.$index, 60);
+        expect($slots[$index]->get())->toBeTrue();
+    }
+    $locks = app(MarketplaceConcurrencyService::class)->acquire('ozon', $this->tenant, (int) $this->account->id, true);
+    expect($locks['slot'])->toBeNull();
+    app(MarketplaceConcurrencyService::class)->release($locks);
+    foreach ($slots as $slot) {
+        $slot->release();
+    }
 });
 
 it('завершает постоянную ошибку без повторных заданий', function (): void {

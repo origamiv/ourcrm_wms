@@ -34,7 +34,7 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
 
     private const MAX_TRANSIENT_ATTEMPTS = 5;
 
-    public int $tries = self::MAX_TRANSIENT_ATTEMPTS;
+    public int $tries = 0;
 
     public int $timeout = 1200;
 
@@ -152,6 +152,7 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
                     $options = (array) $run->options;
                     $options['catalog_cursor'] = $data->data['next_cursor'];
                     $options['catalog_processed'] = (int) $data->data['processed'];
+                    unset($options['catalog_network_attempts']);
                     $run->forceFill(['status' => 'queued', 'options' => $options])->save();
                     $stage->forceFill(['status' => 'queued'])->save();
                     self::dispatch($this->webhookId, $this->tenant, (int) $run->id)
@@ -171,9 +172,19 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
         } catch (Throwable $exception) {
             $reason = trim($exception->getMessage()) ?: 'неизвестная ошибка.';
             $message = 'Синхронизация каталога '.$marketplaceName.' не выполнена: '.$reason;
-            if ($singlePage && $this->isTransient($exception) && $this->attempts() < self::MAX_TRANSIENT_ATTEMPTS) {
+            if ($singlePage && $exception instanceof LockTimeoutException) {
+                $stage->forceFill(['status' => 'queued', 'error_message' => 'Ожидание освобождения аккаунта.', 'started_at' => null])->save();
+                $run->forceFill(['status' => 'queued', 'error_message' => 'Ожидание освобождения аккаунта.', 'started_at' => null])->save();
+                $this->release(60);
+
+                return;
+            }
+            $options = (array) ($run->options ?? []);
+            $networkAttempts = (int) ($options['catalog_network_attempts'] ?? 0) + 1;
+            if ($singlePage && $this->isTransient($exception) && $networkAttempts < self::MAX_TRANSIENT_ATTEMPTS) {
                 $retryMessage = 'Временная ошибка связи с '.$marketplaceName.'. Повторная попытка '
-                    .($this->attempts() + 1).' из '.self::MAX_TRANSIENT_ATTEMPTS.'.';
+                    .($networkAttempts + 1).' из '.self::MAX_TRANSIENT_ATTEMPTS.'.';
+                $options['catalog_network_attempts'] = $networkAttempts;
                 $stage->forceFill([
                     'status' => 'queued',
                     'started_at' => null,
@@ -186,8 +197,9 @@ final class SyncMarketplaceCatalogJob implements ShouldQueue
                     'started_at' => null,
                     'error_message' => $retryMessage,
                     'finished_at' => null,
+                    'options' => $options,
                 ])->save();
-                $this->release(min(300, 30 * (2 ** max(0, $this->attempts() - 1))));
+                $this->release(min(300, 30 * (2 ** max(0, $networkAttempts - 1))));
 
                 return;
             }

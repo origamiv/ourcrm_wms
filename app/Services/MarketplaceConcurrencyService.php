@@ -17,7 +17,7 @@ final class MarketplaceConcurrencyService
 
     private const LOCK_WAIT_SECONDS = 5;
 
-    /** @return array{account: Lock, slot: Lock} */
+    /** @return array{account: Lock, slot: ?Lock} */
     public function acquire(string $marketplace, string $tenant, int $accountId, bool $singlePage = false): array
     {
         $ttl = $singlePage ? self::LOCK_TTL_SECONDS : 21600;
@@ -26,6 +26,9 @@ final class MarketplaceConcurrencyService
         try {
             $account->block(self::LOCK_WAIT_SECONDS);
             $accountAcquired = true;
+            if ($singlePage) {
+                return ['account' => $account, 'slot' => null];
+            }
             $deadline = time() + self::LOCK_WAIT_SECONDS;
             do {
                 for ($slot = 0; $slot < self::SLOT_COUNT; $slot++) {
@@ -48,10 +51,10 @@ final class MarketplaceConcurrencyService
         throw new LockTimeoutException('Не удалось получить слот синхронизации маркетплейса за '.self::LOCK_WAIT_SECONDS.' секунд.');
     }
 
-    /** @param array{account: Lock, slot: Lock} $locks */
+    /** @param array{account: Lock, slot: ?Lock} $locks */
     public function release(array $locks): void
     {
-        $locks['slot']->release();
+        $locks['slot']?->release();
         $locks['account']->release();
     }
 
