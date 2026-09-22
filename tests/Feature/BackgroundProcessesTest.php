@@ -73,7 +73,7 @@ it('возвращает одну итоговую строку по всем д
         ->assertJsonPath('data.0.failed_runs', 1)
         ->assertJsonPath('data.0.running_runs', 2)
         ->assertJsonPath('data.0.without_runs', 1)
-        ->assertJsonCount(5, 'data.0.activity');
+        ->assertJsonCount(4, 'data.0.activity');
 });
 
 it('возвращает одну итоговую строку по всем доступным вебхукам', function (): void {
@@ -96,7 +96,7 @@ it('возвращает одну итоговую строку по всем д
         ->assertJsonCount(1, 'data.0.activity');
 });
 
-it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo, string $statisticsFrom): void {
+it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo): void {
     $this->loginUser($this->makeUser([], true));
 
     $this->getJson('/web/background_processes?period='.$period)
@@ -106,15 +106,15 @@ it('возвращает границы и единицы всех поддер�
         ->assertJsonPath('timezone', 'Europe/Moscow')
         ->assertJsonPath('selected_from', $selectedFrom)
         ->assertJsonPath('selected_to', $selectedTo)
-        ->assertJsonPath('statistics_from', $statisticsFrom);
+        ->assertJsonPath('statistics_from', $selectedFrom);
 })->with([
-    ['today', 'hour', '2026-09-22T00:00:00+03:00', '2026-09-23T00:00:00+03:00', '2026-09-20T00:00:00+03:00'],
-    ['yesterday', 'hour', '2026-09-21T00:00:00+03:00', '2026-09-22T00:00:00+03:00', '2026-09-19T00:00:00+03:00'],
-    ['week', 'day', '2026-09-21T00:00:00+03:00', '2026-09-28T00:00:00+03:00', '2026-09-07T00:00:00+03:00'],
-    ['month', 'day', '2026-09-01T00:00:00+03:00', '2026-10-01T00:00:00+03:00', '2026-07-01T00:00:00+03:00'],
-    ['hours_4', 'minute', '2026-09-22T08:35:00+03:00', '2026-09-22T12:35:00+03:00', '2026-09-22T00:35:00+03:00'],
-    ['hour', 'minute', '2026-09-22T11:35:00+03:00', '2026-09-22T12:35:00+03:00', '2026-09-22T09:35:00+03:00'],
-    ['minutes_15', 'minute', '2026-09-22T12:20:00+03:00', '2026-09-22T12:35:00+03:00', '2026-09-22T11:50:00+03:00'],
+    ['today', 'hour', '2026-09-22T00:00:00+03:00', '2026-09-23T00:00:00+03:00'],
+    ['yesterday', 'hour', '2026-09-21T00:00:00+03:00', '2026-09-22T00:00:00+03:00'],
+    ['week', 'day', '2026-09-21T00:00:00+03:00', '2026-09-28T00:00:00+03:00'],
+    ['month', 'day', '2026-09-01T00:00:00+03:00', '2026-10-01T00:00:00+03:00'],
+    ['hours_4', 'minute', '2026-09-22T08:35:00+03:00', '2026-09-22T12:35:00+03:00'],
+    ['hour', 'minute', '2026-09-22T11:35:00+03:00', '2026-09-22T12:35:00+03:00'],
+    ['minutes_15', 'minute', '2026-09-22T12:20:00+03:00', '2026-09-22T12:35:00+03:00'],
 ]);
 
 it('агрегирует любое число вебхуков в одну строку', function (): void {

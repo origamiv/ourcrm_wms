@@ -61,9 +61,6 @@ const statisticsTo = ref("");
 const bucketUnit = ref<BucketUnit>("hour");
 let loadRequest = 0;
 
-const gridRows = computed(() =>
-    bucketUnit.value === "day" ? 7 : bucketUnit.value === "hour" ? 24 : 15,
-);
 const displayActivity = computed(() => {
     if (!summary.value || !statisticsFrom.value || !statisticsTo.value) {
         return [];
@@ -294,14 +291,9 @@ onMounted(() => {
                     <div
                         class="activity-scroll"
                         tabindex="0"
-                        aria-label="Активность за три периода"
+                        aria-label="Активность за выбранный период"
                     >
-                        <div
-                            class="activity-grid"
-                            :style="{
-                                gridTemplateRows: `repeat(${gridRows}, 10px)`,
-                            }"
-                        >
+                        <div class="activity-grid">
                             <span
                                 v-for="point in displayActivity"
                                 :key="point.start"
@@ -456,13 +448,12 @@ onMounted(() => {
     scrollbar-width: thin;
 }
 .activity-grid {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 10px;
+    display: flex;
     gap: 3px;
     width: max-content;
 }
 .activity-point {
+    flex: 0 0 10px;
     width: 10px;
     height: 10px;
     border: 1px solid #e0e6e3;

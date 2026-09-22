@@ -50,11 +50,11 @@ final class BackgroundProcessStatisticsService
     {
         $now = CarbonImmutable::now((string) config('app.timezone', 'Europe/Moscow'));
 
-        [$from, $to, $statisticsFrom, $unit] = match ($period) {
-            'today' => [$now->startOfDay(), $now->startOfDay()->addDay(), $now->startOfDay()->subDays(2), 'hour'],
-            'yesterday' => [$now->startOfDay()->subDay(), $now->startOfDay(), $now->startOfDay()->subDays(3), 'hour'],
-            'week' => [$now->startOfWeek(CarbonInterface::MONDAY), $now->startOfWeek(CarbonInterface::MONDAY)->addWeek(), $now->startOfWeek(CarbonInterface::MONDAY)->subWeeks(2), 'day'],
-            'month' => [$now->startOfMonth(), $now->startOfMonth()->addMonth(), $now->startOfMonth()->subMonthsNoOverflow(2), 'day'],
+        [$from, $to, $unit] = match ($period) {
+            'today' => [$now->startOfDay(), $now->startOfDay()->addDay(), 'hour'],
+            'yesterday' => [$now->startOfDay()->subDay(), $now->startOfDay(), 'hour'],
+            'week' => [$now->startOfWeek(CarbonInterface::MONDAY), $now->startOfWeek(CarbonInterface::MONDAY)->addWeek(), 'day'],
+            'month' => [$now->startOfMonth(), $now->startOfMonth()->addMonth(), 'day'],
             'hours_4' => $this->rollingRange($now, 240),
             'hour' => $this->rollingRange($now, 60),
             'minutes_15' => $this->rollingRange($now, 15),
@@ -64,20 +64,20 @@ final class BackgroundProcessStatisticsService
         return [
             'selected_from' => $from,
             'selected_to' => $to,
-            'statistics_from' => $statisticsFrom,
+            'statistics_from' => $from,
             'statistics_to' => $to,
             'bucket_unit' => $unit,
         ];
     }
 
     /**
-     * @return array{CarbonImmutable, CarbonImmutable, CarbonImmutable, string}
+     * @return array{CarbonImmutable, CarbonImmutable, string}
      */
     private function rollingRange(CarbonImmutable $now, int $minutes): array
     {
         $to = $now->startOfMinute()->addMinute();
 
-        return [$to->subMinutes($minutes), $to, $to->subMinutes($minutes * 3), 'minute'];
+        return [$to->subMinutes($minutes), $to, 'minute'];
     }
 
     private function webhooks(string $tenant, string $groupBy): Collection
