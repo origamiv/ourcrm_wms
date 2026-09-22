@@ -656,7 +656,9 @@ h2 {
     }
     .mobile-months {
         display: grid;
-        gap: 24px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        gap: 20px 12px;
         position: relative;
         max-height: min(60dvh, 650px);
         overflow-y: auto;
