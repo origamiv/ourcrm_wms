@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { Head, router, usePage } from "@inertiajs/vue3";
 import ClientTabs from "../Components/ClientTabs.vue";
 import { formatDate } from "../lib/dates";
@@ -42,6 +42,7 @@ const error = ref("");
 const pageNumber = ref(1);
 const lastPage = ref(1);
 const total = ref(0);
+const mobileMonthsScroll = ref<HTMLElement | null>(null);
 let calendarRequest = 0;
 let dayRequest = 0;
 
@@ -95,6 +96,18 @@ const months = computed(() =>
                 timeZone: "UTC",
             }).format(start),
             week,
+        };
+    }),
+);
+const mobileMonths = computed(() =>
+    months.value.map((month, index) => {
+        const firstDay = new Date(Date.UTC(year.value, index, 1));
+        const leadingDays = (firstDay.getUTCDay() + 6) % 7;
+        const prefix = `${year.value}-${String(index + 1).padStart(2, "0")}-`;
+        const monthCells = cells.value.filter((cell) => cell.date.startsWith(prefix));
+        return {
+            label: month.label,
+            cells: [...Array<null>(leadingDays).fill(null), ...monthCells],
         };
     }),
 );
@@ -157,9 +170,23 @@ function changeYear(direction: number) {
     void loadCalendar(next);
     void loadDay(next === Number(today.slice(0, 4)) ? today : `${next}-01-01`);
 }
+function scrollToStartMonth() {
+    const container = mobileMonthsScroll.value;
+    if (!container) return;
+    const monthIndex = year.value === Number(today.slice(0, 4))
+        ? Math.max(0, new Date().getUTCMonth() - 3)
+        : 0;
+    const month = container.querySelector<HTMLElement>(`[data-month-index="${monthIndex}"]`);
+    if (month) container.scrollTop = month.offsetTop;
+}
+watch(year, async () => {
+    await nextTick();
+    scrollToStartMonth();
+});
 onMounted(() => {
     void loadCalendar(year.value);
     void loadDay(selectedDate.value);
+    void nextTick(scrollToStartMonth);
 });
 </script>
 
@@ -261,6 +288,39 @@ onMounted(() => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div ref="mobileMonthsScroll" class="mobile-months">
+                        <section
+                            v-for="(month, index) in mobileMonths"
+                            :key="index"
+                            class="mobile-month"
+                            :data-month-index="index"
+                            :aria-label="`${month.label} ${year}`"
+                        >
+                            <h3>{{ month.label }}</h3>
+                            <div class="mobile-weekdays" aria-hidden="true">
+                                <span v-for="day in ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']" :key="day">{{ day }}</span>
+                            </div>
+                            <div class="mobile-month-grid">
+                                <template v-for="(cell, dayIndex) in month.cells" :key="dayIndex">
+                                    <button
+                                        v-if="cell"
+                                        type="button"
+                                        class="activity-cell"
+                                        :class="[
+                                            `level-${cell.level}`,
+                                            { selected: selectedDate === cell.date },
+                                        ]"
+                                        :disabled="cell.future"
+                                        :aria-label="`${formatDate(cell.date)}: ${cell.count} запусков`"
+                                        :aria-pressed="selectedDate === cell.date"
+                                        :title="`${formatDate(cell.date)} — ${cell.count} запусков`"
+                                        @click="loadDay(cell.date)"
+                                    >{{ Number(cell.date.slice(-2)) }}</button>
+                                    <span v-else aria-hidden="true"></span>
+                                </template>
+                            </div>
+                        </section>
                     </div>
                     <div class="activity-legend">
                         <span>Меньше</span
@@ -432,6 +492,9 @@ h2 {
     width: max-content;
     gap: 8px;
 }
+.mobile-months {
+    display: none;
+}
 .calendar-main {
     width: calc(var(--weeks) * 17px);
 }
@@ -589,36 +652,50 @@ h2 {
         padding: 14px;
     }
     .calendar-scroll {
-        overflow-x: hidden;
+        display: none;
     }
-    .calendar-layout {
-        width: 100%;
-        gap: 5px;
+    .mobile-months {
+        display: grid;
+        gap: 24px;
+        position: relative;
+        max-height: min(60dvh, 650px);
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        margin-top: 20px;
+        padding-right: 6px;
     }
-    .calendar-main {
-        flex: 1 1 auto;
-        min-width: 0;
-        width: auto;
+    .mobile-month h3 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: capitalize;
     }
-    .month-labels {
-        width: 100%;
-        font-size: 8px;
+    .mobile-weekdays,
+    .mobile-month-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 3px;
     }
-    .weekday-labels {
-        grid-template-rows: repeat(7, minmax(0, 1fr));
-        font-size: 8px;
+    .mobile-weekdays {
+        margin-bottom: 4px;
+        color: #858585;
+        font-size: 10px;
+        text-align: center;
     }
-    .activity-grid {
-        width: 100%;
-        grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
-        grid-template-rows: repeat(7, auto);
-        gap: 1px;
-    }
-    .activity-cell {
+    .mobile-month-grid .activity-cell {
         width: 100%;
         height: auto;
         min-width: 0;
+        padding: 0;
         aspect-ratio: 1;
+        color: #0c1821;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .mobile-month-grid .activity-cell.level-3,
+    .mobile-month-grid .activity-cell.level-4 {
+        color: #fff;
     }
 }
 </style>
