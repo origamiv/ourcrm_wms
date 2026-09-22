@@ -35,12 +35,27 @@ it('открывает шесть разделов и сохраняет зап�
 
 it('показывает интеграции выбранного клиента в клиентском разделе', function () {
     (require database_path('migrations/2026_09_19_000001_add_client_to_integration_webhooks.php'))->up();
+    Schema::create('wms.import_runs', function ($table): void {
+        $table->id();
+        $table->string('tenant_id')->nullable();
+        $table->unsignedBigInteger('source_webhook_id')->nullable();
+        $table->timestamp('created_at')->nullable();
+        $table->timestamp('deleted_at')->nullable();
+    });
     $this->loginUser($this->makeUser([], true));
     $client = DB::table('clients.clients')->insertGetId(['name' => 'Первый', 'tenant_id' => 'tenant_a']);
     $otherClient = DB::table('clients.clients')->insertGetId(['name' => 'Второй', 'tenant_id' => 'tenant_a']);
     $foreignClient = DB::table('clients.clients')->insertGetId(['name' => 'Чужой', 'tenant_id' => 'tenant_b']);
     $webhook = $this->postJson('/web/integration/webhooks', ['name' => 'Первый вебхук', 'status' => 1, 'client_id' => $client])->assertCreated()->json('data');
     $otherWebhook = $this->postJson('/web/integration/webhooks', ['name' => 'Второй вебхук', 'status' => 1, 'client_id' => $otherClient])->assertCreated()->json('data');
+    DB::table('wms.import_runs')->insert([
+        ['tenant_id' => 'tenant_a', 'source_webhook_id' => $webhook['id'], 'created_at' => now('UTC')->startOfDay()->addHour(), 'deleted_at' => null],
+        ['tenant_id' => 'tenant_a', 'source_webhook_id' => $webhook['id'], 'created_at' => now('UTC')->startOfDay()->addHours(2), 'deleted_at' => null],
+        ['tenant_id' => 'tenant_a', 'source_webhook_id' => $webhook['id'], 'created_at' => now('UTC')->subDay(), 'deleted_at' => null],
+        ['tenant_id' => 'tenant_b', 'source_webhook_id' => $webhook['id'], 'created_at' => now('UTC')->startOfDay()->addHours(3), 'deleted_at' => null],
+        ['tenant_id' => 'tenant_a', 'source_webhook_id' => $webhook['id'], 'created_at' => now('UTC')->startOfDay()->addHours(4), 'deleted_at' => now('UTC')],
+    ]);
+    expect(App\Models\IntegrationWebhook::findOrFail($webhook['id'])->count_runs)->toBe(2);
 
     $this->get('/clients/integrations')->assertOk()->assertInertia(fn (Assert $page) => $page->component('ClientIntegrations'));
     $this->get('/clients/integrations?client_id='.$client)->assertOk()->assertInertia(fn (Assert $page) => $page->component('ClientIntegrations')->where('clientScope.id', (string) $client));
@@ -51,6 +66,7 @@ it('показывает интеграции выбранного клиент�
     $this->getJson('/web/sync/integration_webhooks')->assertOk()->assertJsonPath('changes.0.data.client_id', $client);
     $snapshot = $this->getJson('/web/clients/'.$client.'/integrations/sync')->assertOk()
         ->assertJsonPath('changes.0.data.client_id', $client)
+        ->assertJsonPath('changes.0.data.count_runs', 2)
         ->assertJsonPath('changes.1.operation', 'remove')
         ->assertJsonPath('changes.1.data', null)->json();
     $this->getJson('/web/clients/'.$foreignClient.'/integrations/sync')->assertNotFound();

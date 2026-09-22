@@ -135,6 +135,7 @@ export const references = {
                 lookup: "integration_rules",
             },
             { key: "cnt", label: "Количество запусков", kind: "number" },
+            { key: "count_runs", label: "Запусков сегодня", kind: "number" },
             {
                 key: "dat_last_run",
                 label: "Последний запуск",

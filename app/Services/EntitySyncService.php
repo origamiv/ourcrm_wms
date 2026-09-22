@@ -67,8 +67,9 @@ final class EntitySyncService
                 $row->data = null;
             }
         }
+        $decorations = $this->decorations($entity, $tenant, $rows);
         $changes = array_map(fn ($row) => ['id' => (string) $row->entity_id, 'version' => (string) $row->revision,
-            'operation' => $row->operation, 'data' => $row->data ? [...$this->decorate($entity, $tenant, json_decode($row->data, true)), 'version' => (string) $row->revision] : null], $rows);
+            'operation' => $row->operation, 'data' => $row->data ? [...$this->decorate($entity, $tenant, json_decode($row->data, true), $decorations[(string) $row->entity_id] ?? []), 'version' => (string) $row->revision] : null], $rows);
         if ($rows) {
             $last = end($rows);
             $state['after'] = (string) ($state['mode'] === 'snapshot' ? $last->entity_id : $last->revision);
@@ -76,20 +77,6 @@ final class EntitySyncService
 
         return ['mode' => $state['mode'], 'changes' => $changes, 'continuation' => $more ? $this->encode($state) : null,
             'cursor' => $more ? null : $this->encode(['entity' => $entity, 'tenant' => $tenant, 'user' => $user, 'format' => config('wms.cache_version'), 'generation' => $state['generation'], 'revision' => $state['target']])];
-    }
-
-    /** Add read-only values derived from the linked product to placement payloads. */
-    private function decorate(string $entity, ?string $tenant, array $data): array
-    {
-        if ($entity !== \App\Models\CellGood::class || empty($data['good_id'])) {
-            return $data;
-        }
-
-        $good = \App\Models\Good::withTrashed()->visibleTo($tenant)->find($data['good_id']);
-        $data['barcodes'] = $good?->barcodes ?? [];
-        $data['articules'] = $good?->articul ?? [];
-
-        return $data;
     }
 
     public function checkpoint(?string $tenant): object
@@ -118,6 +105,60 @@ final class EntitySyncService
             || ($id !== null && $model::withTrashed()->whereKey($id)->whereNull('tenant_id')->exists());
         $lock = DB::table('public.sync_state')->whereNull('tenant_id');
         ($shared ? $lock->lockForUpdate() : $lock->sharedLock())->firstOrFail();
+    }
+
+    /** Add read-only calculated values to synchronization payloads. */
+    private function decorate(string $entity, ?string $tenant, array $data, array $decoration = []): array
+    {
+        if ($entity === \App\Models\IntegrationWebhook::class) {
+            if (! array_key_exists('count_runs', $decoration)) {
+                $webhook = \App\Models\IntegrationWebhook::withTrashed()->visibleTo($tenant)->find($data['id'] ?? null);
+                $decoration['count_runs'] = $webhook?->count_runs ?? 0;
+            }
+
+            return [...$data, ...$decoration];
+        }
+
+        if ($entity !== \App\Models\CellGood::class || empty($data['good_id'])) {
+            return $data;
+        }
+
+        $good = \App\Models\Good::withTrashed()->visibleTo($tenant)->find($data['good_id']);
+        $data['barcodes'] = $good?->barcodes ?? [];
+        $data['articules'] = $good?->articul ?? [];
+
+        return $data;
+    }
+
+    /** @return array<string, array{count_runs: int}> */
+    private function decorations(string $entity, ?string $tenant, array $rows): array
+    {
+        if ($entity !== \App\Models\IntegrationWebhook::class || ! Schema::hasTable('wms.import_runs')) {
+            return [];
+        }
+
+        $ids = array_values(array_unique(array_map(
+            static fn ($row): string => (string) $row->entity_id,
+            array_filter($rows, static fn ($row): bool => $row->data !== null),
+        )));
+        if ($ids === []) {
+            return [];
+        }
+
+        $start = \Carbon\CarbonImmutable::now('UTC')->startOfDay();
+        $counts = DB::table('wms.import_runs')
+            ->selectRaw('source_webhook_id, COUNT(*)::integer AS count_runs')
+            ->whereIn('source_webhook_id', $ids)
+            ->when($tenant === null, fn ($query) => $query->whereNull('tenant_id'), fn ($query) => $query->where('tenant_id', $tenant))
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<', $start->addDay())
+            ->whereNull('deleted_at')
+            ->groupBy('source_webhook_id')
+            ->pluck('count_runs', 'source_webhook_id');
+
+        return $counts
+            ->mapWithKeys(static fn ($count, $id): array => [(string) $id => ['count_runs' => (int) $count]])
+            ->all() + array_fill_keys($ids, ['count_runs' => 0]);
     }
 
     private function generation(?string $tenant): string

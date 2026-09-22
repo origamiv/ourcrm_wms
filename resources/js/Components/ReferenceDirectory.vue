@@ -167,6 +167,7 @@ const isScheduler = props.entity === "scheduler";
 const editorFields = computed(() =>
     definition.fields.filter(
         (field) =>
+            field.key !== "count_runs" &&
             !(
                 isScheduler &&
                 ["next_run_at", "last_run_at"].includes(field.key)
@@ -774,6 +775,7 @@ async function save(remove = false) {
     notice.value = "";
     try {
         const payload = { ...form.value };
+        delete payload.count_runs;
         if (isDocument)
             payload.amount =
                 payload.amount === "" || payload.amount == null
