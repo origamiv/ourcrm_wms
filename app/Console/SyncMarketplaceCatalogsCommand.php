@@ -216,11 +216,34 @@ final class SyncMarketplaceCatalogsCommand extends Command
             ->orderByRaw('dat_last_run ASC NULLS FIRST')
             ->orderBy('id')
             ->get();
+        $accounts = ClientAccount::query()
+            ->whereIn('tenant_id', $tenants)
+            ->where('status', 1)
+            ->get()
+            ->keyBy(fn (ClientAccount $account): string => $account->tenant_id.':'.$account->id);
+        $rules = IntegrationRule::query()
+            ->where('status', 1)
+            ->whereIn('shortname', array_values($marketplaceFilter === ''
+                ? self::RULES
+                : [self::RULES[$marketplaceFilter]]))
+            ->whereHas('typeProcessing_obj', fn ($query) => $query->where('status', 1)->where('shortname', 'marketplace_catalog'))
+            ->get()
+            ->keyBy('shortname');
 
         $started = 0;
         foreach ($webhooks as $webhook) {
             $marketplace = $this->marketplaceFor($webhook);
             if ($marketplace === null || ($marketplaceFilter !== '' && $marketplace !== $marketplaceFilter)) {
+                continue;
+            }
+            $accountId = (int) (($webhook->params ?? [])['account_id'] ?? 0);
+            $account = $accounts->get($webhook->tenant_id.':'.$accountId);
+            $rule = $rules->get(self::RULES[$marketplace]);
+            $configuredRuleIds = array_map('intval', array_filter((array) $webhook->rules_id));
+            if (! $account || ($webhook->client_id !== null && (int) $account->client_id !== (int) $webhook->client_id)) {
+                continue;
+            }
+            if (! $rule || ($configuredRuleIds !== [] && ! in_array((int) $rule->id, $configuredRuleIds, true))) {
                 continue;
             }
 
