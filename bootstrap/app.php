@@ -20,6 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
             ->everyThirtyMinutes()
             ->onOneServer()
             ->withoutOverlapping(30);
+        $schedule->command('integration:sync-catalogs --marketplace=wildberries')
+            ->cron('10,40 * * * *')
+            ->onOneServer()
+            ->withoutOverlapping(30);
+        $schedule->command('integration:sync-catalogs --marketplace=yandex_market')
+            ->cron('20,50 * * * *')
+            ->onOneServer()
+            ->withoutOverlapping(30);
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
