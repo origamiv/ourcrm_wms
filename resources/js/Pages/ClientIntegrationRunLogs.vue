@@ -221,30 +221,22 @@ onMounted(() => {
                         Загружаем календарь…
                     </p>
                     <div class="calendar-scroll">
-                        <div class="calendar-layout">
+                        <div class="calendar-layout" :style="{ '--weeks': weeks }">
                             <div class="weekday-labels">
                                 <span>Пн</span><span>Ср</span><span>Пт</span>
                             </div>
                             <div class="calendar-main">
                                 <div
                                     class="month-labels"
-                                    :style="{ width: `${weeks * 17}px` }"
                                 >
                                     <span
                                         v-for="month in months"
                                         :key="month.label"
-                                        :style="{
-                                            left: `${month.week * 17}px`,
-                                        }"
+                                        :style="{ left: `${(month.week / weeks) * 100}%` }"
                                         >{{ month.label }}</span
                                     >
                                 </div>
-                                <div
-                                    class="activity-grid"
-                                    :style="{
-                                        gridTemplateColumns: `repeat(${weeks}, 14px)`,
-                                    }"
-                                >
+                                <div class="activity-grid">
                                     <button
                                         v-for="cell in cells"
                                         :key="cell.date"
@@ -440,6 +432,9 @@ h2 {
     width: max-content;
     gap: 8px;
 }
+.calendar-main {
+    width: calc(var(--weeks) * 17px);
+}
 .weekday-labels {
     display: grid;
     grid-template-rows: repeat(7, 14px);
@@ -470,6 +465,7 @@ h2 {
 .activity-grid {
     display: grid;
     grid-auto-flow: column;
+    grid-template-columns: repeat(var(--weeks), 14px);
     grid-template-rows: repeat(7, 14px);
     gap: 3px;
 }
@@ -537,7 +533,8 @@ h2 {
     font-size: 13px;
 }
 .runs-table-scroll {
-    overflow-x: auto;
+    max-height: min(55dvh, 560px);
+    overflow: auto;
     margin-top: 16px;
 }
 .runs-table {
@@ -553,6 +550,10 @@ h2 {
     white-space: nowrap;
 }
 .runs-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fff;
     color: #858585;
     font-weight: 600;
 }
@@ -582,10 +583,42 @@ h2 {
     padding: 10px;
     color: #a12020;
 }
-@media (max-width: 600px) {
+@media (max-width: 767px) {
     .activity-card,
     .day-card {
         padding: 14px;
+    }
+    .calendar-scroll {
+        overflow-x: hidden;
+    }
+    .calendar-layout {
+        width: 100%;
+        gap: 5px;
+    }
+    .calendar-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+    }
+    .month-labels {
+        width: 100%;
+        font-size: 8px;
+    }
+    .weekday-labels {
+        grid-template-rows: repeat(7, minmax(0, 1fr));
+        font-size: 8px;
+    }
+    .activity-grid {
+        width: 100%;
+        grid-template-columns: repeat(var(--weeks), minmax(0, 1fr));
+        grid-template-rows: repeat(7, auto);
+        gap: 1px;
+    }
+    .activity-cell {
+        width: 100%;
+        height: auto;
+        min-width: 0;
+        aspect-ratio: 1;
     }
 }
 </style>
