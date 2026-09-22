@@ -182,7 +182,6 @@ onUnmounted(() => { if (timer !== undefined) window.clearInterval(timer); });
                                 <div class="import-mobile-summary">
                                     <button v-if="hasChildren(row)" type="button" class="row-arrow" :aria-label="isRunExpanded(row) ? 'Свернуть этапы' : 'Развернуть этапы'" @click="toggleRun(row, $event)">{{ isRunExpanded(row) ? "⌄" : "›" }}</button>
                                     <button type="button" class="name-button" @click="openName(row, $event)">{{ row.row_type === "stage" ? "↳ " : "" }}{{ row.name }}</button>
-                                    <span class="import-mobile-summary-marketplace import-marketplace-badge" :class="`marketplace-${marketplaceCode(row.marketplace)}`">{{ marketplaceLabel(row.marketplace) }}</span>
                                     <span class="import-mobile-summary-updated">{{ updatedTime(row) }}</span>
                                     <span class="import-mobile-summary-status"><span class="badge" :class="statusClass(row.status)">{{ statusLabel(row.status) }}</span></span>
                                 </div>
