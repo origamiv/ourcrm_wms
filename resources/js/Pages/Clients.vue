@@ -17,6 +17,17 @@ interface ClientRow extends EntityRow {
 }
 type Relation = "documents" | "accounts" | "integrations" | "companies" | "individuals";
 type RelationFlags = Record<Relation, boolean>;
+type ClientAction = Relation | "view" | "edit" | "delete";
+const clientActions: { key: ClientAction; label: string; icon: string }[] = [
+    { key: "documents", label: "Документы", icon: "/design/crm/documents.svg" },
+    { key: "accounts", label: "Доступы", icon: "/design/crm/key.svg" },
+    { key: "integrations", label: "Интеграции", icon: "/design/crm/integrations.svg" },
+    { key: "companies", label: "Юрлица", icon: "/design/crm/client_companies.svg" },
+    { key: "individuals", label: "Физлица", icon: "/design/crm/contacts.svg" },
+    { key: "view", label: "Просмотр", icon: "/design/crm/view.svg" },
+    { key: "edit", label: "Редактировать", icon: "/design/crm/edit.svg" },
+    { key: "delete", label: "Удалить", icon: "/design/crm/delete.svg" },
+];
 const page = usePage<any>();
 const columnFields = [
     { key: "name", label: "Название" },
@@ -108,6 +119,49 @@ function relationDisabled(row: ClientRow, relation: Relation): boolean {
     if (saving.value || !!row.deleted_at) return true;
     const flags = relations.value[String(row.id)];
     return flags ? !flags[relation] : !relationError.value;
+}
+function actionDisabled(row: ClientRow, action: ClientAction): boolean {
+    if (action === "view") return false;
+    if (action === "edit" || action === "delete") return !online.value || saving.value || !!row.deleted_at;
+    return relationDisabled(row, action);
+}
+function runAction(row: ClientRow, action: ClientAction): void {
+    if (actionDisabled(row, action)) return;
+    closeActionMenu();
+    switch (action) {
+        case "documents": openDocuments(row); break;
+        case "accounts": openAccounts(row); break;
+        case "integrations": openIntegrations(row); break;
+        case "companies":
+        case "individuals": openParties(row, action); break;
+        case "view": open(row, true); break;
+        case "edit": open(row); break;
+        case "delete": deleting.value = row; break;
+    }
+}
+const actionMenuRow = ref<ClientRow | null>(null);
+const actionMenuPosition = ref({ top: 0, left: 0 });
+function closeActionMenu(): void {
+    actionMenuRow.value = null;
+}
+function closeActionMenuOnEscape(event: KeyboardEvent): void {
+    if (event.key === "Escape") closeActionMenu();
+}
+function toggleActionMenu(row: ClientRow, event: MouseEvent): void {
+    if (actionMenuRow.value?.id === row.id) {
+        closeActionMenu();
+        return;
+    }
+    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 208;
+    const menuHeight = clientActions.length * 40 + 12;
+    actionMenuPosition.value = {
+        top: trigger.bottom + menuHeight + 8 <= window.innerHeight
+            ? trigger.bottom + 4
+            : Math.max(8, trigger.top - menuHeight - 4),
+        left: Math.max(8, Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8)),
+    };
+    actionMenuRow.value = row;
 }
 watch(visible, () => { void refreshRelations(); }, { immediate: true });
 watch([query, shortQuery, statusFilter], () => (currentPage.value = 1));
@@ -225,10 +279,16 @@ async function confirmDelete() {
 onMounted(() => {
     void store.start();
     window.addEventListener("focus", refreshRelations);
+    window.addEventListener("scroll", closeActionMenu);
+    window.addEventListener("resize", closeActionMenu);
+    window.addEventListener("keydown", closeActionMenuOnEscape);
 });
 onUnmounted(() => {
     store.stop();
     window.removeEventListener("focus", refreshRelations);
+    window.removeEventListener("scroll", closeActionMenu);
+    window.removeEventListener("resize", closeActionMenu);
+    window.removeEventListener("keydown", closeActionMenuOnEscape);
 });
 
 useCardRoute<ClientRow>({
@@ -365,92 +425,28 @@ useCardRoute<ClientRow>({
                                 >
                             </td>
                             <td>
-                                <div class="row-actions">
+                                <div class="row-actions client-desktop-actions">
                                     <button
-                                        :aria-label="`Документы: ${displayName(row)}`"
-                                        title="Документы"
-                                        :disabled="relationDisabled(row, 'documents')"
-                                        @click="openDocuments(row)"
+                                        v-for="action in clientActions"
+                                        :key="action.key"
+                                        type="button"
+                                        :aria-label="`${action.label}: ${displayName(row)}`"
+                                        :title="action.label"
+                                        :disabled="actionDisabled(row, action.key)"
+                                        @click="runAction(row, action.key)"
                                     >
-                                        <img src="/design/crm/documents.svg" alt="" />
-                                    </button>
-                                    <button
-                                        :aria-label="`Доступы: ${displayName(row)}`"
-                                        title="Доступы"
-                                        :disabled="relationDisabled(row, 'accounts')"
-                                        @click="openAccounts(row)"
-                                    >
-                                        <img src="/design/crm/key.svg" alt="" />
-                                    </button>
-                                    <button
-                                        :aria-label="`Интеграции: ${displayName(row)}`"
-                                        title="Интеграции"
-                                        :disabled="relationDisabled(row, 'integrations')"
-                                        @click="openIntegrations(row)"
-                                    >
-                                        <img src="/design/crm/integrations.svg" alt="" />
-                                    </button>
-                                    <button
-                                        :aria-label="`Юрлица: ${displayName(row)}`"
-                                        title="Юрлица"
-                                        :disabled="relationDisabled(row, 'companies')"
-                                        @click="openParties(row, 'companies')"
-                                    >
-                                        <img
-                                            src="/design/crm/client_companies.svg"
-                                            alt=""
-                                        />
-                                    </button>
-                                    <button
-                                        :aria-label="`Физлица: ${displayName(row)}`"
-                                        title="Физлица"
-                                        :disabled="relationDisabled(row, 'individuals')"
-                                        @click="openParties(row, 'individuals')"
-                                    >
-                                        <img
-                                            src="/design/crm/contacts.svg"
-                                            alt=""
-                                        />
-                                    </button>
-                                    <button
-                                        :aria-label="`Просмотр: ${displayName(row)}`"
-                                        title="Просмотр"
-                                        @click="open(row, true)"
-                                    >
-                                        <img
-                                            src="/design/crm/view.svg"
-                                            alt=""
-                                        /></button
-                                    ><button
-                                        :aria-label="`Редактировать: ${displayName(row)}`"
-                                        title="Редактировать"
-                                        :disabled="
-                                            !online ||
-                                            saving ||
-                                            !!row.deleted_at
-                                        "
-                                        @click="open(row)"
-                                    >
-                                        <img
-                                            src="/design/crm/edit.svg"
-                                            alt=""
-                                        /></button
-                                    ><button
-                                        :aria-label="`Удалить: ${displayName(row)}`"
-                                        title="Удалить"
-                                        :disabled="
-                                            !online ||
-                                            saving ||
-                                            !!row.deleted_at
-                                        "
-                                        @click="deleting = row"
-                                    >
-                                        <img
-                                            src="/design/crm/delete.svg"
-                                            alt=""
-                                        />
+                                        <img :src="action.icon" alt="" />
                                     </button>
                                 </div>
+                                <button
+                                    v-if="clientActions.length > 4"
+                                    class="client-mobile-action-trigger"
+                                    type="button"
+                                    :aria-label="`Действия: ${displayName(row)}`"
+                                    aria-haspopup="menu"
+                                    :aria-expanded="actionMenuRow?.id === row.id"
+                                    @click.stop="toggleActionMenu(row, $event)"
+                                >⋮</button>
                             </td>
                         </tr>
                         <tr v-if="!visible.length">
@@ -491,6 +487,30 @@ useCardRoute<ClientRow>({
                 </div>
             </footer>
         </section>
+        <Teleport to="body">
+            <template v-if="actionMenuRow">
+                <div class="client-action-menu-backdrop" @click="closeActionMenu"></div>
+                <div
+                    class="client-action-menu"
+                    role="menu"
+                    :aria-label="`Действия: ${displayName(actionMenuRow)}`"
+                    :style="{ top: `${actionMenuPosition.top}px`, left: `${actionMenuPosition.left}px` }"
+                    @keydown.esc.stop="closeActionMenu"
+                >
+                    <button
+                        v-for="action in clientActions"
+                        :key="action.key"
+                        type="button"
+                        role="menuitem"
+                        :disabled="actionDisabled(actionMenuRow, action.key)"
+                        @click.stop="runAction(actionMenuRow, action.key)"
+                    >
+                        <img :src="action.icon" alt="" />
+                        {{ action.label }}
+                    </button>
+                </div>
+            </template>
+        </Teleport>
         <ConfirmDelete
             v-if="deleting"
             :message="`Удалить клиента ${displayName(deleting)}?`"
@@ -611,6 +631,75 @@ useCardRoute<ClientRow>({
 }
 .row-actions button:disabled img {
     filter: grayscale(1);
+}
+.client-mobile-action-trigger {
+    display: none;
+}
+.client-action-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+.client-action-menu {
+    position: fixed;
+    z-index: 1001;
+    display: grid;
+    width: 208px;
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid #dcecef;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 12px 32px rgb(16 24 40 / 18%);
+}
+.client-action-menu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #0c1821;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+.client-action-menu button:hover,
+.client-action-menu button:focus-visible {
+    background: #e1f3e7;
+}
+.client-action-menu button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.client-action-menu img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+@media (max-width: 900px) {
+    html body .main-panel .table-scroll table tbody tr td:last-child .row-actions.client-desktop-actions {
+        display: none !important;
+    }
+    html body .main-panel .table-scroll table tbody tr td:last-child .client-mobile-action-trigger {
+        display: inline-grid !important;
+        place-items: center;
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        background: #e1f3e7;
+        color: #176b2a;
+        font: inherit;
+        font-size: 23px;
+        line-height: 1;
+        cursor: pointer;
+    }
 }
 td,
 .editor h2 {
