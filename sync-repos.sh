@@ -23,11 +23,11 @@ sync_both() {
         return 1
     fi
     
-    echo "📤 Отправка в GitLab.com..."
+    echo "📤 Отправка в GitHub.com..."
     if git push cloud "$branch"; then
-        echo "✅ GitLab.com обновлен"
+        echo "✅ GitHub.com обновлен"
     else
-        echo "❌ Ошибка при отправке в GitLab.com"
+        echo "❌ Ошибка при отправке в GitHub.com"
         return 1
     fi
     

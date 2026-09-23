@@ -3,11 +3,11 @@
   "description": "Система управления складом на Laravel 12 с Vue 3 frontend",
   "repository": {
     "type": "git",
-    "url": "git@gitlab.com:ourcrm3/modules/wms.git",
-    "provider": "gitlab",
-    "host": "gitlab.com",
-    "owner": "ourcrm3",
-    "name": "modules/wms",
+    "url": "git@github.com:origamiv/ourcrm_wms.git",
+    "provider": "github",
+    "host": "github.com",
+    "owner": "origamiv",
+    "name": "ourcrm_wms",
     "branch": "master"
   },
   "remotes": {
@@ -16,8 +16,8 @@
       "description": "Self-hosted GitLab (primary)"
     },
     "cloud": {
-      "url": "git@gitlab.com:ourcrm3/modules/wms.git", 
-      "description": "GitLab.com mirror"
+      "url": "git@github.com:origamiv/ourcrm_wms.git", 
+      "description": "GitHub.com mirror"
     }
   },
   "language": "php",

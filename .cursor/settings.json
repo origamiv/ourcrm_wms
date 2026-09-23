@@ -1,9 +1,9 @@
 {
   "repository": {
-    "url": "https://gitlab.com/ourcrm3/modules/wms.git",
-    "provider": "gitlab.com",
-    "owner": "ourcrm3",
-    "name": "modules/wms"
+    "url": "https://github.com/origamiv/ourcrm_wms.git",
+    "provider": "github.com",
+    "owner": "origamiv",
+    "name": "ourcrm_wms"
   },
   "cloud": {
     "environment": {

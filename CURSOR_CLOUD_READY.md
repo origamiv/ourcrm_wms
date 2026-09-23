@@ -2,10 +2,10 @@
 
 ## 🎯 Что настроено
 
-### 1. Репозиторий полностью переключен на GitLab.com
-- **Origin**: `git@gitlab.com:ourcrm3/modules/wms.git`
-- **Все git операции** работают с облачным репозиторием
-- **Синхронизация** с self-hosted через скрипт `./sync-repos.sh`
+### 1. Репозиторий полностью переключен на GitHub.com
+- **Origin**: `git@github.com:origamiv/ourcrm_wms.git`
+- **Все git операции** работают с GitHub репозиторием
+- **Синхронизация** с self-hosted GitLab через скрипт `./sync-repos.sh`
 
 ### 2. Конфигурация Cloud Agents
 - ✅ `.cursor/environment.yml` - среда выполнения
@@ -57,18 +57,18 @@ git push origin master
 ## 🔧 Возможные проблемы и решения
 
 ### "Repository not connected" в Cloud Agents
-**Причина**: Нет доступа к приватному репозиторию на GitLab.com
+**Причина**: Нет доступа к приватному репозиторию на GitHub.com
 
 **Решение**:
-1. Добавьте SSH ключ в GitLab.com: https://gitlab.com/-/profile/keys
-2. Или создайте Personal Access Token: https://gitlab.com/-/profile/personal_access_tokens
+1. Добавьте SSH ключ в GitHub.com: https://github.com/settings/keys
+2. Или создайте Personal Access Token: https://github.com/settings/tokens
 
-### SSH ключ истекает
-**Решение**: Обновите SSH ключ как в self-hosted, так и в GitLab.com
+### SSH ключ истекает  
+**Решение**: Обновите SSH ключ как в self-hosted GitLab, так и в GitHub.com
 
 ### Нужно работать офлайн
 **Решение**: Используйте локальные git операции, затем `./sync-repos.sh` при подключении
 
 ## 🎉 Готово к использованию!
 
-Проект полностью настроен для работы в Cursor Cloud Agents. Попробуйте запустить build - он должен успешно клонировать репозиторий и настроить среду разработки.
+Проект полностью настроен для работы в Cursor Cloud Agents через GitHub. Попробуйте запустить build - он должен успешно клонировать репозиторий и настроить среду разработки.

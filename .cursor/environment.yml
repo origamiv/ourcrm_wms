@@ -3,8 +3,8 @@ description: WMS - система управления складом на Larav
 
 # Информация о репозитории
 repository:
-  url: https://gitlab.com/ourcrm3/modules/wms.git
-  provider: gitlab.com
+  url: https://github.com/origamiv/ourcrm_wms.git
+  provider: github.com
   branch: master
   
 # Базовый образ с PHP и Node.js
