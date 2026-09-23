@@ -445,7 +445,11 @@ async function loadPage(reset = false) {
     const params = new URLSearchParams({
         page: String(currentPage.value),
         per_page: "25",
-        q: query.value || tableSearch.debouncedQuery.value,
+        q:
+            query.value ||
+            (tableSearch.mode.value === "filter"
+                ? tableSearch.debouncedQuery.value
+                : ""),
         short_query: shortQuery.value,
         deleted: statusFilter.value === "deleted" ? "deleted" : "active",
         sort: isKiz ? "code" : "name",
