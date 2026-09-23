@@ -1,21 +1,87 @@
 <?php
 
 declare(strict_types=1);
+
+use App\Models\User;
+use App\Services\EntityChangeRecorder;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\DB;
+
 // Отдельная локальная БД: реальные таблицы проекта никогда не используются.
 function connection(): PDO
 {
     return new PDO('pgsql:host=/var/run/postgresql;dbname=wms_concurrency_test', 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 }
+
+function application(): Illuminate\Foundation\Application
+{
+    $environment = [
+        'APP_ENV' => 'testing',
+        'DB_CONNECTION' => 'pgsql',
+        'DB_HOST' => '/var/run/postgresql',
+        'DB_PORT' => '5432',
+        'DB_DATABASE' => 'wms_concurrency_test',
+        'DB_USERNAME' => 'root',
+        'DB_PASSWORD' => '',
+        'DB_URL' => '',
+        'DB_SCHEMA' => 'public',
+    ];
+    foreach ($environment as $key => $value) {
+        putenv($key.'='.$value);
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+    }
+    require_once __DIR__.'/../../vendor/autoload.php';
+    $app = require __DIR__.'/../../bootstrap/app.php';
+    $app->make(Kernel::class)->bootstrap();
+    config([
+        'database.default' => 'pgsql',
+        'database.connections.pgsql.url' => null,
+        'database.connections.pgsql.host' => '/var/run/postgresql',
+        'database.connections.pgsql.port' => '5432',
+        'database.connections.pgsql.database' => 'wms_concurrency_test',
+        'database.connections.pgsql.username' => 'root',
+        'database.connections.pgsql.password' => '',
+        'database.connections.pgsql.search_path' => 'public',
+    ]);
+    DB::purge('pgsql');
+
+    return $app;
+}
+
 if (($argv[1] ?? '') === 'writer') {
-    $db = connection();
-    $db->exec("SET application_name = 'wms_sync_writer'; SET statement_timeout = '8s'; UPDATE public.users SET name = 'Второй commit' WHERE id = 2");
+    application();
+    DB::statement("SET application_name = 'wms_sync_writer'");
+    DB::statement("SET statement_timeout = '8s'");
+    DB::transaction(function (): void {
+        DB::table('public.users')->where('id', 2)->update(['name' => 'Второй commit']);
+        app(EntityChangeRecorder::class)->publishCurrent(User::class, 2);
+    });
     exit;
 }
 if (($argv[1] ?? '') === 'visibility_writer') {
-    $db = connection();
-    $db->exec("SET application_name = 'wms_visibility_writer'; SET statement_timeout = '8s'");
-    $query = $db->prepare('INSERT INTO main.tenant_entity (entity_type, entity_id, tenant_id) VALUES (?, 4, ?)');
-    $query->execute(['App\\Models\\User', 'a']);
+    application();
+    DB::statement("SET application_name = 'wms_visibility_writer'");
+    DB::statement("SET statement_timeout = '8s'");
+    DB::transaction(function (): void {
+        DB::table('main.tenant_entity')->insert(['entity_type' => User::class, 'entity_id' => 4, 'tenant_id' => 'a']);
+        app(EntityChangeRecorder::class)->refreshVisibility(User::class, 4);
+    });
+    exit;
+}
+if (($argv[1] ?? '') === 'other_tenant_writer') {
+    application();
+    if (DB::scalar('SELECT current_database()') !== 'wms_concurrency_test') {
+        throw new RuntimeException('Дочерний процесс подключён не к тестовой БД');
+    }
+    DB::statement("SET statement_timeout = '8s'");
+    DB::transaction(function (): void {
+        if (DB::table('public.users')->where('id', 3)->update(['name' => 'Независимая запись']) !== 1) {
+            throw new RuntimeException('Дочерний процесс не обновил пользователя другого тенанта');
+        }
+        app(EntityChangeRecorder::class)->publishCurrent(User::class, 3);
+    });
+    fwrite(STDOUT, (string) DB::table('public.sync_state')->where('tenant_id', 'b')->value('revision'));
     exit;
 }
 $db = connection();
@@ -31,14 +97,28 @@ try {
     $db->exec(file_get_contents(__DIR__.'/../../database/sql/tenant_entity_visibility.sql'));
     $db->exec("INSERT INTO public.users(id,name,tenant_id) VALUES (1,'Первый','a'),(2,'Второй','a'),(3,'Другой тенант','b')");
     $db->commit();
+    application();
+    (require __DIR__.'/../../database/migrations/2026_09_23_000002_move_entity_changes_to_laravel.php')->up();
+    $changes = app(EntityChangeRecorder::class);
+    DB::statement('INSERT INTO public.sync_state (tenant_id) VALUES (NULL) ON CONFLICT (tenant_id) DO NOTHING');
     $reader = connection();
     $before = $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'a'")->fetchColumn();
-    $db->beginTransaction();
-    $db->exec("UPDATE public.users SET name='Первый commit' WHERE id=1");
+    $otherTenantBefore = (int) $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'b'")->fetchColumn();
+    DB::beginTransaction();
+    DB::table('public.users')->where('id', 1)->update(['name' => 'Первый commit']);
+    $changes->publishCurrent(User::class, 1);
     // Запись другого тенанта завершается, пока транзакция a удерживает свой счётчик.
-    $reader->exec("SET statement_timeout = '1s'; UPDATE public.users SET name='Независимая запись' WHERE id=3");
-    if ((int) $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'b'")->fetchColumn() !== 2) {
-        throw new RuntimeException('Счётчик другого тенанта не обновился');
+    $otherTenant = proc_open([PHP_BINARY, __FILE__, 'other_tenant_writer'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $otherTenantPipes);
+    $otherTenantOutput = stream_get_contents($otherTenantPipes[1]);
+    $otherTenantError = stream_get_contents($otherTenantPipes[2]);
+    fclose($otherTenantPipes[1]);
+    fclose($otherTenantPipes[2]);
+    if (proc_close($otherTenant) !== 0) {
+        throw new RuntimeException($otherTenantError);
+    }
+    $otherTenantAfter = (int) $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'b'")->fetchColumn();
+    if ($otherTenantAfter !== $otherTenantBefore + 1) {
+        throw new RuntimeException("Счётчик другого тенанта изменился с {$otherTenantBefore} на {$otherTenantAfter}; дочерний процесс увидел {$otherTenantOutput}");
     }
 
     $process = proc_open([PHP_BINARY, __FILE__, 'writer'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
@@ -53,7 +133,7 @@ try {
     if (! $waiting || $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'a'")->fetchColumn() !== $before) {
         throw new RuntimeException('Нарушена видимость незавершённой транзакции');
     }
-    $db->commit();
+    DB::commit();
     $stderr = stream_get_contents($pipes[2]);
     fclose($pipes[1]);
     fclose($pipes[2]);
@@ -64,10 +144,14 @@ try {
     if (array_map('intval', $ids) !== [1, 2]) {
         throw new RuntimeException('Нарушен порядок commit');
     }
-    $db->exec("INSERT INTO public.users(id,name,tenant_id) VALUES (4, 'Общий', NULL)");
+    DB::transaction(function () use ($changes): void {
+        DB::table('public.users')->insert(['id' => 4, 'name' => 'Общий', 'tenant_id' => null]);
+        $changes->publishCurrent(User::class, 4);
+    });
     $bBefore = (int) $reader->query("SELECT revision FROM public.sync_state WHERE tenant_id = 'b'")->fetchColumn();
-    $db->beginTransaction();
-    $db->exec("UPDATE public.users SET name = 'Изменение общего' WHERE id = 4");
+    DB::beginTransaction();
+    DB::table('public.users')->where('id', 4)->update(['name' => 'Изменение общего']);
+    $changes->publishCurrent(User::class, 4);
     $process = proc_open([PHP_BINARY, __FILE__, 'visibility_writer'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
     $deadline = microtime(true) + 5;
     do {
@@ -80,7 +164,7 @@ try {
     if (! $waiting) {
         throw new RuntimeException('Изменение доступа не сериализовано с общей записью');
     }
-    $db->commit();
+    DB::commit();
     $stderr = stream_get_contents($pipes[2]);
     fclose($pipes[1]);
     fclose($pipes[2]);
@@ -91,15 +175,18 @@ try {
     if ($events !== ['upsert', 'remove']) {
         throw new RuntimeException('После отзыва доступа осталась общая запись');
     }
-    $reader->exec("SELECT wms.initialize_tenant_shares('new_tenant')");
+    $changes->initializeTenantShares('new_tenant');
     if ((int) $reader->query("SELECT count(*) FROM public.entity_changes WHERE tenant_id = 'new_tenant' AND entity_id = '4' AND operation = 'upsert'")->fetchColumn() !== 0) {
         throw new RuntimeException('Новый тенант получил запрещённую запись');
     }
     echo "Общие записи и отзыв доступа сериализованы; новый тенант получает только разрешённые записи.\n";
     echo "Параллельные записи: внутри тенанта соблюдён порядок commit; другой тенант пишет без ожидания.\n";
 } finally {
+    if (class_exists(DB::class) && DB::transactionLevel() > 0) {
+        DB::rollBack();
+    }
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    $db->exec('DROP SCHEMA IF EXISTS goods CASCADE; DROP SCHEMA IF EXISTS clients CASCADE; DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens;');
+    $db->exec('DROP SCHEMA IF EXISTS goods CASCADE; DROP SCHEMA IF EXISTS clients CASCADE; DROP SCHEMA IF EXISTS wms CASCADE; DROP SCHEMA IF EXISTS main CASCADE; DROP TABLE IF EXISTS public.sync_state; DROP TABLE IF EXISTS public.entity_changes; DROP TABLE IF EXISTS public.users; DROP TABLE IF EXISTS public.personal_access_tokens; DROP TABLE IF EXISTS public.tenants;');
 }

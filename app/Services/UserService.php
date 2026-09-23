@@ -155,6 +155,11 @@ final class UserService
             ]);
         }
 
+        $changes = app(EntityChangeRecorder::class);
+        if (! $changes->hasDatabaseTrigger('main.role_user')) {
+            $changes->publishCurrent(User::class, $user->id);
+        }
+
         return $this->sync->current($user->id, $actor->tenant_id);
     }
 }

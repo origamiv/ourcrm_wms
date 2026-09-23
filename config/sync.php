@@ -49,9 +49,9 @@ return [
         'task_statuses' => ['entity' => App\Models\TaskStatus::class, 'table' => 'wms.task_statuses', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'icon', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
         'priorities' => ['entity' => App\Models\Priority::class, 'table' => 'wms.priorities', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'icon', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
         'kizes' => ['entity' => App\Models\Kiz::class, 'table' => 'goods.kizes', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'code', 'client_id', 'kind_kiz_id', 'good_id', 'entranced_at', 'leaving_at', 'printed_at', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
-        'client_companies' => ['entity' => App\Models\ClientCompany::class, 'table' => 'clients.companies', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'fullname', 'inn', 'kpp', 'ogrn', 'okpo', 'phone', 'email', 'site', 'director_fio', 'director_position', 'bank', 'bik', 'korr_schet', 'rasch_schet', 'client_id', 'src', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
+        'client_companies' => ['entity' => App\Models\ClientCompany::class, 'table' => 'clients.companies', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'fullname', 'inn', 'kpp', 'ogrn', 'okpo', 'phone', 'email', 'site', 'director_fio', 'director_position', 'bank', 'bik', 'korr_schet', 'rasch_schet', 'client_id', 'src', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'], 'json_fields' => ['src' => ['telegram', 'opf', 'accountant_position', 'accountant_fio', 'legal_address', 'is_own', 'is_client', 'is_partner']]],
         'client_services' => ['entity' => App\Models\ClientService::class, 'table' => 'clients.services', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
-        'client_accounts' => ['entity' => App\Models\ClientAccount::class, 'table' => 'clients.accounts', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'host', 'login', 'pass', 'token', 'descr', 'status', 'group_id', 'server_id', 'src', 'client_id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
+        'client_accounts' => ['entity' => App\Models\ClientAccount::class, 'table' => 'clients.accounts', 'authorize' => [App\Services\AccessService::class, 'isAdmin'], 'fields' => ['id', 'name', 'shortname', 'host', 'login', 'pass', 'token', 'descr', 'status', 'group_id', 'server_id', 'src', 'client_id', 'service_id', 'tenant_id', 'created_at', 'updated_at', 'deleted_at']],
         'modules' => [
             'entity' => App\Models\Module::class,
             'table' => 'main.modules',
@@ -92,6 +92,7 @@ return [
             'table' => 'main.companies',
             'authorize' => [App\Services\AccessService::class, 'isAdmin'],
             'fields' => ['id', 'name', 'shortname', 'fullname', 'inn', 'kpp', 'ogrn', 'phone', 'email', 'site', 'director_fio', 'director_position', 'bank', 'bik', 'korr_schet', 'rasch_schet', 'src', 'status', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+            'json_fields' => ['src' => ['telegram', 'opf', 'accountant_position', 'accountant_fio', 'legal_address', 'is_own', 'is_client', 'is_partner']],
         ],
         'company_contacts' => [
             'entity' => App\Models\CompanyContact::class,
@@ -104,6 +105,7 @@ return [
             'table' => 'public.users',
             'authorize' => [App\Services\AccessService::class, 'isAdmin'],
             'fields' => ['id', 'name', 'last_name', 'middle_name', 'nick', 'email', 'phone', 'status', 'roles', 'tenant_id', 'created_at', 'updated_at', 'deleted_at'],
+            'projector' => App\Services\Sync\UserSyncPayloadProjector::class,
         ],
         'roles' => [
             'entity' => App\Models\Role::class,

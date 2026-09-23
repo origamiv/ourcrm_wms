@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console;
 
+use App\Services\EntityChangeRecorder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -13,17 +14,18 @@ final class InitializeWmsTenantCommand extends Command
 
     protected $description = 'Инициализирует WMS для организации: меню, права и контекст синхронизации';
 
-    public function handle(): int
+    public function handle(EntityChangeRecorder $changes): int
     {
         $tenantId = (string) $this->argument('tenant');
         $tenant = DB::table('public.tenants')->where('id', $tenantId)->first(['id', 'name', 'status', 'owner_user_id']);
         if (! $tenant) {
             $this->components->error("Организация {$tenantId} не найдена.");
+
             return self::FAILURE;
         }
 
-        DB::transaction(function () use ($tenantId, $tenant): void {
-            DB::statement('SELECT wms.initialize_tenant_shares(?)', [$tenantId]);
+        DB::transaction(function () use ($tenantId, $tenant, $changes): void {
+            $changes->initializeTenantShares($tenantId);
             $this->copyRoles($tenantId);
             $this->copyFulfillmentCatalogs($tenantId);
             if ($tenant->owner_user_id !== null) {
@@ -35,12 +37,17 @@ final class InitializeWmsTenantCommand extends Command
                     DB::table('main.role_user')->insert(['role_id' => $adminRole->id, 'user_id' => $tenant->owner_user_id, 'tenant_id' => $tenantId, 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
                 }
             }
+            $this->publishCopiedEntities($changes, $tenantId);
+            if ($tenant->owner_user_id !== null && ! $changes->hasDatabaseTrigger('main.role_user')) {
+                $changes->publishCurrent(\App\Models\User::class, $tenant->owner_user_id);
+            }
         });
 
         $this->call('project:menu');
         $this->call('project:sync_permissions');
         $this->components->info("WMS инициализирован для «{$tenant->name}» ({$tenantId}).");
         $this->line('Проверены контекст синхронизации, общие справочники, меню и права доступа.');
+
         return self::SUCCESS;
     }
 
@@ -121,7 +128,8 @@ final class InitializeWmsTenantCommand extends Command
         if (! DB::table($table)->where('shortname', $candidate)->whereNull('deleted_at')->exists()) {
             return $candidate;
         }
-        return $candidate.'_'.substr(str_replace('-', '', $tenantId), 0, 8);
+
+        return $candidate.'_'.mb_substr(str_replace('-', '', $tenantId), 0, 8);
     }
 
     private function syncSequence(string $table): void
@@ -130,6 +138,20 @@ final class InitializeWmsTenantCommand extends Command
         $sequence = DB::selectOne('SELECT pg_get_serial_sequence(?, ?) AS sequence', [$schema.'.'.$name, 'id'])->sequence ?? null;
         if ($sequence) {
             DB::statement("SELECT setval(?, COALESCE((SELECT MAX(id) FROM {$schema}.{$name}), 1), true)", [$sequence]);
+        }
+    }
+
+    private function publishCopiedEntities(EntityChangeRecorder $changes, string $tenant): void
+    {
+        foreach ($changes->definitions() as $entity => $definition) {
+            if ($changes->hasDatabaseTrigger($definition['table']) || ! in_array($definition['table'], [
+                'main.roles', 'main.permission_role', 'wms.marketplaces', 'wms.type_services',
+                'wms.services_ff', 'wms.delivery_services', 'wms.warehouses', 'wms.zones',
+            ], true)) {
+                continue;
+            }
+            $ids = DB::table($definition['table'])->where('tenant_id', $tenant)->pluck('id');
+            $changes->publishMany($entity, $ids);
         }
     }
 }

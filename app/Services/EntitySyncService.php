@@ -13,6 +13,8 @@ use JsonException;
 
 final class EntitySyncService
 {
+    public function __construct(private readonly EntityChangeRecorder $recorder) {}
+
     public function revision(?string $tenant): string
     {
         return (string) $this->checkpoint($tenant)->revision;
@@ -88,7 +90,7 @@ final class EntitySyncService
         }
 
         if ($tenant !== null && isset($state->shared_initialized) && ! $state->shared_initialized) {
-            DB::statement('SELECT wms.initialize_tenant_shares(?)', [$tenant]);
+            $this->recorder->initializeTenantShares($tenant);
             $state = DB::table('public.sync_state')->where('tenant_id', $tenant)->firstOrFail();
         }
 

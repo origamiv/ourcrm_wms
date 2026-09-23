@@ -243,7 +243,7 @@ final class MarketplaceCatalogSyncService
         } else {
             $params['yandex_market_catalog']['next_page_token'] = $cursor;
         }
-        $webhook->forceFill(['params' => $params])->saveQuietly();
+        $webhook->forceFill(['params' => $params])->save();
     }
 
     private function normalizeOzonPage(array $response): array

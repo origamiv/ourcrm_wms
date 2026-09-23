@@ -345,16 +345,23 @@ final class SyncMarketplaceCatalogsCommand extends Command
             return;
         }
 
-        IntegrationWebhook::query()
-            ->whereKey($webhook->id)
-            ->where('tenant_id', $webhook->tenant_id)
-            ->where('status', 3)
-            ->update(['status' => 1]);
+        DB::transaction(function () use ($webhook): void {
+            $current = IntegrationWebhook::query()
+                ->whereKey($webhook->id)
+                ->where('tenant_id', $webhook->tenant_id)
+                ->where('status', 3)
+                ->lockForUpdate()
+                ->first();
+            $current?->forceFill(['status' => 1])->save();
+        });
     }
 
     private function setWebhookStatus(IntegrationWebhook $webhook, int $status): void
     {
-        IntegrationWebhook::query()->whereKey($webhook->id)->where('tenant_id', $webhook->tenant_id)->update(['status' => $status]);
+        DB::transaction(function () use ($webhook, $status): void {
+            $current = IntegrationWebhook::query()->whereKey($webhook->id)->where('tenant_id', $webhook->tenant_id)->lockForUpdate()->first();
+            $current?->forceFill(['status' => $status])->save();
+        });
     }
 
     private function markImportFailed(?ImportRun $import, Throwable $exception): void

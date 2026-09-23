@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Console;
 
 use App\Jobs\ImportRunCoordinatorJob;
+use App\Models\CellGood;
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
+use App\Services\EntityChangeRecorder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -273,16 +275,9 @@ final class ImportTswmsCommand extends Command
     {
         foreach ($this->source->table('tswms-partners')->get() as $row) {
             $partnerId = (string) $row->id;
-            $clientId = $this->mapped('tswms-partners', $partnerId, 'App\\Models\\Client');
             $data = ['name' => (string) ($row->name ?? 'Партнёр #'.$row->id), 'shortname' => 'tswms_partner_'.$row->id, 'code' => $partnerId, 'status' => (int) ($row->active ?? 1), 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $partnerId, 'source_fields' => (array) $row], JSON_UNESCAPED_UNICODE), 'updated_at' => now(), 'created_at' => now()];
-            if ($clientId) {
-                DB::table('clients.clients')->where('id', $clientId)->update($data);
-                $this->updated++;
-            } else {
-                $clientId = (string) DB::table('clients.clients')->insertGetId($data);
-                $this->created++;
-            }
-            $this->remember('tswms-partners', $partnerId, 'App\\Models\\Client', $clientId, $row);
+            $this->upsert('clients.clients', $data, 'tswms-partners', $partnerId, 'App\\Models\\Client');
+            $clientId = $this->mapped('tswms-partners', $partnerId, 'App\\Models\\Client');
             $company = array_filter(['name' => $row->name ?? null, 'shortname' => 'tswms_company_'.$row->id, 'fullname' => $row->{'org-name'} ?? null, 'inn' => $row->inn ?? null, 'ogrn' => $row->ogrn ?? null, 'phone' => $row->{'org-phone'} ?? null, 'director_position' => $row->{'director-role'} ?? null, 'director_fio' => trim(($row->{'director-lastname'} ?? '').' '.($row->{'director-firstname'} ?? '').' '.($row->{'director-patronymic'} ?? '')), 'bank' => $row->{'bank-name'} ?? null, 'bik' => $row->{'bank-bik'} ?? null, 'rasch_schet' => $row->{'bank-account'} ?? null, 'korr_schet' => $row->{'correspondent-account'} ?? null, 'client_id' => $clientId, 'status' => 1, 'tenant_id' => $this->tenant, 'src' => json_encode(['source_system' => 'tswms', 'source_id' => $partnerId, 'legal_address' => $row->{'legal-addr'} ?? null], JSON_UNESCAPED_UNICODE), 'created_at' => now(), 'updated_at' => now()]);
             if (count(array_filter($company, fn ($v) => $v !== null && $v !== '')) > 4) {
                 $this->upsert('clients.companies', $company, 'tswms-partners', $partnerId, 'App\\Models\\ClientCompany', 'client_id');
@@ -364,6 +359,10 @@ final class ImportTswmsCommand extends Command
                 $columns = array_values(array_diff(array_keys($updates[0]), ['id']));
                 DB::table('goods.goods')->upsert($updates, ['id'], $columns);
             }
+            $recorder = app(EntityChangeRecorder::class);
+            if (! $recorder->hasDatabaseTrigger('goods.goods')) {
+                $recorder->publishMany('App\\Models\\Good', array_values(array_filter(array_column($mappingRows, 'target_id'))));
+            }
             DB::table('wms.tswms_import_mappings')->upsert(array_values($mappingRows), ['source_system', 'source_client_id', 'source_table', 'source_id', 'target_entity'], ['target_id', 'source_database', 'source_hash', 'updated_at']);
         });
         $this->created += count($inserts);
@@ -376,7 +375,7 @@ final class ImportTswmsCommand extends Command
         if ($this->source->getSchemaBuilder()->hasTable('warehouse_types')) {
             foreach ($this->source->table('warehouse_types')->get() as $type) {
                 $kind = DB::table('wms.kind_warehouses')->where('tenant_id', $this->tenant)->where('name', (string) $type->name)->first();
-                $kindId = $kind?->id ?: DB::table('wms.kind_warehouses')->insertGetId(['name' => (string) $type->name, 'shortname' => 'tswms_kind_'.$type->id, 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()]);
+                $kindId = $kind?->id ?: $this->insertAndPublish('wms.kind_warehouses', ['name' => (string) $type->name, 'shortname' => 'tswms_kind_'.$type->id, 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()], 'App\\Models\\KindWarehouse');
                 $kindMap[(string) $type->id] = $kindId;
             }
         }
@@ -391,8 +390,8 @@ final class ImportTswmsCommand extends Command
         if (! $this->source->getSchemaBuilder()->hasTable('tswms-places')) {
             return;
         }
-        $warehouseId = $warehouseMap ? (int) reset($warehouseMap) : (int) (DB::table('wms.warehouses')->where('tenant_id', $this->tenant)->orderBy('id')->value('id') ?: DB::table('wms.warehouses')->insertGetId(['name' => 'Основной', 'shortname' => 'tswms_main_'.$this->sourceClientId, 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()]));
-        $zoneId = DB::table('wms.zones')->where('tenant_id', $this->tenant)->orderBy('id')->value('id') ?: DB::table('wms.zones')->insertGetId(['name' => 'Основная', 'shortname' => 'tswms_main_'.$this->sourceClientId, 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()]);
+        $warehouseId = $warehouseMap ? (int) reset($warehouseMap) : (int) (DB::table('wms.warehouses')->where('tenant_id', $this->tenant)->orderBy('id')->value('id') ?: $this->insertAndPublish('wms.warehouses', ['name' => 'Основной', 'shortname' => 'tswms_main_'.$this->sourceClientId, 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()], 'App\\Models\\Warehouse'));
+        $zoneId = DB::table('wms.zones')->where('tenant_id', $this->tenant)->orderBy('id')->value('id') ?: $this->insertAndPublish('wms.zones', ['name' => 'Основная', 'shortname' => 'tswms_main_'.$this->sourceClientId, 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()], 'App\\Models\\Zone');
         $storageMap = ['cell' => (int) (DB::table('wms.type_storage')->where('shortname', 'cells')->value('id') ?? 0), 'box' => (int) (DB::table('wms.type_storage')->where('shortname', 'boxes')->value('id') ?? 0), 'transit' => (int) (DB::table('wms.type_storage')->where('shortname', 'transit')->value('id') ?? 0)];
         foreach ($this->source->table('tswms-places')->get() as $row) {
             $sourceWarehouse = (string) ($row->warehouse_id ?? '');
@@ -451,14 +450,14 @@ final class ImportTswmsCommand extends Command
             return (int) $serviceId;
         }
 
-        return (int) DB::table('clients.services')->insertGetId([
+        return $this->insertAndPublish('clients.services', [
             'name' => $name,
             'shortname' => $shortname,
             'status' => 1,
             'tenant_id' => $this->tenant,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ], 'App\\Models\\ClientService');
     }
 
     private function existingAccountCredentials(string $sourceTable, string $sourceId, array $credentials): array
@@ -562,7 +561,7 @@ final class ImportTswmsCommand extends Command
             return (int) $id;
         }
 
-        return (int) DB::table('integration.services')->insertGetId(['name' => $name, 'shortname' => $this->latinShortname($name), 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()]);
+        return $this->insertAndPublish('integration.services', ['name' => $name, 'shortname' => $this->latinShortname($name), 'status' => 1, 'tenant_id' => $this->tenant, 'created_at' => now(), 'updated_at' => now()], 'App\\Models\\IntegrationService');
     }
 
     private function latinShortname(string $value): string
@@ -643,13 +642,7 @@ final class ImportTswmsCommand extends Command
             if ($batch === []) {
                 return;
             }
-            DB::table('wms.orders')->upsert($batch, ['tenant_id', 'code'], array_values(array_diff(array_keys($batch[0]), ['id', 'code', 'created_at'])));
-            $ids = DB::table('wms.orders')->where('tenant_id', $this->tenant)->whereIn('code', array_column($batch, 'code'))->pluck('id', 'code');
-            $maps = [];
-            foreach ($batch as $data) {
-                $maps[] = ['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_database' => $this->sourceDatabase, 'source_table' => 'tswms-orders', 'source_id' => $data['code'], 'target_entity' => 'App\\Models\\Order', 'target_id' => $ids[$data['code']] ?? null, 'source_hash' => $this->sourceHash((object) $data), 'created_at' => now(), 'updated_at' => now()];
-            }
-            DB::table('wms.tswms_import_mappings')->upsert($maps, ['source_system', 'source_client_id', 'source_table', 'source_id', 'target_entity'], ['target_id', 'source_database', 'source_hash', 'updated_at']);
+            $this->bulkUpsert('wms.orders', $batch, 'tswms-orders', 'App\\Models\\Order');
         });
     }
 
@@ -948,11 +941,15 @@ final class ImportTswmsCommand extends Command
             if (isset($seen[(string) $mapping->source_id])) {
                 continue;
             }
-            DB::table('wms.cell_goods')
+            $changed = DB::table('wms.cell_goods')
                 ->where('id', $mapping->target_id)
                 ->where('tenant_id', $this->tenant)
                 ->whereNull('deleted_at')
                 ->update(['cnt' => 0, 'leave_at' => now(), 'deleted_at' => now(), 'updated_at' => now()]);
+            $recorder = app(EntityChangeRecorder::class);
+            if ($changed > 0 && ! $recorder->hasDatabaseTrigger('wms.cell_goods')) {
+                $recorder->publishCurrent(CellGood::class, $mapping->target_id);
+            }
             $this->updated++;
         }
     }
@@ -1087,6 +1084,10 @@ final class ImportTswmsCommand extends Command
                 $target = (string) DB::table($table)->insertGetId($data);
                 $this->created++;
             }
+            $recorder = app(EntityChangeRecorder::class);
+            if (! $recorder->hasDatabaseTrigger($table)) {
+                $recorder->publishCurrent($entity, $target);
+            }
             $this->remember($sourceTable, $sourceId, $entity, $target, $row);
         });
     }
@@ -1096,13 +1097,32 @@ final class ImportTswmsCommand extends Command
         if ($batch === []) {
             return;
         }
-        DB::table($table)->upsert($batch, ['tenant_id', 'code'], array_values(array_diff(array_keys($batch[0]), ['id', 'code', 'created_at'])));
-        $ids = DB::table($table)->where('tenant_id', $this->tenant)->whereIn('code', array_column($batch, 'code'))->pluck('id', 'code');
-        $maps = [];
-        foreach ($batch as $data) {
-            $maps[] = ['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_database' => $this->sourceDatabase, 'source_table' => $sourceTable, 'source_id' => $data['code'], 'target_entity' => $entity, 'target_id' => $ids[$data['code']] ?? null, 'source_hash' => $this->sourceHash((object) $data), 'created_at' => now(), 'updated_at' => now()];
-        }
-        DB::table('wms.tswms_import_mappings')->upsert($maps, ['source_system', 'source_client_id', 'source_table', 'source_id', 'target_entity'], ['target_id', 'source_database', 'source_hash', 'updated_at']);
+        DB::transaction(function () use ($table, $batch, $sourceTable, $entity): void {
+            DB::table($table)->upsert($batch, ['tenant_id', 'code'], array_values(array_diff(array_keys($batch[0]), ['id', 'code', 'created_at'])));
+            $ids = DB::table($table)->where('tenant_id', $this->tenant)->whereIn('code', array_column($batch, 'code'))->pluck('id', 'code');
+            $recorder = app(EntityChangeRecorder::class);
+            if (! $recorder->hasDatabaseTrigger($table)) {
+                $recorder->publishMany($entity, $ids->values());
+            }
+            $maps = [];
+            foreach ($batch as $data) {
+                $maps[] = ['source_system' => 'tswms', 'source_client_id' => $this->sourceClientId, 'source_database' => $this->sourceDatabase, 'source_table' => $sourceTable, 'source_id' => $data['code'], 'target_entity' => $entity, 'target_id' => $ids[$data['code']] ?? null, 'source_hash' => $this->sourceHash((object) $data), 'created_at' => now(), 'updated_at' => now()];
+            }
+            DB::table('wms.tswms_import_mappings')->upsert($maps, ['source_system', 'source_client_id', 'source_table', 'source_id', 'target_entity'], ['target_id', 'source_database', 'source_hash', 'updated_at']);
+        });
+    }
+
+    private function insertAndPublish(string $table, array $data, string $entity): int
+    {
+        return DB::transaction(function () use ($table, $data, $entity): int {
+            $id = (int) DB::table($table)->insertGetId($data);
+            $recorder = app(EntityChangeRecorder::class);
+            if (! $recorder->hasDatabaseTrigger($table)) {
+                $recorder->publishCurrent($entity, $id);
+            }
+
+            return $id;
+        });
     }
 
     private function mapped(string $table, string $id, string $entity): ?string

@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Http\Middleware\EnsureWmsAccess;
 use App\Models\PersonalAccessToken;
+use App\Observers\EntitySyncObserver;
+use App\Services\EntityChangeRecorder;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Http\Request;
@@ -22,6 +24,10 @@ final class WmsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $observer = $this->app->make(EntitySyncObserver::class);
+        foreach ($this->app->make(EntityChangeRecorder::class)->definitions() as $entity => $definition) {
+            $entity::observe($observer);
+        }
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         Sanctum::getAccessTokenFromRequestUsing(fn (Request $request) => $request->bearerToken());
         Scramble::configure()->expose(false)->withDocumentTransformers(function ($document) {
