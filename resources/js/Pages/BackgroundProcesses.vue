@@ -576,6 +576,8 @@ watch(
                                         <Link
                                             class="run-entity-link"
                                             :href="entityUrl(run.entity_id)"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                         >
                                             {{ run.entity_id }}
                                         </Link>
