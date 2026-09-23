@@ -1,0 +1,26 @@
+{
+  "name": "WMS Laravel Project",
+  "description": "Система управления складом на Laravel 12 с Vue 3 frontend",
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.com:ourcrm3/modules/wms.git",
+    "provider": "gitlab",
+    "host": "gitlab.com",
+    "owner": "ourcrm3",
+    "name": "modules/wms",
+    "branch": "master"
+  },
+  "remotes": {
+    "origin": {
+      "url": "git@gitlab.our24.ru:ourcrm3/modules/wms.git",
+      "description": "Self-hosted GitLab (primary)"
+    },
+    "cloud": {
+      "url": "git@gitlab.com:ourcrm3/modules/wms.git", 
+      "description": "GitLab.com mirror"
+    }
+  },
+  "language": "php",
+  "framework": "laravel",
+  "version": "12.x"
+}

@@ -1,0 +1,12 @@
+{
+  "provider": "gitlab",
+  "host": "gitlab.our24.ru",
+  "repository": "ourcrm3/modules/wms",
+  "protocol": "ssh",
+  "remotes": {
+    "origin": "git@gitlab.our24.ru:ourcrm3/modules/wms.git",
+    "cloud": "git@gitlab.com:ourcrm3/modules/wms.git"
+  },
+  "primaryRemote": "origin",
+  "selfHosted": true
+}
