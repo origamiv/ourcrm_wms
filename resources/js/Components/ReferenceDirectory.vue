@@ -822,7 +822,7 @@ watch(
 );
 watch(currentPage, () => {
     if (!suppressPageWatch) void loadPage();
-});
+}, { flush: "sync" });
 watch(
     pages,
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
