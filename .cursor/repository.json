@@ -1,0 +1,27 @@
+{
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/ourcrm3/modules/wms.git",
+    "ssh_url": "git@gitlab.com:ourcrm3/modules/wms.git",
+    "provider": "gitlab.com",
+    "owner": "ourcrm3",
+    "name": "modules/wms",
+    "full_name": "ourcrm3/modules/wms",
+    "default_branch": "master",
+    "private": true
+  },
+  "remotes": {
+    "origin": "git@gitlab.com:ourcrm3/modules/wms.git",
+    "cloud": "git@gitlab.com:ourcrm3/modules/wms.git",
+    "gitlab-self": "git@gitlab.our24.ru:ourcrm3/modules/wms.git"
+  },
+  "branches": [
+    "master",
+    "dev1"
+  ],
+  "cursor": {
+    "cloud_agents_compatible": true,
+    "primary_remote": "origin",
+    "scm_provider": "gitlab"
+  }
+}

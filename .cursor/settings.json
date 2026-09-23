@@ -1,7 +1,13 @@
 {
+  "repository": {
+    "url": "https://gitlab.com/ourcrm3/modules/wms.git",
+    "provider": "gitlab.com",
+    "owner": "ourcrm3",
+    "name": "modules/wms"
+  },
   "cloud": {
     "environment": {
-      "name": "wms-laravel-project",
+      "name": "wms-laravel-project", 
       "description": "WMS - система управления складом на Laravel 12 с Vue 3 frontend"
     },
     "features": {

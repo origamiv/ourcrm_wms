@@ -1,0 +1,23 @@
+{
+  "repository": {
+    "primary_url": "git@gitlab.com:ourcrm3/modules/wms.git",
+    "https_url": "https://gitlab.com/ourcrm3/modules/wms.git",
+    "clone_method": "ssh",
+    "provider": "gitlab.com",
+    "owner": "ourcrm3",
+    "repo": "modules/wms",
+    "full_name": "ourcrm3/modules/wms",
+    "private": true
+  },
+  "cursor_cloud_agents": {
+    "supported": true,
+    "clone_url": "git@gitlab.com:ourcrm3/modules/wms.git",
+    "fallback_url": "https://gitlab.com/ourcrm3/modules/wms.git",
+    "requires_auth": true
+  },
+  "instructions": {
+    "manual_clone": "git clone git@gitlab.com:ourcrm3/modules/wms.git",
+    "setup_ssh": "Убедитесь, что SSH ключ добавлен в GitLab.com",
+    "alternative": "Используйте Personal Access Token для HTTPS"
+  }
+}
