@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
-import { Head, usePage, router } from "@inertiajs/vue3";
+import { Head, Link, usePage, router } from "@inertiajs/vue3";
 import ClientTabs from "../Components/ClientTabs.vue";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -19,6 +19,7 @@ import {
     type FilterOptions,
 } from "../lib/tableFilters";
 import { useTableSearch } from "../lib/tableSearch";
+import { recordIdFromUrl, withoutRecordId } from "../lib/recordLinks";
 interface ClientRow extends EntityRow {
     name: string | null;
     shortname: string | null;
@@ -48,6 +49,8 @@ const clientActions: { key: ClientAction; label: string; icon: string }[] = [
     { key: "delete", label: "Удалить", icon: "/design/crm/delete.svg" },
 ];
 const page = usePage<any>();
+const recordIdFilter = computed(() => recordIdFromUrl(page.url));
+const clearRecordIdUrl = computed(() => withoutRecordId(page.url));
 const columnFields = [
     { key: "name", label: "Название" },
     { key: "shortname", label: "Краткое название" },
@@ -102,6 +105,8 @@ const advancedOptions: FilterOptions = { status: [0, 1, 2] };
 const quickFiltered = computed(() =>
     rows.value
         .filter((row) => {
+            if (recordIdFilter.value && String(row.id) !== recordIdFilter.value)
+                return false;
             if (
                 statusFilter.value === "deleted"
                     ? !row.deleted_at
@@ -457,6 +462,11 @@ useCardRoute<ClientRow>({
                 }}
             </div>
             <FilterPresetTiles :state="advancedFilters" />
+            <p v-if="recordIdFilter" class="notice record-id-filter">
+                Фильтр по ID клиента:
+                <strong>#{{ recordIdFilter }}</strong>
+                <Link :href="clearRecordIdUrl">Показать всех</Link>
+            </p>
             <p v-if="error || warning" class="notice" role="alert">
                 {{ error || warning }}
             </p>
@@ -822,6 +832,11 @@ useCardRoute<ClientRow>({
     width: 16px;
     height: 16px;
     object-fit: contain;
+}
+.record-id-filter a {
+    margin-left: 8px;
+    color: #2274a5;
+    font-weight: 700;
 }
 @media (max-width: 900px) {
     html

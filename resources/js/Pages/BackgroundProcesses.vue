@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Head, Link } from "@inertiajs/vue3";
 import { computed, onMounted, ref, watch } from "vue";
 import MaintenanceTabs from "../Components/MaintenanceTabs.vue";
 import { formatDateInTimezone } from "../lib/dates";
@@ -14,6 +14,7 @@ import {
     type FilterOptions,
 } from "../lib/tableFilters";
 import { appendTableSearch, useTableSearch } from "../lib/tableSearch";
+import { clientRecordUrl } from "../lib/recordLinks";
 
 type GroupBy = "clients" | "webhooks";
 type MarketplaceFilter =
@@ -309,6 +310,13 @@ function formatRunDate(value: string | null): string {
     return value ? formatDateInTimezone(value, "Europe/Moscow", true) : "—";
 }
 
+function entityUrl(id: string): string {
+    return clientRecordUrl(
+        groupBy.value === "clients" ? "clients" : "integrations",
+        id,
+    );
+}
+
 function selectGroup(value: GroupBy): void {
     if (groupBy.value === value) return;
     groupBy.value = value;
@@ -564,7 +572,14 @@ watch(
                                     }"
                                 >
                                     <td>{{ run.id }}</td>
-                                    <td>{{ run.entity_id }}</td>
+                                    <td>
+                                        <Link
+                                            class="run-entity-link"
+                                            :href="entityUrl(run.entity_id)"
+                                        >
+                                            {{ run.entity_id }}
+                                        </Link>
+                                    </td>
                                     <td>{{ formatRunDate(run.created_at) }}</td>
                                     <td>
                                         <span
@@ -872,6 +887,15 @@ watch(
 .runs-table td {
     color: #18251f;
     font-size: 12px;
+}
+.run-entity-link {
+    color: #2274a5;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.run-entity-link:hover {
+    color: #1e892f;
 }
 .run-status {
     display: inline-flex;

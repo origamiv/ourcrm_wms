@@ -2,7 +2,7 @@
 import { goodsTree, flattenGoods } from "../lib/goodsTree";
 import { useCardRoute } from "../lib/cardRoute";
 import { computed, ref, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { Head, router, usePage } from "@inertiajs/vue3";
+import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import RussianDateInput from "./RussianDateInput.vue";
 import { formatDate } from "../lib/dates";
 import DocumentPrintFields from "./DocumentPrintFields.vue";
@@ -36,6 +36,7 @@ import {
     type FilterOptions,
 } from "../lib/tableFilters";
 import { useTableSearch } from "../lib/tableSearch";
+import { recordIdFromUrl, withoutRecordId } from "../lib/recordLinks";
 interface ReferenceRow extends EntityRow {
     name: string | null;
     shortname?: string | null;
@@ -356,6 +357,10 @@ const docTypeFilter = ref("");
 const dateFilter = ref("");
 
 const page = usePage<any>();
+const recordIdFilter = computed(() =>
+    isClientIntegration ? recordIdFromUrl(page.url) : "",
+);
+const clearRecordIdUrl = computed(() => withoutRecordId(page.url));
 const clientScope = computed<{ id: string; name: string } | null>(() =>
     isClientScoped ? (page.props.clientScope ?? null) : null,
 );
@@ -590,6 +595,8 @@ const advancedOptions = computed<FilterOptions>(() =>
 const quickFiltered = computed(() =>
     rows.value
         .filter((row) => {
+            if (recordIdFilter.value && String(row.id) !== recordIdFilter.value)
+                return false;
             if (
                 isDocument &&
                 ((clientFilter.value &&
@@ -1298,6 +1305,11 @@ useCardRoute<ReferenceRow>({
                     >Склад:
                     <strong>{{ warehouseScope?.name }}</strong></template
                 >
+            </p>
+            <p v-if="recordIdFilter" class="notice record-id-filter">
+                Фильтр по ID вебхука:
+                <strong>#{{ recordIdFilter }}</strong>
+                <Link :href="clearRecordIdUrl">Показать все</Link>
             </p>
             <div class="page-heading">
                 <div class="heading-title-group">
@@ -2966,6 +2978,11 @@ useCardRoute<ReferenceRow>({
 }
 .name-button {
     text-align: left;
+}
+.record-id-filter a {
+    margin-left: 8px;
+    color: #2274a5;
+    font-weight: 700;
 }
 td,
 .editor h2 {
