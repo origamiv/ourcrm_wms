@@ -22,7 +22,7 @@ final class ImportTswmsScheduledCommand extends Command
         'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
     ];
 
-    private const TSWMS_WORKING_HOURS = ['start' => 9, 'end' => 20];
+    private const TSWMS_WORKING_HOURS = ['start' => 9, 'end' => 23]; // Временно расширяем для демо
 
     public function handle(): int
     {

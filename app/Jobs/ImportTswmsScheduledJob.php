@@ -30,7 +30,7 @@ final class ImportTswmsScheduledJob implements ShouldQueue
         'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
     ];
 
-    private const TSWMS_WORKING_HOURS = ['start' => 9, 'end' => 20];
+    private const TSWMS_WORKING_HOURS = ['start' => 9, 'end' => 23]; // Временно расширяем для демо
 
     public function __construct(
         public string $tenantId,
@@ -109,15 +109,23 @@ final class ImportTswmsScheduledJob implements ShouldQueue
             return;
         }
 
-        // Запускаем импорт через существующую команду с ограничением по сущностям
-        $exitCode = Artisan::call('wms:import:tswms', [
-            '--tenant' => $this->tenantId,
-            '--only' => $entities,
-        ]);
+        // Запускаем отдельный импорт для каждой сущности
+        foreach ($entities as $entity) {
+            $exitCode = Artisan::call('wms:import:tswms', [
+                '--tenant' => $this->tenantId,
+                '--only' => [$entity],
+            ]);
 
-        if ($exitCode !== 0) {
-            $output = Artisan::output();
-            throw new RuntimeException("Импорт TSWMS завершился с ошибкой. Код: {$exitCode}. Вывод: {$output}");
+            if ($exitCode !== 0) {
+                $output = Artisan::output();
+                logger()->warning("Импорт сущности {$entity} завершился с ошибкой", [
+                    'tenant_id' => $this->tenantId,
+                    'entity' => $entity,
+                    'exit_code' => $exitCode,
+                    'output' => $output,
+                ]);
+                // Продолжаем с другими сущностями даже если одна упала
+            }
         }
     }
 
