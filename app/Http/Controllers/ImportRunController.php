@@ -200,7 +200,7 @@ final class ImportRunController extends BaseApiController
     private function determineEntityGroup(array $entities): string
     {
         $entityGroups = [
-            'references' => ['clients', 'accounts', 'webhooks', 'warehouses', 'services', 'task_stages', 'users', 'documents'],
+            'references' => ['clients', 'services', 'warehouses', 'task_stages', 'users', 'accounts', 'webhooks', 'documents'],
             'goods' => ['goods'],
             'orders' => ['orders', 'order_goods', 'order_histories', 'shipments', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'],
             'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],

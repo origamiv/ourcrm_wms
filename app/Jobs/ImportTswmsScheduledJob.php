@@ -24,7 +24,7 @@ final class ImportTswmsScheduledJob implements ShouldQueue
     public int $timeout = 300; // 5 минут для проверки и запуска
 
     private const ENTITY_GROUPS = [
-        'references' => ['clients', 'accounts', 'webhooks', 'warehouses', 'services', 'task_stages', 'users', 'documents'],
+        'references' => ['clients', 'services', 'warehouses', 'task_stages', 'users', 'accounts', 'webhooks', 'documents'],
         'goods' => ['goods'],
         'orders' => ['orders', 'order_goods', 'order_histories', 'shipments', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'],
         'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
@@ -34,7 +34,8 @@ final class ImportTswmsScheduledJob implements ShouldQueue
 
     public function __construct(
         public string $tenantId,
-        public array $entityGroups
+        public array $entityGroups,
+        public array $specificEntities = []
     ) {}
 
     public function handle(): void
@@ -97,7 +98,8 @@ final class ImportTswmsScheduledJob implements ShouldQueue
 
     private function runImport(): void
     {
-        $entities = $this->getEntitiesFromGroups();
+        // Если переданы конкретные сущности, используем их, иначе получаем из групп
+        $entities = !empty($this->specificEntities) ? $this->specificEntities : $this->getEntitiesFromGroups();
         
         if (empty($entities)) {
             throw new RuntimeException('Не найдены сущности для импорта в группах: ' . implode(', ', $this->entityGroups));
@@ -160,7 +162,7 @@ final class ImportTswmsScheduledJob implements ShouldQueue
             'next_run' => $nextWorkingTime->toDateTimeString(),
         ]);
 
-        self::dispatch($this->tenantId, $this->entityGroups)
+        self::dispatch($this->tenantId, $this->entityGroups, $this->specificEntities)
             ->delay($nextWorkingTime)
             ->onConnection('redis')
             ->onQueue('imports');
@@ -183,7 +185,7 @@ final class ImportTswmsScheduledJob implements ShouldQueue
             'next_run' => $delay->toDateTimeString(),
         ]);
 
-        self::dispatch($this->tenantId, $this->entityGroups)
+        self::dispatch($this->tenantId, $this->entityGroups, $this->specificEntities)
             ->delay($delay)
             ->onConnection('redis')
             ->onQueue('imports');

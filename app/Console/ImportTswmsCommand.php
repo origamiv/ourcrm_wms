@@ -18,15 +18,32 @@ use Throwable;
 
 final class ImportTswmsCommand extends Command
 {
-    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--entity-groups= : Группы сущностей (references,goods,orders,tasks)} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограничение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
+    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--entity-groups= : Группы сущностей (references,goods,orders,tasks)} {--with-dependencies : Автоматически добавить зависимые сущности} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограничение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
 
     protected $description = 'Импортирует данные выбранного клиента TSWMS в тенант WMS';
 
     private const ENTITY_GROUPS = [
-        'references' => ['clients', 'accounts', 'webhooks', 'warehouses', 'services', 'task_stages', 'users', 'documents'],
+        'references' => ['clients', 'services', 'warehouses', 'task_stages', 'users', 'accounts', 'webhooks', 'documents'],
         'goods' => ['goods'],
         'orders' => ['orders', 'order_goods', 'order_histories', 'shipments', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'],
         'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
+    ];
+
+    /**
+     * Карта зависимостей между сущностями
+     */
+    private const ENTITY_DEPENDENCIES = [
+        'accounts' => ['clients'],
+        'webhooks' => ['clients', 'accounts'], 
+        'documents' => ['clients'],
+        'orders' => ['clients', 'warehouses', 'webhooks', 'services'],
+        'order_goods' => ['orders', 'goods'],
+        'order_histories' => ['orders'],
+        'shipments' => ['orders'],
+        'tasks' => ['clients', 'warehouses', 'task_stages', 'users'],
+        'task_goods' => ['tasks', 'goods'],
+        'acceptances' => ['tasks', 'clients', 'warehouses'],
+        'cell_goods' => ['tasks', 'goods', 'warehouses'],
     ];
 
     private string $tenant;
@@ -154,28 +171,46 @@ final class ImportTswmsCommand extends Command
             return self::SUCCESS;
         }
         $only = $this->resolveEntitiesFromOptions();
+        
+        // Автоматическое добавление зависимостей, если включена опция
+        if ($this->option('with-dependencies')) {
+            $only = $this->addDependencies($only);
+        }
+        
+        // Валидация зависимостей между сущностями
+        $this->validateDependencies($only);
+        
+        // Уровень 1: Базовые справочники (без зависимостей)
         $this->runStep('clients', fn () => $this->importPartners(), $only);
-        $this->runStep('accounts', fn () => $this->importAccounts(), $only);
-        $this->runStep('webhooks', fn () => $this->importWebhooks(), $only);
-        $this->runStep('goods', fn () => $this->importGoods(), $only);
-        $this->runStep('warehouses', fn () => $this->importWarehouses(), $only);
         $this->runStep('services', fn () => $this->importServices(), $only);
-        $this->runStep('documents', fn () => $this->importDocuments(), $only);
+        $this->runStep('warehouses', fn () => $this->importWarehouses(), $only);
         $this->runStep('task_stages', fn () => $this->importTaskStages(), $only);
         $this->runStep('users', fn () => $this->importImportedUsers(), $only);
+        $this->runStep('goods', fn () => $this->importGoods(), $only);
+        
+        // Уровень 2: Интеграционные сущности (зависят от clients)
+        $this->runStep('accounts', fn () => $this->importAccounts(), $only);
+        $this->runStep('webhooks', fn () => $this->importWebhooks(), $only);
+        $this->runStep('documents', fn () => $this->importDocuments(), $only);
+        // Уровень 4: Операционные данные
         $this->runStep('tasks', fn () => $this->importTasks(), $only);
-        $this->runStep('task_goods', fn () => $this->importTaskGoods(), $only);
-        $this->runStep('acceptances', fn () => $this->importAcceptances(), $only);
-        $this->runStep('cell_goods', fn () => $this->importCellGoods(), $only);
+        // Уровень 3: Справочники заказов (создаются через orders)
         $this->runStep('order_statuses', fn () => $this->importOrderReference('tswms-orders-status', 'wms.order_statuses'), $only);
         $this->runStep('order_sources', fn () => $this->importOrderReference('tswms-orders-source', 'wms.order_sources'), $only);
         $this->runStep('order_cancel_statuses', fn () => $this->importOrderReference('directories_order_cancel_statuses', 'wms.order_cancel_statuses'), $only);
         $this->runStep('logistic_companies', fn () => $this->importOrderReference('logistic_companies', 'wms.logistic_companies'), $only);
         $this->runStep('shipment_statuses', fn () => $this->importOrderReference('tswms-shipments-statuses', 'wms.shipment_statuses'), $only);
+        
+        // Продолжение уровня 4: Операционные данные
         $this->runStep('orders', fn () => $this->importOrders(), $only);
+        
+        // Уровень 5: Связанные данные
         $this->runStep('order_goods', fn () => $this->importOrderGoods(), $only);
         $this->runStep('order_histories', fn () => $this->importOrderHistories(), $only);
         $this->runStep('shipments', fn () => $this->importShipments(), $only);
+        $this->runStep('task_goods', fn () => $this->importTaskGoods(), $only);
+        $this->runStep('acceptances', fn () => $this->importAcceptances(), $only);
+        $this->runStep('cell_goods', fn () => $this->importCellGoods(), $only);
         $this->info("Импорт завершён: создано {$this->created}, обновлено {$this->updated}.");
         $this->line('IMPORT_RECORDS:'.($this->created + $this->updated));
 
@@ -1171,5 +1206,60 @@ final class ImportTswmsCommand extends Command
 
         // Иначе используем старую опцию --only для обратной совместимости
         return array_values(array_filter($this->option('only')));
+    }
+
+    /**
+     * Добавляет зависимости к списку сущностей
+     */
+    private function addDependencies(array $entities): array
+    {
+        $result = $entities;
+        $added = [];
+        
+        foreach ($entities as $entity) {
+            $dependencies = self::ENTITY_DEPENDENCIES[$entity] ?? [];
+            
+            foreach ($dependencies as $dependency) {
+                if (!in_array($dependency, $result, true)) {
+                    $result[] = $dependency;
+                    $added[] = $dependency;
+                }
+            }
+        }
+        
+        if (!empty($added)) {
+            $this->components->info('Автоматически добавлены зависимости: ' . implode(', ', $added));
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Проверяет зависимости для заданных сущностей и выдает предупреждения
+     */
+    private function validateDependencies(array $entities): void
+    {
+        $missingDependencies = [];
+        
+        foreach ($entities as $entity) {
+            $dependencies = self::ENTITY_DEPENDENCIES[$entity] ?? [];
+            
+            foreach ($dependencies as $dependency) {
+                if (!in_array($dependency, $entities, true)) {
+                    $missingDependencies[$entity][] = $dependency;
+                }
+            }
+        }
+        
+        if (!empty($missingDependencies)) {
+            $this->components->warn('Обнаружены отсутствующие зависимости:');
+            
+            foreach ($missingDependencies as $entity => $dependencies) {
+                $this->components->warn("  • {$entity} требует: " . implode(', ', $dependencies));
+            }
+            
+            $this->components->warn('Некоторые записи могут быть пропущены из-за отсутствующих связанных данных.');
+            $this->components->warn('Рекомендуется запустить импорт зависимостей перед импортом основных сущностей.');
+        }
     }
 }
