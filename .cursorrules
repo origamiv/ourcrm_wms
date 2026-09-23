@@ -1,0 +1,66 @@
+# Cursor Cloud Agents Rules для WMS проекта
+
+## Настройка окружения
+- Используйте SQLite базу данных для разработки в облаке
+- Все команды Laravel выполняйте с флагом `--force` для автоматического подтверждения
+- Перед изменениями frontend всегда выполняйте `npm run build` 
+- После изменений конфигурации выполняйте `php artisan optimize:clear`
+
+## Работа с проектом
+- Основной язык проекта: русский
+- Используйте существующие стили и компоненты из `resources/js/Components/`
+- Модели размещайте в стандартных каталогах Laravel в `app/`
+- Не создавайте новые файлы в `Modules/` - используйте структуру Laravel
+
+## Базы данных и миграции
+- Используйте PostgreSQL синтаксис в миграциях (даже если локально SQLite)
+- Все бизнес-сущности должны иметь поля `tenant_id`, `created_at`, `updated_at`, `deleted_at`
+- Справочники должны содержать поля: `id`, `name`, `shortname`, `status`, `tenant_id`
+- После создания миграций сразу выполняйте `php artisan migrate --force`
+
+## Frontend разработка
+- Используйте Vue 3 + TypeScript + Inertia.js
+- Стили на базе Tailwind CSS + DaisyUI
+- Даты отображайте в формате `дд.мм.гг`, время в формате `чч:мм`
+- Локальные данные храните в IndexedDB
+
+## API и документация
+- API документируйте через Scramble/OpenAPI
+- Защищайте API через `auth:sanctum` middleware
+- Используйте отдельные FormRequest классы для валидации
+
+## Git и коммиты
+- Коммиты пишите на русском языке
+- Используйте автора: Вениамин Смородинский <origamiv@gmail.com>
+- Не включайте в коммиты `.env` файлы и пользовательские данные
+- После работы делайте коммит и push в текущую ветку
+
+## Команды для быстрого старта в Cloud Agents
+```bash
+# Первоначальная настройка
+npm run cloud:setup
+
+# Разработка (запускает Laravel + Vite)
+npm run cloud:dev  
+
+# Сборка проекта
+npm run cloud:build
+```
+
+## Полезные команды Laravel
+```bash
+# Очистка всех кэшей
+php artisan optimize:clear
+
+# Просмотр маршрутов
+php artisan route:list
+
+# Создание контроллера с ресурсными методами
+php artisan make:controller --resource ExampleController
+
+# Создание модели с миграцией
+php artisan make:model --migration Example
+
+# Создание FormRequest
+php artisan make:request ExampleRequest
+```

@@ -1,0 +1,60 @@
+{
+  "cloud": {
+    "environment": {
+      "name": "wms-laravel-project",
+      "description": "WMS - система управления складом на Laravel 12 с Vue 3 frontend"
+    },
+    "features": {
+      "terminal": true,
+      "fileWatcher": true,
+      "portForwarding": true
+    },
+    "resources": {
+      "memory": "2GB",
+      "cpu": "1 core",
+      "disk": "10GB"
+    }
+  },
+  "development": {
+    "autoStart": [
+      "laravel-server"
+    ],
+    "primaryPort": 8000,
+    "urls": {
+      "app": "http://localhost:8000",
+      "vite": "http://localhost:5173",
+      "docs": "http://localhost:8000/docs/api"
+    }
+  },
+  "languages": {
+    "php": {
+      "version": "8.2",
+      "extensions": ["pgsql", "redis", "gd", "mbstring", "xml", "curl", "simplexml"]
+    },
+    "nodejs": {
+      "version": "20",
+      "packageManager": "npm"
+    }
+  },
+  "tools": {
+    "composer": {
+      "autoOptimize": true,
+      "preferDist": true
+    },
+    "artisan": {
+      "defaultCommands": [
+        "migrate --force",
+        "optimize:clear",
+        "route:list",
+        "config:cache"
+      ]
+    },
+    "npm": {
+      "scripts": {
+        "dev": "Frontend development server",
+        "build": "Production build",
+        "typecheck": "TypeScript checking"
+      }
+    }
+  }
+}

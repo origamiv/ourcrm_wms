@@ -20,12 +20,19 @@
 
 ## Подготовка
 
+### Локальная разработка
 ```shell
 composer install
 npm ci
 npm run build
 php artisan migrate --force
 ```
+
+### Cursor Cloud Agents
+```shell
+./start-cloud.sh
+```
+Автоматическая настройка для работы в облачной среде. Подробности в [docs/CLOUD_AGENTS.md](docs/CLOUD_AGENTS.md).
 
 Перед миграцией задайте `DB_CONNECTION=pgsql`, `DB_SCHEMA=wms` и создайте схему `wms` при её отсутствии. В PostgreSQL должны существовать общие `public.users`, `main.roles` и `main.role_user`. Миграция создаёт техническую инфраструктуру в `wms`, не пересоздавая пользователей. Нужна действующая конфигурация БД и сессий. Вход — `/login`, пользователи — `/users`, документация API — `/docs/api`.
 

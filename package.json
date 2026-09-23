@@ -3,10 +3,13 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite",
+        "dev": "vite --host 0.0.0.0 --port 5173",
         "typecheck": "vue-tsc --noEmit",
         "test:cache": "tsx --test tests/frontend/*.test.ts",
-        "test:browser": "playwright test"
+        "test:browser": "playwright test",
+        "cloud:setup": "cp .env.cloud .env && php artisan key:generate --force && php artisan migrate --force && npm run build",
+        "cloud:dev": "concurrently \"php artisan serve --host=0.0.0.0 --port=8000\" \"npm run dev\"",
+        "cloud:build": "npm run build && php artisan optimize:clear"
     },
     "devDependencies": {
         "@playwright/test": "^1.63.0",

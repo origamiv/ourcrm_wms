@@ -25,3 +25,8 @@ yarn-error.log
 /storage/api-docs/
 /test-results/
 /playwright-report/
+
+# Cursor Cloud Agents
+.env.cloud.local
+.cursor/logs/
+.cursor/tmp/
