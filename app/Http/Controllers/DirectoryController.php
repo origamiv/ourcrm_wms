@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class DirectoryController extends BaseApiController
 {
@@ -39,16 +40,22 @@ final class DirectoryController extends BaseApiController
         $model = new $modelClass;
         $table = $model->getTable();
         $columns = Schema::getColumnListing($table);
+        $hasDeletedAt = in_array('deleted_at', $columns, true);
         $fields = array_values(array_intersect(array_unique(array_merge(
-            ['id', 'name', 'shortname', 'status', 'deleted_at'],
+            ['id', 'name', 'shortname', 'status'],
+            $hasDeletedAt ? ['deleted_at'] : [],
             $definition['fields'] ?? [],
         )), $columns));
-        $query = $modelClass::query()->withTrashed()->visibleTo((string) $request->user()->tenant_id)->select($fields);
+        $query = $modelClass::query();
+        if ($hasDeletedAt && in_array(SoftDeletes::class, class_uses_recursive($modelClass), true)) {
+            $query->withTrashed();
+        }
+        $query->visibleTo((string) $request->user()->tenant_id)->select($fields);
 
         $deleted = $validated['deleted'] ?? 'active';
-        if ($deleted === 'deleted') {
+        if ($hasDeletedAt && $deleted === 'deleted') {
             $query->whereNotNull($model->qualifyColumn('deleted_at'));
-        } elseif ($deleted !== 'all') {
+        } elseif ($hasDeletedAt && $deleted !== 'all') {
             $query->whereNull($model->qualifyColumn('deleted_at'));
         }
 
