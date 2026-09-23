@@ -51,14 +51,24 @@ const barcodes = computed(() => Array.isArray(good.value?.barcodes) ? good.value
 const articuls = computed(() => Array.isArray(good.value?.articul) ? good.value!.articul! : []);
 const showOtherProperties = ref(false);
 const demoProperties: Record<string, unknown> = { "Материал": "Пластик", "Страна производства": "Россия", "Температурный режим": "от +5 до +25 °C" };
-function srcValue(keys: string[], fallback: string) {
+function sourceField(keys: string[]) {
     const source = good.value?.src ?? {};
-    for (const key of keys) if (source[key] !== undefined && source[key] !== null && source[key] !== "") return String(source[key]);
-    return fallback;
+    const nested = source.source_fields;
+    for (const key of keys) {
+        if (source[key] !== undefined && source[key] !== null && source[key] !== "") return source[key];
+        if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+            const value = (nested as Record<string, unknown>)[key];
+            if (value !== undefined && value !== null && value !== "") return value;
+        }
+    }
+    return null;
+}
+function srcValue(keys: string[], fallback: string, suffix = "") {
+    const value = sourceField(keys);
+    return value === null ? fallback : `${String(value)}${suffix}`;
 }
 function hasSrcValue(keys: string[]) {
-    const source = good.value?.src ?? {};
-    return keys.some((key) => source[key] !== undefined && source[key] !== null && source[key] !== "");
+    return sourceField(keys) !== null;
 }
 function flattenProperties(value: unknown, prefix = ""): { key: string; value: string }[] {
     if (value === null || value === undefined) return [];
@@ -191,11 +201,11 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                 <div v-if="expanded.characteristics" class="good-section-content good-characteristics-layout">
                     <div class="good-characteristics-main">
                         <div class="good-data-grid good-main-properties">
-                            <div><span>Длина</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['length', 'длина']) }">{{ srcValue(['length', 'длина'], '30 см') }}</strong></div>
-                            <div><span>Ширина</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['width', 'ширина']) }">{{ srcValue(['width', 'ширина'], '20 см') }}</strong></div>
-                            <div><span>Высота</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['height', 'высота']) }">{{ srcValue(['height', 'высота'], '15 см') }}</strong></div>
-                            <div><span>Вес</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['weight', 'вес']) }">{{ srcValue(['weight', 'вес'], '1,2 кг') }}</strong></div>
-                            <div><span>Цвет</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['color', 'цвет']) }">{{ srcValue(['color', 'цвет'], 'Синий') }}</strong></div>
+                            <div><span>Длина</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['length', 'depth', 'длина']) }">{{ srcValue(['length', 'depth', 'длина'], '30 см', ' см') }}</strong></div>
+                            <div><span>Ширина</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['width', 'ширина']) }">{{ srcValue(['width', 'ширина'], '20 см', ' см') }}</strong></div>
+                            <div><span>Высота</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['height', 'высота']) }">{{ srcValue(['height', 'высота'], '15 см', ' см') }}</strong></div>
+                            <div><span>Вес</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['weight', 'вес']) }">{{ srcValue(['weight', 'вес'], '1,2 кг', ' г') }}</strong></div>
+                            <div><span>Цвет</span><strong :class="{ 'hardcoded-value': !hasSrcValue(['color', 'colour', 'цвет']) }">{{ srcValue(['color', 'colour', 'цвет'], 'Синий') }}</strong></div>
                             <button class="good-other-tile" type="button" @click="showOtherProperties = !showOtherProperties"><span>Остальные</span><b>{{ showOtherProperties ? '✓' : '›' }}</b></button>
                         </div>
                         <div class="good-cards-block"><div class="good-cards-heading"><strong>Карточки товара</strong><button type="button" class="good-card-add" aria-label="Добавить карточку товара" title="Добавить карточку товара" @click="addCard">+</button></div><div class="good-card-avatars"><button v-for="(card, index) in cardTiles" :key="card.id" type="button" class="good-card-avatar" :class="[`color-${(index % 6) + 1}`, { 'hardcoded-value': card.demo }]" :aria-label="card.name || `Карточка №${card.id}`" :title="card.name || `Карточка №${card.id}`" @click="openCardTile(card)"><span>{{ (card.name || `К${index + 1}`).slice(0, 2).toUpperCase() }}</span></button></div></div>
