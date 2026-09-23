@@ -250,6 +250,7 @@ watch(
                         :state="advancedFilters"
                         :fields="advancedFields"
                         :options="advancedOptions"
+                        :rows="runs"
                     /><button
                         type="button"
                         class="back-button"

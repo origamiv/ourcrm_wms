@@ -395,6 +395,7 @@ useCardRoute<UserRow>({
                         :state="advancedFilters"
                         :fields="advancedFields"
                         :options="advancedOptions"
+                        :rows="rows"
                     />
                     <DataTransferMenu
                         :rows="filtered"

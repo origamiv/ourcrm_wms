@@ -332,6 +332,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
                         :state="advancedFilters"
                         :fields="advancedFields"
                         :options="advancedOptions"
+                        :rows="rows"
                     />
                 </div>
                 <FilterPresetTiles :state="advancedFilters" />

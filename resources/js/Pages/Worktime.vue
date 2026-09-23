@@ -127,15 +127,18 @@ const total = (row: any) =>
         (sum: number, d: any) => sum + (d.worked_minutes || 0),
         0,
     );
+const filterOptionRows = computed(() =>
+    report.value.rows.map((row: any) => ({
+        ...row,
+        user_id: row.user.id,
+        employee: employeeName(row.user),
+        email: row.user.email,
+        total_minutes: total(row),
+    })),
+);
 const filteredRows = computed(() =>
     applyTableFilter<any>(
-        report.value.rows.map((row: any) => ({
-            ...row,
-            user_id: row.user.id,
-            employee: employeeName(row.user),
-            email: row.user.email,
-            total_minutes: total(row),
-        })),
+        filterOptionRows.value,
         advancedFilters.combined.value,
     ),
 );
@@ -189,6 +192,7 @@ watch([from, to], load);
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
+                        :rows="filterOptionRows"
                     />
                     <RussianDateInput v-model="from" />
                     <span>—</span>

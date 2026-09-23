@@ -51,6 +51,7 @@ const webhookStore = createEntitySync<IntegrationWebhookRow>(
     scope,
     "integration_webhooks",
 );
+const filterOptionRows = marketplaceStore.rows;
 const query = ref("");
 const integrationFilter = ref<string[]>([]);
 const marketplaceFilter = ref<string[]>([]);
@@ -437,6 +438,7 @@ onUnmounted(() => {
                         :state="advancedFilters"
                         :fields="advancedFields"
                         :options="advancedOptions"
+                        :rows="filterOptionRows"
                     /><span
                         >Всего: <b>{{ filtered.length }}</b></span
                     ><span

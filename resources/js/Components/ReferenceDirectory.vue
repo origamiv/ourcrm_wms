@@ -1311,6 +1311,7 @@ useCardRoute<ReferenceRow>({
                         :state="advancedFilters"
                         :fields="advancedFields"
                         :options="advancedOptions"
+                        :rows="rows"
                     />
                     <DataTransferMenu
                         :rows="filtered"

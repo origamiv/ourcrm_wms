@@ -167,6 +167,55 @@ export function serializedFilter(rules: FilterRules | null): string {
     return rules?.rules?.length ? JSON.stringify(rules) : "";
 }
 
+export function filterOptionsFromRows(
+    rows: unknown[],
+    fields: FilterField[],
+    overrides: FilterOptions = {},
+): FilterOptions {
+    const result: FilterOptions = { ...overrides };
+    for (const field of fields) {
+        if (Object.prototype.hasOwnProperty.call(overrides, field.id)) continue;
+        const values = rows.flatMap((row) => {
+            const value = fieldValue(row, field.id);
+            return Array.isArray(value) ? value : [value];
+        });
+        const unique = new Map<string, string | number | Date>();
+        for (const source of values) {
+            if (source === null || source === undefined || source === "")
+                continue;
+            let value: string | number | Date;
+            if (field.type === "date") {
+                const date =
+                    source instanceof Date ? source : new Date(String(source));
+                if (Number.isNaN(date.getTime())) continue;
+                value = date;
+            } else if (typeof source === "boolean") {
+                value = source ? 1 : 0;
+            } else if (
+                typeof source === "string" ||
+                typeof source === "number"
+            ) {
+                value = source;
+            } else continue;
+            const key =
+                value instanceof Date
+                    ? `date:${value.toISOString()}`
+                    : `${typeof value}:${value}`;
+            unique.set(key, value);
+        }
+        result[field.id] = [...unique.values()].sort((left, right) => {
+            if (left instanceof Date && right instanceof Date)
+                return left.getTime() - right.getTime();
+            if (typeof left === "number" && typeof right === "number")
+                return left - right;
+            return String(left).localeCompare(String(right), "ru", {
+                numeric: true,
+            });
+        });
+    }
+    return result;
+}
+
 function matchesNode(row: unknown, node: any): boolean {
     if (Array.isArray(node?.rules)) {
         const values = node.rules.map((child: unknown) =>
@@ -178,7 +227,7 @@ function matchesNode(row: unknown, node: any): boolean {
     }
     const actual = fieldValue(row, String(node.field ?? ""));
     const candidates = Array.isArray(actual) ? actual : [actual];
-    if (Array.isArray(node.includes))
+    if (Array.isArray(node.includes) && node.includes.length > 0)
         return candidates.some((value) =>
             node.includes.some(
                 (included: unknown) =>

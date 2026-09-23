@@ -337,6 +337,7 @@ watch(
                     :state="advancedFilters"
                     :fields="advancedFields"
                     :options="advancedOptions"
+                    :rows="runs"
                 />
             </div>
 

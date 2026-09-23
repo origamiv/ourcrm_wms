@@ -50,13 +50,8 @@ final class QueryFilterService
         $expression = $fields[$field];
         $method = $boolean === 'or' ? 'orWhereRaw' : 'whereRaw';
         $type = (string) ($node['type'] ?? 'text');
-        if (isset($node['includes']) && is_array($node['includes'])) {
+        if (isset($node['includes']) && is_array($node['includes']) && $node['includes'] !== []) {
             $values = array_values($node['includes']);
-            if ($values === []) {
-                $query->{$method}('false');
-
-                return;
-            }
             $placeholders = implode(', ', array_fill(0, count($values), '?'));
             $query->{$method}("({$expression}) IN ({$placeholders})", $values);
 

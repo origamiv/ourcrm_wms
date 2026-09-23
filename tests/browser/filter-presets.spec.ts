@@ -26,16 +26,17 @@ test("конструктор открывается, а активная пли�
             },
             body: JSON.stringify({
                 screen_key: "users",
-                name: "Активные сотрудники",
+                name: "Все Иваны",
                 is_active: true,
                 rules: {
                     glue: "and",
                     rules: [
                         {
-                            field: "status",
-                            type: "tuple",
-                            filter: "equal",
-                            value: 1,
+                            field: "last_name",
+                            type: "text",
+                            filter: "contains",
+                            value: "Иван",
+                            includes: [],
                         },
                     ],
                 },
@@ -46,8 +47,11 @@ test("конструктор открывается, а активная пли�
 
     await page.goto("/main/users");
     await expect(
-        page.getByRole("button", { name: "Активные сотрудники", exact: true }),
+        page.getByRole("button", { name: "Все Иваны", exact: true }),
     ).toBeVisible();
+    const tableBody = page.locator(".table-scroll tbody");
+    await expect(tableBody.getByText(/Иванов.*Михаил/)).toBeVisible();
+    await expect(tableBody.getByText(/Смирнова/)).toHaveCount(0);
     await page
         .getByRole("button", { name: "Открыть конструктор фильтров" })
         .click();
@@ -63,6 +67,12 @@ test("конструктор открывается, а активная пли�
     await expect(page.getByText("Email", { exact: true })).toBeVisible();
     await page.getByText("Email", { exact: true }).click();
     await expect(fieldSelector).toContainText("Email");
+    const emailOption = page
+        .locator(".wx-filter-editor .wx-item")
+        .filter({ hasText: "admin@example.test" });
+    await expect(emailOption).toBeVisible();
+    await emailOption.click();
+    await expect(emailOption.locator('input[type="checkbox"]')).toBeChecked();
     await page.getByRole("button", { name: "Закрыть" }).click();
 
     await page.setViewportSize({ width: 390, height: 844 });

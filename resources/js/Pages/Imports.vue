@@ -264,6 +264,7 @@ onUnmounted(() => {
                     :state="advancedFilters"
                     :fields="advancedFields"
                     :options="advancedOptions"
+                    :rows="rows"
                 />
             </div>
             <div class="sync-line" role="status">

@@ -10,14 +10,16 @@ import type {
     FilterPresetState,
     FilterRules,
 } from "../lib/tableFilters";
+import { filterOptionsFromRows } from "../lib/tableFilters";
 
 const props = withDefaults(
     defineProps<{
         state: FilterPresetState;
         fields: FilterField[];
         options?: FilterOptions;
+        rows?: unknown[];
     }>(),
-    { options: () => ({}) },
+    { options: () => ({}), rows: () => [] },
 );
 
 const open = ref(false);
@@ -66,6 +68,9 @@ const activeCount = computed(
     () =>
         props.state.presets.value.filter((preset) => preset.is_active).length +
         (props.state.draft.value?.rules?.length ? 1 : 0),
+);
+const resolvedOptions = computed(() =>
+    filterOptionsFromRows(props.rows, props.fields, props.options),
 );
 
 function show(preset?: FilterPreset | null): void {
@@ -198,7 +203,7 @@ onMounted(() => void props.state.load());
                             <FilterBuilder
                                 :key="builderKey"
                                 :fields="fields"
-                                :options="options"
+                                :options="resolvedOptions"
                                 :value="initial"
                                 type="list"
                                 :init="(value: IApi) => (api = value)"

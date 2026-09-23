@@ -39,6 +39,7 @@ const scope = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.aut
 const roles = createEntitySync<RoleRow>(scope, "roles");
 const permissions = createEntitySync<PermissionRow>(scope, "permissions");
 const assignments = createEntitySync<Assignment>(scope, "permission_roles");
+const filterOptionRows = permissions.rows;
 const stores = [roles, permissions, assignments];
 const ready = computed(() => stores.every((store) => store.ready.value));
 const online = computed(() => stores.every((store) => store.online.value));
@@ -160,6 +161,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                 <FilterPresetButton
                     :state="advancedFilters"
                     :fields="advancedFields"
+                    :rows="filterOptionRows"
                 />
                 <button
                     class="primary"
