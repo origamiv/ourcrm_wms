@@ -6,11 +6,13 @@ import AdminTabs from "../Components/AdminTabs.vue";
 import { isoDate, toIsoDate } from "../lib/dates";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     applyTableFilter,
     useFilterPresets,
     type FilterField,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 const today = new Date(),
     from = ref(toIsoDate(new Date(today.getFullYear(), today.getMonth(), 1))),
     to = ref(toIsoDate(new Date(today.getFullYear(), today.getMonth() + 1, 0))),
@@ -25,6 +27,7 @@ const advancedFields: FilterField[] = [
     { id: "email", label: "Email", type: "text" },
     { id: "total_minutes", label: "Отработано минут", type: "number" },
 ];
+const tableSearch = useTableSearch("worktime", advancedFields);
 const weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 const info = (row: any, day: string) =>
     row.days?.[day] || { state: "empty", worked_minutes: 0 };
@@ -136,12 +139,13 @@ const filterOptionRows = computed(() =>
         total_minutes: total(row),
     })),
 );
-const filteredRows = computed(() =>
+const searchBaseRows = computed(() =>
     applyTableFilter<any>(
         filterOptionRows.value,
         advancedFilters.combined.value,
     ),
 );
+const filteredRows = computed(() => tableSearch.apply(searchBaseRows.value));
 async function scrollToToday() {
     await nextTick();
     const calendar = calendarRef.value;
@@ -189,6 +193,11 @@ watch([from, to], load);
                     <p>Рабочее время сотрудников</p>
                 </div>
                 <div class="range">
+                    <TableSearchButton
+                        :state="tableSearch"
+                        :fields="advancedFields"
+                        :rows="searchBaseRows"
+                    />
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
@@ -230,7 +239,18 @@ watch([from, to], load);
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in filteredRows" :key="row.user.id">
+                        <tr
+                            v-for="row in filteredRows"
+                            :key="row.user.id"
+                            :data-table-search-id="tableSearch.identify(row)"
+                            :class="{
+                                'table-search-match':
+                                    tableSearch.mode.value === 'highlight' &&
+                                    tableSearch.matches(row),
+                                'table-search-current':
+                                    tableSearch.isCurrent(row),
+                            }"
+                        >
                             <td class="employee">
                                 <span
                                     class="employee-avatar"

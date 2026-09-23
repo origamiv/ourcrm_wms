@@ -7,11 +7,13 @@ import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     applyTableFilter,
     useFilterPresets,
     type FilterField,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 interface RoleRow extends EntityRow {
     name: string;
     slug: string;
@@ -35,6 +37,7 @@ const advancedFields: FilterField[] = [
     { id: "slug", label: "Код", type: "text" },
     { id: "resource", label: "Ресурс", type: "text" },
 ];
+const tableSearch = useTableSearch("roles_rights", advancedFields);
 const scope = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`;
 const roles = createEntitySync<RoleRow>(scope, "roles");
 const permissions = createEntitySync<PermissionRow>(scope, "permissions");
@@ -61,8 +64,14 @@ const activeRoles = computed(() =>
         .filter((row) => row.status === 1 && !row.deleted_at)
         .sort((a, b) => a.name.localeCompare(b.name, "ru")),
 );
+const searchBaseRows = computed(() =>
+    applyTableFilter(
+        permissions.rows.value,
+        advancedFilters.combined.value,
+    ).filter((row) => !row.deleted_at && row.status === 1),
+);
 const filteredPermissions = computed(() =>
-    applyTableFilter(permissions.rows.value, advancedFilters.combined.value),
+    tableSearch.apply(searchBaseRows.value),
 );
 const groups = computed(() => {
     const map = new Map<string, PermissionRow[]>();
@@ -87,6 +96,12 @@ const groups = computed(() => {
             rows: rows.sort((a, b) => a.name.localeCompare(b.name, "ru")),
         }));
 });
+function revealPermission(row: PermissionRow): void {
+    expanded.value = new Set([
+        ...expanded.value,
+        row.resource || "Общие права",
+    ]);
+}
 const cells = computed(() => {
     const result = new Map<string, { enabled: boolean; version: string }>();
     for (const row of assignments.rows.value) {
@@ -158,6 +173,12 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
             <AdminTabs />
             <div class="page-heading">
                 <h1>Роли и права</h1>
+                <TableSearchButton
+                    :state="tableSearch"
+                    :fields="advancedFields"
+                    :rows="searchBaseRows"
+                    @navigate="(row: any) => revealPermission(row)"
+                />
                 <FilterPresetButton
                     :state="advancedFilters"
                     :fields="advancedFields"
@@ -257,6 +278,17 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
                             <tr
                                 v-for="permission in group.rows"
                                 :key="permission.id"
+                                :data-table-search-id="
+                                    tableSearch.identify(permission)
+                                "
+                                :class="{
+                                    'table-search-match':
+                                        tableSearch.mode.value ===
+                                            'highlight' &&
+                                        tableSearch.matches(permission),
+                                    'table-search-current':
+                                        tableSearch.isCurrent(permission),
+                                }"
                             >
                                 <td class="id-column">{{ permission.id }}</td>
                                 <th scope="row">{{ permission.name }}</th>

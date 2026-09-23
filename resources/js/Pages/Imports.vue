@@ -7,12 +7,14 @@ import { http, HttpError } from "../lib/http";
 import { formatDateInTimezone } from "../lib/dates";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     serializedFilter,
     useFilterPresets,
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { appendTableSearch, useTableSearch } from "../lib/tableSearch";
 
 interface ImportRun {
     id: string;
@@ -58,6 +60,7 @@ const advancedFields: FilterField[] = [
     },
     { id: "error_message", label: "Ошибка", type: "text" },
 ];
+const tableSearch = useTableSearch("imports", advancedFields);
 const advancedOptions = computed<FilterOptions>(() => ({
     marketplace: [
         ...new Set(
@@ -79,8 +82,10 @@ const expandedRuns = ref<Set<string>>(new Set());
 const expandedMobileRows = ref<Set<string>>(new Set());
 let timer: number | undefined;
 
+const searchBaseRows = computed(() => rows.value);
+const searchedRows = computed(() => tableSearch.apply(searchBaseRows.value));
 const visibleRows = computed(() =>
-    rows.value.filter(
+    searchedRows.value.filter(
         (row) =>
             row.row_type === "run" ||
             expandedRuns.value.has(row.parent_id ?? ""),
@@ -201,6 +206,7 @@ async function load(page = currentPage.value): Promise<void> {
     loading.value = rows.value.length === 0;
     try {
         const query = new URLSearchParams({ page: String(page) });
+        appendTableSearch(query, tableSearch);
         const filter = serializedFilter(advancedFilters.combined.value);
         if (filter) query.set("filter", filter);
         const response = await http(`/web/imports?${query}`);
@@ -247,6 +253,11 @@ watch(
     () => void load(1),
     { deep: true },
 );
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => void load(1),
+    { deep: true },
+);
 onUnmounted(() => {
     if (timer !== undefined) window.clearInterval(timer);
 });
@@ -260,6 +271,11 @@ onUnmounted(() => {
             <MaintenanceTabs />
             <div class="page-heading">
                 <h1>Импорты</h1>
+                <TableSearchButton
+                    :state="tableSearch"
+                    :fields="advancedFields"
+                    :rows="searchBaseRows"
+                />
                 <FilterPresetButton
                     :state="advancedFilters"
                     :fields="advancedFields"
@@ -308,7 +324,13 @@ onUnmounted(() => {
                             v-for="row in visibleRows"
                             v-else
                             :key="`${row.row_type}-${row.id}`"
+                            :data-table-search-id="tableSearch.identify(row)"
                             :class="{
+                                'table-search-match':
+                                    tableSearch.mode.value === 'highlight' &&
+                                    tableSearch.matches(row),
+                                'table-search-current':
+                                    tableSearch.isCurrent(row),
                                 'mobile-card-expanded': isMobileExpanded(row),
                                 'stage-row': row.row_type === 'stage',
                             }"

@@ -15,12 +15,14 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     applyTableFilter,
     useFilterPresets,
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 
 interface Instruction {
     id: string;
@@ -105,14 +107,16 @@ const advancedFields: FilterField[] = [
     { id: "status", label: "Статус", type: "tuple" },
     { id: "updated_at", label: "Изменено", type: "date" },
 ];
+const tableSearch = useTableSearch("instructions", advancedFields);
 const advancedOptions = computed<FilterOptions>(() => ({
     section_key: [...new Set(rows.value.map((row) => row.section_key))],
     content_type: Object.keys(types),
     status: [0, 1, 2],
 }));
-const filteredRows = computed(() =>
+const searchBaseRows = computed(() =>
     applyTableFilter(rows.value, advancedFilters.combined.value),
 );
+const filteredRows = computed(() => tableSearch.apply(searchBaseRows.value));
 const isViewing = computed(() => Boolean(props.instructionId));
 const renderedMarkdown = computed(() =>
     DOMPurify.sanitize(marked.parse(selectedContent.value) as string, {
@@ -328,6 +332,11 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
                             }}
                         </p>
                     </div>
+                    <TableSearchButton
+                        :state="tableSearch"
+                        :fields="advancedFields"
+                        :rows="searchBaseRows"
+                    />
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
@@ -362,6 +371,17 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
                                 v-for="row in filteredRows"
                                 :key="row.id"
                                 class="instruction-row instruction-mobile-card"
+                                :data-table-search-id="
+                                    tableSearch.identify(row)
+                                "
+                                :class="{
+                                    'table-search-match':
+                                        tableSearch.mode.value ===
+                                            'highlight' &&
+                                        tableSearch.matches(row),
+                                    'table-search-current':
+                                        tableSearch.isCurrent(row),
+                                }"
                             >
                                 <td data-label="#">{{ row.id }}</td>
                                 <td data-label="Название">
@@ -427,6 +447,13 @@ onUnmounted(() => window.removeEventListener("keydown", handleEscape));
                         v-else
                         :key="row.id"
                         class="instructions-mobile-card"
+                        :data-table-search-id="tableSearch.identify(row)"
+                        :class="{
+                            'table-search-match':
+                                tableSearch.mode.value === 'highlight' &&
+                                tableSearch.matches(row),
+                            'table-search-current': tableSearch.isCurrent(row),
+                        }"
                         role="link"
                         tabindex="0"
                         @click="openInstruction(row)"

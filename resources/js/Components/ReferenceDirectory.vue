@@ -23,6 +23,7 @@ import TableColumnSettings, {
 } from "./TableColumnSettings.vue";
 import FilterPresetButton from "./FilterPresetButton.vue";
 import FilterPresetTiles from "./FilterPresetTiles.vue";
+import TableSearchButton from "./TableSearchButton.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
@@ -34,6 +35,7 @@ import {
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 interface ReferenceRow extends EntityRow {
     name: string | null;
     shortname?: string | null;
@@ -562,6 +564,10 @@ const advancedFields = computed<FilterField[]>(() => [
         : []),
     { id: "deleted_at", label: "Удалена", type: "text" },
 ]);
+const tableSearch = useTableSearch(
+    `reference:${String(props.entity)}`,
+    () => advancedFields.value,
+);
 const advancedOptions = computed<FilterOptions>(() =>
     Object.fromEntries(
         advancedFields.value
@@ -646,12 +652,22 @@ const quickFiltered = computed(() =>
                 ) * (descending.value ? -1 : 1),
         ),
 );
-const filtered = computed(() =>
+const searchBaseRows = computed(() =>
     applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
+const filtered = computed(() => tableSearch.apply(searchBaseRows.value));
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => (currentPage.value = 1),
+    { deep: true },
 );
 const expandedGoods = ref(new Set<string>());
 const goodsFiltered = computed(
-    () => !!query.value || !!shortQuery.value || statusFilter.value !== "all",
+    () =>
+        !!query.value ||
+        !!shortQuery.value ||
+        statusFilter.value !== "all" ||
+        (tableSearch.mode.value === "filter" && tableSearch.active.value),
 );
 const goodsForest = computed(() =>
     goodsTree(
@@ -1307,6 +1323,12 @@ useCardRoute<ReferenceRow>({
                     </button>
                 </div>
                 <div class="page-heading-actions">
+                    <TableSearchButton
+                        :state="tableSearch"
+                        :fields="advancedFields"
+                        :rows="searchBaseRows"
+                        @navigate="(row: any) => revealGood(row)"
+                    />
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
@@ -1611,6 +1633,7 @@ useCardRoute<ReferenceRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            :data-table-search-id="tableSearch.identify(row)"
                             v-memo="[
                                 row,
                                 orderedColumns,
@@ -1618,8 +1641,16 @@ useCardRoute<ReferenceRow>({
                                 expandedMobileRows,
                                 saving,
                                 online,
+                                tableSearch.currentId.value,
+                                tableSearch.debouncedQuery.value,
+                                tableSearch.mode.value,
                             ]"
                             :class="{
+                                'table-search-match':
+                                    tableSearch.mode.value === 'highlight' &&
+                                    tableSearch.matches(row),
+                                'table-search-current':
+                                    tableSearch.isCurrent(row),
                                 'goods-category-row':
                                     isGood &&
                                     (row.is_category === 1 ||

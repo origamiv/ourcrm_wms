@@ -8,12 +8,14 @@ import type { EntityRow } from "../lib/cache";
 import { http, HttpError } from "../lib/http";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     applyTableFilter,
     useFilterPresets,
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 
 interface MarketplaceRow extends EntityRow {
     webhook_id: string | number | null;
@@ -176,6 +178,7 @@ const advancedFields: FilterField[] = [
     },
     { id: "synced_at", label: "Синхронизация", type: "date" },
 ];
+const tableSearch = useTableSearch("goods_marketplace", advancedFields);
 const advancedOptions = computed<FilterOptions>(() => ({
     marketplace: marketplaces.value as string[],
     match_type: matchOptions.map((item) => item.value),
@@ -215,8 +218,14 @@ const quickFiltered = computed(() =>
             String(a.name ?? "").localeCompare(String(b.name ?? ""), "ru"),
         ),
 );
-const filtered = computed(() =>
+const searchBaseRows = computed(() =>
     applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
+const filtered = computed(() => tableSearch.apply(searchBaseRows.value));
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => (currentPage.value = 1),
+    { deep: true },
 );
 const pages = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / pageSize)),
@@ -434,6 +443,20 @@ onUnmounted(() => {
                     </p>
                 </div>
                 <div class="catalog-stats">
+                    <TableSearchButton
+                        :state="tableSearch"
+                        :fields="advancedFields"
+                        :rows="searchBaseRows"
+                        @navigate="
+                            (row: any) =>
+                                (currentPage =
+                                    Math.floor(
+                                        searchBaseRows.findIndex(
+                                            (item) => item.id === row.id,
+                                        ) / pageSize,
+                                    ) + 1)
+                        "
+                    />
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
@@ -598,7 +621,13 @@ onUnmounted(() => {
                             v-for="row in visible"
                             :key="row.id"
                             class="mmp-mobile-row"
+                            :data-table-search-id="tableSearch.identify(row)"
                             :class="{
+                                'table-search-match':
+                                    tableSearch.mode.value === 'highlight' &&
+                                    tableSearch.matches(row),
+                                'table-search-current':
+                                    tableSearch.isCurrent(row),
                                 'mobile-card-expanded': expandedMobileRows.has(
                                     String(row.id),
                                 ),

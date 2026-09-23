@@ -253,6 +253,33 @@ it('применяет конструктор фильтров до агрега
         ->assertJsonPath('data.0.activity.0.failed_count', 1);
 });
 
+it('применяет общий поиск по выбранным полям до агрегации', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $webhook = webhookForStatistics('Вебхук', 1, 'tenant_a', null);
+    runForStatistics($webhook, 'tenant_a', 'completed', now()->startOfDay()->addHour(), 125);
+    runForStatistics($webhook, 'tenant_a', 'failed', now()->startOfDay()->addHours(2), 18);
+
+    $this->getJson('/web/background_processes?'.http_build_query([
+        'group_by' => 'webhooks',
+        'period' => 'today',
+        'search' => 'Ошибка',
+        'search_fields' => ['status'],
+        'search_mode' => 'filter',
+    ]))->assertOk()
+        ->assertJsonPath('data.0.total_runs', 1)
+        ->assertJsonPath('data.0.failed_runs', 1);
+
+    $this->getJson('/web/background_processes?'.http_build_query([
+        'group_by' => 'webhooks',
+        'period' => 'today',
+        'search' => '125',
+        'search_fields' => ['processed_records'],
+        'search_mode' => 'filter',
+    ]))->assertOk()
+        ->assertJsonPath('data.0.total_runs', 1)
+        ->assertJsonPath('data.0.successful_runs', 1);
+});
+
 it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo): void {
     $this->loginUser($this->makeUser([], true));
 

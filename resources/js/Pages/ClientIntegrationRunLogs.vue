@@ -6,12 +6,14 @@ import { formatDate } from "../lib/dates";
 import { http } from "../lib/http";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     serializedFilter,
     useFilterPresets,
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { appendTableSearch, useTableSearch } from "../lib/tableSearch";
 
 type DayCount = { date: string; count: number };
 type RunRow = {
@@ -158,10 +160,18 @@ const advancedFields: FilterField[] = [
     },
     { id: "processed_records", label: "Обработано записей", type: "number" },
 ];
+const tableSearch = useTableSearch(
+    "client_integration_run_logs",
+    advancedFields,
+);
 const advancedOptions: FilterOptions = { status: Object.keys(statusLabels) };
 function filterQuery(): string {
+    const query = new URLSearchParams();
     const filter = serializedFilter(advancedFilters.combined.value);
-    return filter ? `&filter=${encodeURIComponent(filter)}` : "";
+    if (filter) query.set("filter", filter);
+    appendTableSearch(query, tableSearch);
+    const value = query.toString();
+    return value ? `&${value}` : "";
 }
 
 async function loadCalendar(nextYear: number) {
@@ -227,6 +237,14 @@ watch(
     },
     { deep: true },
 );
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => {
+        void loadCalendar(year.value);
+        void loadDay(selectedDate.value);
+    },
+    { deep: true },
+);
 </script>
 
 <template>
@@ -246,6 +264,11 @@ watch(
                     <p>{{ integration.name }}</p>
                 </div>
                 <div class="page-heading-actions">
+                    <TableSearchButton
+                        :state="tableSearch"
+                        :fields="advancedFields"
+                        :rows="runs"
+                    />
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
@@ -428,7 +451,21 @@ watch(
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="run in runs" :key="run.id">
+                                <tr
+                                    v-for="run in runs"
+                                    :key="run.id"
+                                    :data-table-search-id="
+                                        tableSearch.identify(run)
+                                    "
+                                    :class="{
+                                        'table-search-match':
+                                            tableSearch.mode.value ===
+                                                'highlight' &&
+                                            tableSearch.matches(run),
+                                        'table-search-current':
+                                            tableSearch.isCurrent(run),
+                                    }"
+                                >
                                     <td>{{ run.id }}</td>
                                     <td>
                                         {{

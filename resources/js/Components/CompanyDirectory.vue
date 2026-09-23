@@ -9,6 +9,7 @@ import TableColumnSettings from "./TableColumnSettings.vue";
 import DataTransferMenu from "./DataTransferMenu.vue";
 import FilterPresetButton from "./FilterPresetButton.vue";
 import FilterPresetTiles from "./FilterPresetTiles.vue";
+import TableSearchButton from "./TableSearchButton.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
@@ -19,6 +20,7 @@ import {
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 interface DirectoryRow extends EntityRow {
     name: string;
     shortname: string;
@@ -122,6 +124,10 @@ const advancedFields = computed<FilterField[]>(() => [
     },
     { id: "deleted_at", label: "Удалена", type: "text" },
 ]);
+const tableSearch = useTableSearch(
+    `company:${props.entity}`,
+    () => advancedFields.value,
+);
 const advancedOptions = computed<FilterOptions>(() => ({
     status: [0, 1, 2],
     ...Object.fromEntries(
@@ -261,8 +267,14 @@ const quickFiltered = computed(() =>
                 (descending.value ? -1 : 1),
         ),
 );
-const filtered = computed(() =>
+const searchBaseRows = computed(() =>
     applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
+const filtered = computed(() => tableSearch.apply(searchBaseRows.value));
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => (currentPage.value = 1),
+    { deep: true },
 );
 const pages = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / 25)),
@@ -501,6 +513,20 @@ useCardRoute<DirectoryRow>({
                         }}
                     </h1>
                     <div class="page-heading-actions">
+                        <TableSearchButton
+                            :state="tableSearch"
+                            :fields="advancedFields"
+                            :rows="searchBaseRows"
+                            @navigate="
+                                (row: any) =>
+                                    (currentPage =
+                                        Math.floor(
+                                            searchBaseRows.findIndex(
+                                                (item) => item.id === row.id,
+                                            ) / 25,
+                                        ) + 1)
+                            "
+                        />
                         <FilterPresetButton
                             :state="advancedFilters"
                             :fields="advancedFields"
@@ -656,7 +682,13 @@ useCardRoute<DirectoryRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            :data-table-search-id="tableSearch.identify(row)"
                             :class="{
+                                'table-search-match':
+                                    tableSearch.mode.value === 'highlight' &&
+                                    tableSearch.matches(row),
+                                'table-search-current':
+                                    tableSearch.isCurrent(row),
                                 'mobile-card-expanded': expandedMobileRows.has(
                                     String(row.id),
                                 ),

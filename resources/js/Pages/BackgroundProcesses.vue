@@ -6,12 +6,14 @@ import { formatDateInTimezone } from "../lib/dates";
 import { http, HttpError } from "../lib/http";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     serializedFilter,
     useFilterPresets,
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { appendTableSearch, useTableSearch } from "../lib/tableSearch";
 
 type GroupBy = "clients" | "webhooks";
 type MarketplaceFilter =
@@ -121,6 +123,10 @@ const advancedFields = computed<FilterField[]>(() => [
     },
     { id: "processed_records", label: "Обработано записей", type: "number" },
 ]);
+const tableSearch = useTableSearch(
+    "background_processes",
+    () => advancedFields.value,
+);
 const advancedOptions: FilterOptions = { status: Object.keys(statusLabels) };
 const entityHeading = computed(() =>
     groupBy.value === "clients" ? "ID клиента" : "ID вебхука",
@@ -232,6 +238,7 @@ async function load(): Promise<void> {
             period: period.value,
             marketplace: marketplace.value,
         });
+        appendTableSearch(query, tableSearch);
         const filter = serializedFilter(advancedFilters.combined.value);
         if (filter) query.set("filter", filter);
         const response = await http(
@@ -273,6 +280,7 @@ async function loadRuns(point: DisplayPoint, page = 1): Promise<void> {
             bucket_start: point.start,
             page: String(page),
         });
+        appendTableSearch(query, tableSearch);
         const filter = serializedFilter(advancedFilters.combined.value);
         if (filter) query.set("filter", filter);
         const response = await http(
@@ -321,6 +329,11 @@ watch(
     () => void load(),
     { deep: true },
 );
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => void load(),
+    { deep: true },
+);
 </script>
 
 <template>
@@ -333,6 +346,11 @@ watch(
             <MaintenanceTabs />
             <div class="page-heading">
                 <h1>Фоновые процессы</h1>
+                <TableSearchButton
+                    :state="tableSearch"
+                    :fields="advancedFields"
+                    :rows="runs"
+                />
                 <FilterPresetButton
                     :state="advancedFilters"
                     :fields="advancedFields"
@@ -530,7 +548,21 @@ watch(
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="run in runs" :key="run.id">
+                                <tr
+                                    v-for="run in runs"
+                                    :key="run.id"
+                                    :data-table-search-id="
+                                        tableSearch.identify(run)
+                                    "
+                                    :class="{
+                                        'table-search-match':
+                                            tableSearch.mode.value ===
+                                                'highlight' &&
+                                            tableSearch.matches(run),
+                                        'table-search-current':
+                                            tableSearch.isCurrent(run),
+                                    }"
+                                >
                                     <td>{{ run.id }}</td>
                                     <td>{{ run.entity_id }}</td>
                                     <td>{{ formatRunDate(run.created_at) }}</td>

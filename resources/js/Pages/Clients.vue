@@ -11,12 +11,14 @@ import TableColumnSettings from "../Components/TableColumnSettings.vue";
 import DataTransferMenu from "../Components/DataTransferMenu.vue";
 import FilterPresetButton from "../Components/FilterPresetButton.vue";
 import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import TableSearchButton from "../Components/TableSearchButton.vue";
 import {
     applyTableFilter,
     useFilterPresets,
     type FilterField,
     type FilterOptions,
 } from "../lib/tableFilters";
+import { useTableSearch } from "../lib/tableSearch";
 interface ClientRow extends EntityRow {
     name: string | null;
     shortname: string | null;
@@ -64,6 +66,7 @@ const advancedFields: FilterField[] = [
     },
     { id: "deleted_at", label: "Удалён", type: "text" },
 ];
+const tableSearch = useTableSearch("clients", advancedFields);
 const store = createEntitySync<ClientRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
     "clients",
@@ -126,8 +129,14 @@ const quickFiltered = computed(() =>
                 (descending.value ? -1 : 1),
         ),
 );
-const filtered = computed(() =>
+const searchBaseRows = computed(() =>
     applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
+const filtered = computed(() => tableSearch.apply(searchBaseRows.value));
+watch(
+    [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
+    () => (currentPage.value = 1),
+    { deep: true },
 );
 const pages = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / 25)),
@@ -402,6 +411,20 @@ useCardRoute<ClientRow>({
             <div class="page-heading">
                 <h1>Клиенты</h1>
                 <div class="page-heading-actions">
+                    <TableSearchButton
+                        :state="tableSearch"
+                        :fields="advancedFields"
+                        :rows="searchBaseRows"
+                        @navigate="
+                            (row: any) =>
+                                (currentPage =
+                                    Math.floor(
+                                        searchBaseRows.findIndex(
+                                            (item) => item.id === row.id,
+                                        ) / 25,
+                                    ) + 1)
+                        "
+                    />
                     <FilterPresetButton
                         :state="advancedFilters"
                         :fields="advancedFields"
@@ -494,7 +517,13 @@ useCardRoute<ClientRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
+                            :data-table-search-id="tableSearch.identify(row)"
                             :class="{
+                                'table-search-match':
+                                    tableSearch.mode.value === 'highlight' &&
+                                    tableSearch.matches(row),
+                                'table-search-current':
+                                    tableSearch.isCurrent(row),
                                 'mobile-card-expanded': expandedMobileRows.has(
                                     String(row.id),
                                 ),

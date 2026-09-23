@@ -8,22 +8,28 @@ use App\Http\BaseApiController;
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
 use App\Services\QueryFilterService;
+use App\Services\QuerySearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ImportRunController extends BaseApiController
 {
     /** Возвращает историю запусков импортов текущего tenant с прогрессом обработки. */
-    public function index(Request $request, QueryFilterService $filters): JsonResponse
+    public function index(Request $request, QueryFilterService $filters, QuerySearchService $search): JsonResponse
     {
         $input = $request->validate([
             'page' => ['sometimes', 'integer', 'min:1'],
             'filter' => ['sometimes', 'nullable', 'string', 'max:32768'],
+            'search' => ['sometimes', 'nullable', 'string', 'max:200'],
+            'search_fields' => ['sometimes', 'array', 'min:1'],
+            'search_fields.*' => ['string', \Illuminate\Validation\Rule::in(['id', 'name', 'client_id', 'client_name', 'marketplace', 'webhook_id', 'started_at', 'updated_at', 'current_stage', 'processed_records', 'status', 'error_message'])],
+            'search_mode' => ['sometimes', \Illuminate\Validation\Rule::in(['filter', 'highlight'])],
+            'search_index' => ['sometimes', 'integer', 'min:0'],
         ]);
         $query = ImportRun::query()
             ->with('stages')
             ->visibleTo((string) $request->user()->tenant_id);
-        $filters->apply($query, $input['filter'] ?? null, [
+        $filterFields = [
             'id' => 'wms.import_runs.id',
             'name' => 'wms.import_runs.name',
             'client_id' => "COALESCE(wms.import_runs.source_client_id, NULLIF(wms.import_runs.options->>'client_id', '')::bigint)",
@@ -36,7 +42,17 @@ final class ImportRunController extends BaseApiController
             'processed_records' => 'wms.import_runs.processed_records',
             'status' => 'wms.import_runs.status',
             'error_message' => 'wms.import_runs.error_message',
-        ]);
+        ];
+        $mergedFilter = $search->merge(
+            $input['filter'] ?? null,
+            $input['search'] ?? null,
+            $input['search_fields'] ?? ['id'],
+            array_keys($filterFields),
+            $input['search_mode'] ?? 'filter',
+            ['status' => ['queued' => 'В очереди', 'running' => 'Выполняется', 'completed' => 'Завершён', 'failed' => 'Ошибка']],
+            ['started_at', 'updated_at'],
+        );
+        $filters->apply($query, $mergedFilter, $filterFields);
         $runs = $query
             ->orderByRaw('GREATEST(wms.import_runs.updated_at, COALESCE((SELECT MAX(stages.updated_at) FROM wms.import_run_stages AS stages WHERE stages.import_run_id = wms.import_runs.id), wms.import_runs.updated_at)) DESC')
             ->orderByDesc('id')

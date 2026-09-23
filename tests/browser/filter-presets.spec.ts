@@ -151,3 +151,19 @@ test("сохранённый фильтр клиентов открываетс�
         }),
     ).toBeVisible();
 });
+
+test("общий поиск фильтрует и подсвечивает строки", async ({ page }) => {
+    await login(page);
+    await page.goto("/main/users");
+
+    await page.getByRole("button", { name: "Открыть поиск" }).click();
+    const search = page.getByLabel("Поиск по таблице");
+    await search.fill("Мих");
+    await expect(page.locator(".table-scroll tbody")).toContainText("Михаил");
+    await expect(page.locator(".table-scroll tbody tr")).toHaveCount(1);
+
+    await page.getByTitle("Режим: фильтровать таблицу").click();
+    await expect(page.locator(".table-search-match")).toHaveCount(1);
+    await search.press("Enter");
+    await expect(page.locator(".table-search-current")).toHaveCount(1);
+});

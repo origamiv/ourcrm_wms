@@ -8,20 +8,22 @@ use App\Http\BaseApiController;
 use App\Models\ImportRun;
 use App\Models\IntegrationWebhook;
 use App\Services\QueryFilterService;
+use App\Services\QuerySearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ClientIntegrationRunLogController extends BaseApiController
 {
-    public function calendar(Request $request, QueryFilterService $filters, string $id): JsonResponse
+    public function calendar(Request $request, QueryFilterService $filters, QuerySearchService $search, string $id): JsonResponse
     {
-        $input = $request->validate(['year' => ['required', 'integer', 'between:2000,2100'], 'filter' => ['sometimes', 'nullable', 'string', 'max:32768']]);
+        $input = $request->validate([...$this->searchRules(), 'year' => ['required', 'integer', 'between:2000,2100'], 'filter' => ['sometimes', 'nullable', 'string', 'max:32768']]);
         $tenant = (string) $request->user()->tenant_id;
         IntegrationWebhook::withTrashed()->visibleTo($tenant)->findOrFail($id);
         $year = (int) $input['year'];
 
         $query = $this->runs($tenant, $id);
-        $filters->apply($query, $input['filter'] ?? null, $this->filterFields());
+        $fields = $this->filterFields();
+        $filters->apply($query, $this->mergedFilter($search, $input, $fields), $fields);
         $days = $query
             ->where('created_at', '>=', sprintf('%04d-01-01', $year))
             ->where('created_at', '<', sprintf('%04d-01-01', $year + 1))
@@ -34,14 +36,15 @@ final class ClientIntegrationRunLogController extends BaseApiController
         return response()->json(['data' => $days])->header('Cache-Control', 'private, no-store');
     }
 
-    public function day(Request $request, QueryFilterService $filters, string $id): JsonResponse
+    public function day(Request $request, QueryFilterService $filters, QuerySearchService $search, string $id): JsonResponse
     {
-        $input = $request->validate(['date' => ['required', 'date_format:Y-m-d'], 'page' => ['sometimes', 'integer', 'min:1'], 'filter' => ['sometimes', 'nullable', 'string', 'max:32768']]);
+        $input = $request->validate([...$this->searchRules(), 'date' => ['required', 'date_format:Y-m-d'], 'page' => ['sometimes', 'integer', 'min:1'], 'filter' => ['sometimes', 'nullable', 'string', 'max:32768']]);
         $tenant = (string) $request->user()->tenant_id;
         IntegrationWebhook::withTrashed()->visibleTo($tenant)->findOrFail($id);
         $date = $input['date'];
         $query = $this->runs($tenant, $id);
-        $filters->apply($query, $input['filter'] ?? null, $this->filterFields());
+        $fields = $this->filterFields();
+        $filters->apply($query, $this->mergedFilter($search, $input, $fields), $fields);
         $runs = $query
             ->where('created_at', '>=', $date.' 00:00:00')
             ->where('created_at', '<', date('Y-m-d', strtotime($date.' +1 day')).' 00:00:00')
@@ -78,5 +81,31 @@ final class ClientIntegrationRunLogController extends BaseApiController
             'status' => 'wms.import_runs.status',
             'processed_records' => 'wms.import_runs.processed_records',
         ];
+    }
+
+    /** @return array<string, array<int, mixed>> */
+    private function searchRules(): array
+    {
+        return [
+            'search' => ['sometimes', 'nullable', 'string', 'max:200'],
+            'search_fields' => ['sometimes', 'array', 'min:1'],
+            'search_fields.*' => ['string', \Illuminate\Validation\Rule::in(['id', 'created_at', 'status', 'processed_records'])],
+            'search_mode' => ['sometimes', \Illuminate\Validation\Rule::in(['filter', 'highlight'])],
+            'search_index' => ['sometimes', 'integer', 'min:0'],
+        ];
+    }
+
+    /** @param array<string, mixed> $input @param array<string, string> $fields */
+    private function mergedFilter(QuerySearchService $search, array $input, array $fields): ?string
+    {
+        return $search->merge(
+            $input['filter'] ?? null,
+            $input['search'] ?? null,
+            $input['search_fields'] ?? ['id'],
+            array_keys($fields),
+            $input['search_mode'] ?? 'filter',
+            ['status' => ['queued' => 'В очереди', 'running' => 'Выполняется', 'completed' => 'Завершён', 'failed' => 'Ошибка', 'cancelled' => 'Отменён']],
+            ['created_at'],
+        );
     }
 }
