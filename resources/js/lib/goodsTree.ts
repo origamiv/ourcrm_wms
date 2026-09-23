@@ -34,7 +34,7 @@ export function goodsTree<T extends TreeGood>(
         let parent = parents.get(rowId);
         while (parent) {
             if (seen.has(parent)) {
-                parents.delete(row.id);
+                parents.delete(rowId);
                 break;
             }
             seen.add(parent);
@@ -92,7 +92,7 @@ export function flattenGoods<T extends TreeGood>(
     while (stack.length) {
         const node = stack.pop()!;
         result.push(node.row);
-        if (forceOpen || expanded.has(node.row.id))
+        if (forceOpen || expanded.has(String(node.row.id)))
             stack.push(...[...node.children].reverse());
     }
     return result;
