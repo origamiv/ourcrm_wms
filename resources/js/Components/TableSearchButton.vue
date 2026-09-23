@@ -275,12 +275,25 @@ function keydown(event: KeyboardEvent): void {
 .table-search-field-menu label {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 8px;
+    width: 100%;
     min-height: 32px;
     padding: 3px 6px;
     font-size: 13px;
+    text-align: left;
     white-space: nowrap;
     cursor: pointer;
+}
+.table-search-field-menu input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+.table-search-field-menu label span {
+    flex: 0 1 auto;
+    text-align: left;
 }
 :global(tr.table-search-match),
 :global(.table-search-match) {
