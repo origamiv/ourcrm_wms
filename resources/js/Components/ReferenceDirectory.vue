@@ -1255,11 +1255,9 @@ async function confirmDelete() {
     detailLoading.value = false;
     await save(true);
 }
-onMounted(async () => {
-    await Promise.all([
-        loadPage(),
-        ...Object.values(lookupStores).map((store) => store.start()),
-    ]);
+onMounted(() => {
+    // Основная таблица не должна ждать и зависеть от фоновых lookup-синхронизаций.
+    void loadPage();
 });
 onUnmounted(() => {
     store.stop();
