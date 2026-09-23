@@ -12,10 +12,14 @@ export function createEntitySync<T extends EntityRow>(
         online = ref(navigator.onLine),
         warning = ref(""),
         error = ref("");
-    const cache = new EntityCache<T>(scope, options?.cacheKey ?? entityType, () => {
-        warning.value =
-            "Локальное хранилище недоступно. Данные сохраняются только до закрытия страницы.";
-    });
+    const cache = new EntityCache<T>(
+        scope,
+        options?.cacheKey ?? entityType,
+        () => {
+            warning.value =
+                "Локальное хранилище недоступно. Данные сохраняются только до закрытия страницы.";
+        },
+    );
     const channel =
         typeof BroadcastChannel !== "undefined"
             ? new BroadcastChannel(`wms_entities:${cache.scope}`)
@@ -116,6 +120,22 @@ export function createEntitySync<T extends EntityRow>(
         }
         channel?.postMessage("changed");
     }
+    async function remove(row: T) {
+        if (!allowed()) return;
+        rows.value = await cache.apply([
+            {
+                id: row.id,
+                version: row.version,
+                operation: "remove",
+                data: null,
+            },
+        ]);
+        if (!allowed()) {
+            await cache.reset();
+            return;
+        }
+        channel?.postMessage("changed");
+    }
     const offline = () => {
         online.value = false;
     };
@@ -139,6 +159,7 @@ export function createEntitySync<T extends EntityRow>(
         error,
         sync,
         apply,
+        remove,
         async start() {
             await refresh();
             await sync();

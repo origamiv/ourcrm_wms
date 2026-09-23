@@ -1062,14 +1062,16 @@ function fillForm(row: ReferenceRow | null, readOnly = false) {
     if (isScheduler && !row) applySchedulerTaskDefaults();
 }
 async function save(remove = false) {
+    const target = remove ? deleting.value : selected.value;
     if (
         !online.value ||
         saving.value ||
+        (remove && !target) ||
         (!remove && viewing.value) ||
         (isIntegration && !detailReady.value && !remove)
     )
         return;
-    const creating = !selected.value && !remove;
+    const creating = !target && !remove;
     saving.value = true;
     notice.value = "";
     try {
@@ -1109,14 +1111,17 @@ async function save(remove = false) {
                         .map((value: string) => value.trim())
                         .filter((value: string) => value !== "");
         const response = await http(
-            `/web/${isIndividual ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}individuals` : endpoint!.replace(/^\//, "")}${selected.value ? "/" + selected.value.id : ""}`,
-            remove ? "DELETE" : selected.value ? "PUT" : "POST",
+            `/web/${isIndividual ? `clients/${clientScope.value ? clientScope.value.id + "/" : ""}individuals` : endpoint!.replace(/^\//, "")}${target ? "/" + target.id : ""}`,
+            remove ? "DELETE" : target ? "PUT" : "POST",
             {
                 ...(!remove ? payload : {}),
-                ...(selected.value ? { version: selected.value.version } : {}),
+                ...(target ? { version: target.version } : {}),
             },
         );
-        await store.apply(response.data);
+        if (remove) {
+            await store.remove(target!);
+            await store.sync();
+        } else await store.apply(response.data);
         if (isGood) {
             await store.sync();
             if (!remove) revealGood(response.data);
@@ -1126,13 +1131,17 @@ async function save(remove = false) {
             saving.value = false;
             fillForm(null, false);
             notice.value = "Запись создана. Можно добавить следующую.";
-        } else {
+        } else if (!remove) {
             selected.value = response.data;
             if (isGood) form.value.is_category = response.data.is_category;
         }
         conflict.value = null;
         if (!creating) notice.value = "Изменения сохранены";
-        if (remove) editing.value = false;
+        if (remove) {
+            deleting.value = null;
+            if (selected.value?.id === target?.id) selected.value = null;
+            editing.value = false;
+        }
     } catch (e) {
         if (e instanceof HttpError && e.status === 409)
             conflict.value = e.body.current;
@@ -1203,8 +1212,6 @@ async function confirmDelete() {
     if (!deleting.value || !online.value || saving.value) return;
     ++detailRequest;
     detailLoading.value = false;
-    fillForm(deleting.value, true);
-    deleting.value = null;
     await save(true);
 }
 onMounted(async () => {

@@ -15,7 +15,12 @@ export interface UserRow extends EntityRow {
     deleted_at: string | null;
     created_at: string | null;
     updated_at: string | null;
-    roles: Array<{ id: string; name: string | null; slug: string | null; status: number | null }>;
+    roles: Array<{
+        id: string;
+        name: string | null;
+        slug: string | null;
+        status: number | null;
+    }>;
     version: string;
 }
 export interface Change<T extends EntityRow = UserRow> {
@@ -39,6 +44,22 @@ export interface Meta {
 interface Entry<T extends EntityRow> extends Change<T> {
     key: string;
     scope: string;
+}
+function isValidChange<T extends EntityRow>(change: Change<T>): boolean {
+    if (
+        change.id === null ||
+        change.id === undefined ||
+        String(change.id) === ""
+    )
+        return false;
+    if (change.operation === "remove") return change.data === null;
+    return (
+        typeof change.data === "object" &&
+        change.data !== null &&
+        change.data.id !== null &&
+        change.data.id !== undefined &&
+        String(change.data.id) !== ""
+    );
 }
 const request = <T>(r: IDBRequest<T>) =>
     new Promise<T>((resolve, reject) => {
@@ -130,10 +151,13 @@ export class EntityCache<T extends EntityRow> {
     }
     rows() {
         return [...this.memory.values()]
-            .filter((e) => e.operation === "upsert" && e.data)
+            .filter(
+                (e) => e.operation === "upsert" && e.data && isValidChange(e),
+            )
             .map((e) => e.data!);
     }
     async apply(changes: Change<T>[], meta?: Meta): Promise<T[]> {
+        changes = changes.filter(isValidChange);
         if (this.persistent)
             try {
                 const db = await open();

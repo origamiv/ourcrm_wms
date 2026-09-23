@@ -132,3 +132,35 @@ test("isolates entity IDs and cursors and clears all entity types", async () => 
     assert.equal((await items.load()).length, 0);
     assert.equal(items.meta.cursor, null);
 });
+
+test("ignores malformed cached entities without an ID", async () => {
+    const { EntityCache } = await import("../../resources/js/lib/cache");
+    await clearCaches();
+    const scope = JSON.stringify(["same_user:tenant", "scheduler"]);
+    await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open("wms_cache");
+        request.onsuccess = () => {
+            const db = request.result;
+            const transaction = db.transaction("entries", "readwrite");
+            transaction.objectStore("entries").put({
+                id: undefined,
+                version: undefined,
+                operation: "upsert",
+                data: true,
+                key: `${scope}:undefined`,
+                scope,
+            });
+            transaction.oncomplete = () => {
+                db.close();
+                resolve();
+            };
+            transaction.onerror = () => reject(transaction.error);
+        };
+        request.onerror = () => reject(request.error);
+    });
+    const cache = new EntityCache<UserRow>("same_user:tenant", "scheduler");
+    assert.equal((await cache.load()).length, 0);
+    await cache.apply([row("2", "1")]);
+    assert.equal(cache.rows().length, 1);
+    assert.equal(cache.rows()[0].id, "2");
+});
