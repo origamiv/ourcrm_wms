@@ -40,9 +40,6 @@ interface ImportRun {
 }
 
 const rows = ref<ImportRun[]>([]);
-const schedulerData = ref<any>(null);
-const schedulerLoading = ref(false);
-const schedulerError = ref<string | null>(null);
 const advancedFilters = useFilterPresets("imports");
 const advancedFields: FilterField[] = [
     { id: "id", label: "#", type: "number" },
@@ -121,10 +118,6 @@ function updatedTime(row: ImportRun): string {
     return value === "—" ? value : value.slice(-5);
 }
 
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return "—";
-    return formatDateInTimezone(dateStr, "Europe/Moscow", true);
-}
 
 function marketplaceCode(marketplace: string): string {
     const value = marketplace.trim().toLowerCase();
@@ -237,20 +230,6 @@ async function load(page = currentPage.value): Promise<void> {
     }
 }
 
-async function loadSchedulerStatus(): Promise<void> {
-    schedulerLoading.value = true;
-    schedulerError.value = null;
-    try {
-        const response = await http("/web/imports/scheduler-status");
-        schedulerData.value = response;
-    } catch (exception) {
-        schedulerError.value = exception instanceof HttpError 
-            ? exception.message 
-            : "Не удалось загрузить статус планировщика TSWMS";
-    } finally {
-        schedulerLoading.value = false;
-    }
-}
 
 async function refresh(): Promise<void> {
     if (syncing.value) return;
@@ -269,7 +248,6 @@ function changePage(page: number): void {
 
 onMounted(() => {
     load();
-    loadSchedulerStatus();
     timer = window.setInterval(() => load(), 7000);
 });
 watch(
@@ -315,38 +293,6 @@ onUnmounted(() => {
                 }}
             </div>
             <p v-if="error" class="notice error" role="alert">{{ error }}</p>
-            
-            <!-- TSWMS Scheduler Status -->
-            <div class="tswms-scheduler-section">
-                <h2>Периодический импорт TSWMS</h2>
-                <div v-if="schedulerLoading" class="loading">Загрузка статуса планировщика...</div>
-                <div v-else-if="schedulerError" class="notice error">{{ schedulerError }}</div>
-                <div v-else-if="schedulerData" class="scheduler-tasks">
-                    <div class="tasks-grid">
-                        <div v-for="task in schedulerData.scheduler_tasks" :key="task.id" class="task-card">
-                            <h3>{{ task.name }}</h3>
-                            <div class="task-info">
-                                <span class="entity-groups">{{ task.entity_groups || 'Группа не указана' }}</span>
-                                <span class="next-run">Следующий запуск: {{ formatDate(task.next_run_at) }}</span>
-                                <span v-if="task.last_run_at" class="last-run">Последний запуск: {{ formatDate(task.last_run_at) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="Object.keys(schedulerData.recent_imports_by_group).length > 0" class="recent-imports">
-                        <h4>Недавние импорты по группам (24 часа)</h4>
-                        <div v-for="(imports, group) in schedulerData.recent_imports_by_group" :key="group" class="import-group">
-                            <strong>{{ group }}:</strong>
-                            <ul>
-                                <li v-for="import_ in imports" :key="import_.id">
-                                    #{{ import_.id }}: {{ import_.name }} ({{ import_.status }})
-                                    <span v-if="import_.started_at"> - {{ formatDate(import_.started_at) }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <FilterPresetTiles :state="advancedFilters" />
             <div class="table-scroll">
                 <table>
@@ -560,8 +506,21 @@ onUnmounted(() => {
 .imports-page .sync-line {
     padding-bottom: 14px;
 }
+.imports-page {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.imports-page .users-list {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
 .imports-page .table-scroll {
     flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
 .imports-page .row-arrow {
     width: 24px;
@@ -874,104 +833,4 @@ onUnmounted(() => {
     }
 }
 
-/* TSWMS Scheduler Styles */
-.tswms-scheduler-section {
-    margin-bottom: 24px;
-    padding: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #f9fafb;
-}
-
-.tswms-scheduler-section h2 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #374151;
-}
-
-.tasks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-.task-card {
-    padding: 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    background: white;
-}
-
-.task-card h3 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.task-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.task-info span {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.entity-groups {
-    font-weight: 500;
-    color: #4f46e5 !important;
-}
-
-.next-run {
-    color: #059669 !important;
-}
-
-.last-run {
-    color: #9ca3af !important;
-}
-
-.recent-imports {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #e5e7eb;
-}
-
-.recent-imports h4 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #374151;
-}
-
-.import-group {
-    margin-bottom: 12px;
-}
-
-.import-group strong {
-    color: #1f2937;
-    text-transform: capitalize;
-}
-
-.import-group ul {
-    margin: 4px 0 0 0;
-    padding-left: 20px;
-}
-
-.import-group li {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 2px;
-}
-
-.loading {
-    text-align: center;
-    padding: 20px;
-    color: #6b7280;
-    font-style: italic;
-}
 </style>
