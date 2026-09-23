@@ -181,7 +181,7 @@ function keydown(event: KeyboardEvent): void {
                 </span>
                 <button
                     type="button"
-                    :disabled="!matches.length || currentIndex === 0"
+                    :disabled="!state.active.value"
                     aria-label="Предыдущее совпадение"
                     @click="navigate(-1)"
                 >
@@ -190,7 +190,7 @@ function keydown(event: KeyboardEvent): void {
                 <button
                     type="button"
                     :disabled="
-                        !matches.length || currentIndex === matches.length - 1
+                        !state.active.value
                     "
                     aria-label="Следующее совпадение"
                     @click="navigate(1)"
