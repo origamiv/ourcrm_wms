@@ -18,7 +18,7 @@ use Throwable;
 
 final class ImportTswmsCommand extends Command
 {
-    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--entity-groups= : Группы сущностей (references,goods,orders,tasks)} {--with-dependencies : Автоматически добавить зависимые сущности} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограничение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
+    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--entity-groups= : Группы сущностей (references,goods,orders,tasks)} {--with-dependencies : Автоматически добавить зависимые сущности} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограичение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
 
     protected $description = 'Импортирует данные выбранного клиента TSWMS в тенант WMS';
 

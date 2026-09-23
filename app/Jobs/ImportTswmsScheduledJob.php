@@ -13,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Bus;
 use RuntimeException;
 use Throwable;
 
@@ -30,7 +31,7 @@ final class ImportTswmsScheduledJob implements ShouldQueue
         'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
     ];
 
-    private const TSWMS_WORKING_HOURS = ['start' => 9, 'end' => 23]; // Временно расширяем для демо
+    private const TSWMS_WORKING_HOURS = ['start' => 0, 'end' => 24]; // Временно круглосуточно для тестирования
 
     public function __construct(
         public string $tenantId,
@@ -111,23 +112,49 @@ final class ImportTswmsScheduledJob implements ShouldQueue
             return;
         }
 
-        // Запускаем отдельный импорт для каждой сущности
+        // Создаем цепочку задач для последовательного импорта сущностей в правильном порядке
+        $jobs = [];
+        $groupName = implode(',', $this->entityGroups);
+        
         foreach ($entities as $entity) {
-            $exitCode = Artisan::call('wms:import:tswms', [
-                '--tenant' => $this->tenantId,
-                '--only' => [$entity],
-            ]);
+            $jobs[] = new ImportTswmsEntityJob($this->tenantId, $entity, $groupName);
+        }
 
-            if ($exitCode !== 0) {
-                $output = Artisan::output();
-                logger()->warning("Импорт сущности {$entity} завершился с ошибкой", [
-                    'tenant_id' => $this->tenantId,
-                    'entity' => $entity,
-                    'exit_code' => $exitCode,
-                    'output' => $output,
-                ]);
-                // Продолжаем с другими сущностями даже если одна упала
-            }
+        // Запускаем цепочку задач - каждая следующая выполнится только после успешного завершения предыдущей
+        if (!empty($jobs)) {
+            $batch = Bus::batch($jobs)
+                ->name("TSWMS Import: {$groupName} (Tenant: {$this->tenantId})")
+                ->allowFailures() // Позволяем продолжить даже если некоторые задачи упадут
+                ->onConnection('redis')
+                ->onQueue('imports')
+                ->then(function () use ($groupName) {
+                    logger()->info('Пакет импорта TSWMS завершен успешно', [
+                        'tenant_id' => $this->tenantId,
+                        'groups' => $groupName,
+                    ]);
+                })
+                ->catch(function (Throwable $exception) use ($groupName) {
+                    logger()->error('Пакет импорта TSWMS завершен с ошибками', [
+                        'tenant_id' => $this->tenantId,
+                        'groups' => $groupName,
+                        'exception' => $exception->getMessage(),
+                    ]);
+                })
+                ->finally(function () use ($groupName) {
+                    logger()->info('Пакет импорта TSWMS финализирован', [
+                        'tenant_id' => $this->tenantId,
+                        'groups' => $groupName,
+                    ]);
+                })
+                ->dispatch();
+
+            logger()->info('Запущен пакет импорта TSWMS', [
+                'tenant_id' => $this->tenantId,
+                'groups' => $groupName,
+                'entities' => $entities,
+                'jobs_count' => count($jobs),
+                'batch_id' => $batch->id,
+            ]);
         }
     }
 
