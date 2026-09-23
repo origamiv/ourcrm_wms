@@ -85,3 +85,69 @@ test("конструктор открывается, а активная пли�
     expect(box?.width).toBe(390);
     expect(box?.height).toBe(844);
 });
+
+test("сохранённый фильтр клиентов открывается для редактирования", async ({
+    page,
+}) => {
+    await login(page);
+    await page.evaluate(async () => {
+        const csrf = document.querySelector<HTMLMetaElement>(
+            'meta[name="csrf-token"]',
+        )?.content;
+        const response = await fetch("/web/filter_presets", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrf ?? "",
+            },
+            body: JSON.stringify({
+                screen_key: "clients",
+                name: "Активные А",
+                is_active: false,
+                rules: {
+                    glue: "and",
+                    rules: [
+                        {
+                            field: "status",
+                            type: "tuple",
+                            filter: "equal",
+                            value: 1,
+                            includes: [],
+                        },
+                        {
+                            field: "id",
+                            type: "number",
+                            filter: "contains",
+                            value: null,
+                            includes: [],
+                        },
+                    ],
+                },
+            }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+    });
+
+    await page.goto("/clients/clients");
+    await page
+        .getByRole("button", { name: "Изменить фильтр Активные А" })
+        .click();
+    await expect(
+        page.getByRole("heading", { name: "Изменение фильтра" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Название сохранённого варианта")).toHaveValue(
+        "Активные А",
+    );
+    await page
+        .getByLabel("Название сохранённого варианта")
+        .fill("Активные клиенты А");
+    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await expect(
+        page.getByRole("button", {
+            name: "Активные клиенты А",
+            exact: true,
+        }),
+    ).toBeVisible();
+});

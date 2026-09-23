@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, toRaw, watch } from "vue";
 import { FilterBuilder, Willow, type IApi } from "@svar-ui/vue-filter";
 import { Locale } from "@svar-ui/vue-core";
 import ruCore from "@svar-ui/core-locales/locales/ru";
@@ -76,9 +76,11 @@ const resolvedOptions = computed(() =>
 function show(preset?: FilterPreset | null): void {
     editing.value = preset ?? null;
     name.value = preset?.name ?? "";
-    initial.value = structuredClone(
-        preset?.rules ?? props.state.draft.value ?? { glue: "and", rules: [] },
-    );
+    const rules =
+        preset?.rules ??
+        props.state.draft.value ??
+        ({ glue: "and", rules: [] } as FilterRules);
+    initial.value = structuredClone(toRaw(rules));
     error.value = "";
     builderKey.value++;
     open.value = true;
