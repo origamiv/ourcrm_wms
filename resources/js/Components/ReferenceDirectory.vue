@@ -435,6 +435,7 @@ const query = ref(""),
     currentPage = ref(1),
     descending = ref(false);
 let pageRequest = 0;
+let suppressPageWatch = false;
 async function loadPage(reset = false) {
     if (!online.value) return;
     if (reset) currentPage.value = 1;
@@ -788,8 +789,11 @@ async function navigateSearchPage(direction: -1 | 1): Promise<void> {
     let page = currentPage.value + direction;
     if (page < 1 || page > pages.value) page = first;
     for (let checked = 0; checked < pages.value; checked++) {
+        suppressPageWatch = true;
         currentPage.value = page;
         await loadPage();
+        await nextTick();
+        suppressPageWatch = false;
         const matches = searchBaseRows.value.filter((row) =>
             tableSearch.matches(row),
         );
@@ -812,7 +816,9 @@ watch(
     [query, shortQuery, statusFilter, clientFilter, docTypeFilter, dateFilter, descending],
     () => void loadPage(true),
 );
-watch(currentPage, () => void loadPage());
+watch(currentPage, () => {
+    if (!suppressPageWatch) void loadPage();
+});
 watch(
     pages,
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
