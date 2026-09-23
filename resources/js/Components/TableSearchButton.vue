@@ -307,6 +307,27 @@ function keydown(event: KeyboardEvent): void {
         inset 4px 0 #dc6803,
         0 0 0 2px #fdb022;
 }
+:global(
+    .users-workspace
+        .users-list
+        .table-scroll
+        table
+        tbody
+        tr.table-search-current
+),
+:global(
+    .users-workspace
+        .users-list
+        .table-scroll
+        table
+        tbody
+        tr.table-search-current
+        > td
+),
+:global(.instructions-mobile-card.table-search-current) {
+    background: #ffd98a !important;
+    background-color: #ffd98a !important;
+}
 @media (max-width: 700px) {
     :global(.page-heading-actions) {
         flex-wrap: wrap;
