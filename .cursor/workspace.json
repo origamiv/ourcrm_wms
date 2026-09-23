@@ -17,7 +17,7 @@
     },
     "cloud": {
       "url": "git@github.com:origamiv/ourcrm_wms.git", 
-      "description": "GitHub.com mirror"
+      "description": "GitHub.com (for Cursor Cloud Agents)"
     }
   },
   "language": "php",

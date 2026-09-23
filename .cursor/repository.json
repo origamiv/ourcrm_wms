@@ -11,9 +11,8 @@
     "private": true
   },
   "remotes": {
-    "origin": "git@github.com:origamiv/ourcrm_wms.git",
-    "cloud": "git@github.com:origamiv/ourcrm_wms.git",
-    "gitlab-self": "git@gitlab.our24.ru:ourcrm3/modules/wms.git"
+    "origin": "git@gitlab.our24.ru:ourcrm3/modules/wms.git",
+    "cloud": "git@github.com:origamiv/ourcrm_wms.git"
   },
   "branches": [
     "master",
@@ -21,7 +20,8 @@
   ],
   "cursor": {
     "cloud_agents_compatible": true,
-    "primary_remote": "origin",
-    "scm_provider": "github"
+    "primary_remote": "cloud",
+    "scm_provider": "github",
+    "development_remote": "origin"
   }
 }

@@ -15,15 +15,7 @@ check_git_status() {
 sync_both() {
     local branch=${1:-master}
     
-    echo "📤 Отправка в self-hosted GitLab (gitlab.our24.ru)..."
-    if git push gitlab-self "$branch"; then
-        echo "✅ Self-hosted GitLab обновлен"
-    else
-        echo "❌ Ошибка при отправке в self-hosted GitLab"
-        return 1
-    fi
-    
-    echo "📤 Отправка в GitHub.com..."
+    echo "📤 Отправка в GitHub.com (cloud)..."
     if git push cloud "$branch"; then
         echo "✅ GitHub.com обновлен"
     else
@@ -31,13 +23,26 @@ sync_both() {
         return 1
     fi
     
+    echo "📤 Отправка в self-hosted GitLab (origin)..."
+    if git push origin "$branch"; then
+        echo "✅ Self-hosted GitLab обновлен"
+    else
+        echo "❌ Ошибка при отправке в self-hosted GitLab"
+        return 1
+    fi
+    
     echo "🎉 Синхронизация завершена успешно!"
 }
 
-# Добавляем remote для self-hosted если его нет
-if ! git remote get-url gitlab-self >/dev/null 2>&1; then
-    echo "➕ Добавляем remote для self-hosted GitLab..."
-    git remote add gitlab-self git@gitlab.our24.ru:ourcrm3/modules/wms.git
+# Проверяем наличие необходимых remotes
+if ! git remote get-url origin >/dev/null 2>&1; then
+    echo "❌ Remote 'origin' не найден"
+    exit 1
+fi
+
+if ! git remote get-url cloud >/dev/null 2>&1; then
+    echo "❌ Remote 'cloud' не найден"
+    exit 1
 fi
 
 # Проверяем статус
