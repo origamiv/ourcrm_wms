@@ -114,7 +114,12 @@ function keydown(event: KeyboardEvent): void {
                     :aria-expanded="fieldsOpen"
                     @click="fieldsOpen = !fieldsOpen"
                 >
-                    ☷
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"
+                        />
+                    </svg>
                 </button>
                 <div v-if="fieldsOpen" class="table-search-field-menu">
                     <label v-for="field in fields" :key="field.id">
@@ -147,7 +152,18 @@ function keydown(event: KeyboardEvent): void {
                         state.mode.value === 'filter' ? 'highlight' : 'filter'
                 "
             >
-                {{ state.mode.value === "filter" ? "≡" : "◉" }}
+                <svg
+                    v-if="state.mode.value === 'filter'"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M4 5h16l-6.3 7.2v5.3l-3.4 1.7v-7z" />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 3h9l3 3v15H6z" />
+                    <path d="M15 3v4h3M9 10h6M9 17h6" />
+                    <path class="table-search-highlight-line" d="M9 13.5h6" />
+                </svg>
             </button>
             <template
                 v-if="state.mode.value === 'highlight' && state.active.value"
@@ -237,6 +253,19 @@ function keydown(event: KeyboardEvent): void {
 .table-search-control button:disabled {
     opacity: 0.35;
     cursor: default;
+}
+.table-search-control button svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.table-search-control button .table-search-highlight-line {
+    stroke-width: 3.5;
 }
 .table-search-mode.highlight {
     color: #175cd3;
