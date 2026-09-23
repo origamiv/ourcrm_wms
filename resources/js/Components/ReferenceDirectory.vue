@@ -1682,6 +1682,16 @@ useCardRoute<ReferenceRow>({
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="serverLoading && !visible.length">
+                            <td :colspan="orderedColumns.length + 2" class="table-loading-cell">
+                                Загружаем записи…
+                            </td>
+                        </tr>
+                        <tr v-else-if="!serverLoading && !visible.length">
+                            <td :colspan="orderedColumns.length + 2" class="table-loading-cell">
+                                Записей не найдено
+                            </td>
+                        </tr>
                         <tr
                             v-for="row in visible"
                             :key="row.id"
