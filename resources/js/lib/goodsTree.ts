@@ -41,8 +41,9 @@ export function goodsTree<T extends TreeGood>(
             parent = parents.get(parent);
         }
     }
-    const keep = new Set(matches);
-    for (const id of matches) {
+    const keep = new Set([...matches].map(String));
+    for (const rawId of matches) {
+        const id = String(rawId);
         let parent = parents.get(id);
         while (parent && !keep.has(parent)) {
             keep.add(parent);
