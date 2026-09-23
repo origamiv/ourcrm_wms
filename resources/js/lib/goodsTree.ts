@@ -17,19 +17,21 @@ export function goodsTree<T extends TreeGood>(
 ): { roots: GoodNode<T>[]; nodes: Map<string, GoodNode<T>> } {
     const nodes = new Map(
         rows.map((row) => [
-            row.id,
+            String(row.id),
             { row, children: [], depth: 0 } as GoodNode<T>,
         ]),
     );
     const parents = new Map<string, string>();
     for (const row of rows) {
         const parent = String(row.parent_id ?? "");
-        if (parent !== row.id && nodes.has(parent)) parents.set(row.id, parent);
+        if (parent !== String(row.id) && nodes.has(parent))
+            parents.set(String(row.id), parent);
     }
     // Old offline data may contain a cycle. Keep its records reachable.
     for (const row of rows) {
-        const seen = new Set<string>([row.id]);
-        let parent = parents.get(row.id);
+        const rowId = String(row.id);
+        const seen = new Set<string>([rowId]);
+        let parent = parents.get(rowId);
         while (parent) {
             if (seen.has(parent)) {
                 parents.delete(row.id);
@@ -49,7 +51,7 @@ export function goodsTree<T extends TreeGood>(
     }
     const roots: GoodNode<T>[] = [];
     for (const [id, node] of nodes) {
-        if (!keep.has(id)) {
+        if (!keep.has(String(id))) {
             nodes.delete(id);
             continue;
         }
@@ -62,7 +64,9 @@ export function goodsTree<T extends TreeGood>(
             Number(!!a.children.length || a.row.is_category === 1) ||
         (a.row.name ?? "").localeCompare(b.row.name ?? "", "ru") *
             (descending ? -1 : 1) ||
-        a.row.id.localeCompare(b.row.id, "en", { numeric: true });
+        String(a.row.id).localeCompare(String(b.row.id), "en", {
+            numeric: true,
+        });
     roots.sort(sort);
     const stack = roots.map((node) => ({ node, depth: 0 }));
     while (stack.length) {
