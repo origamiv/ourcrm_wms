@@ -781,6 +781,33 @@ function revealGood(row: ReferenceRow) {
     );
     if (index >= 0) currentPage.value = Math.floor(index / 25) + 1;
 }
+async function navigateSearchPage(direction: -1 | 1): Promise<void> {
+    if (tableSearch.mode.value !== "highlight" || !tableSearch.active.value)
+        return;
+    const first = direction > 0 ? 1 : pages.value;
+    let page = currentPage.value + direction;
+    if (page < 1 || page > pages.value) page = first;
+    for (let checked = 0; checked < pages.value; checked++) {
+        currentPage.value = page;
+        await loadPage();
+        const matches = searchBaseRows.value.filter((row) =>
+            tableSearch.matches(row),
+        );
+        if (matches.length) {
+            const row = direction > 0 ? matches[0] : matches[matches.length - 1];
+            tableSearch.currentId.value = tableSearch.identify(row);
+            if (isGood) revealGood(row);
+            await nextTick();
+            document
+                .querySelector(`[data-table-search-id="${CSS.escape(tableSearch.identify(row))}"]`)
+                ?.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
+        page += direction;
+        if (page < 1) page = pages.value;
+        if (page > pages.value) page = 1;
+    }
+}
 watch(
     [query, shortQuery, statusFilter, clientFilter, docTypeFilter, dateFilter, descending],
     () => void loadPage(true),
@@ -1379,6 +1406,7 @@ useCardRoute<ReferenceRow>({
                         :fields="advancedFields"
                         :rows="searchBaseRows"
                         @navigate="(row: any) => revealGood(row)"
+                        @navigate-page="navigateSearchPage"
                     />
                     <FilterPresetButton
                         :state="advancedFilters"

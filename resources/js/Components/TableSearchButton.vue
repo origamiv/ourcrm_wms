@@ -11,7 +11,10 @@ const props = withDefaults(
     }>(),
     { rows: () => [] },
 );
-const emit = defineEmits<{ navigate: [row: unknown] }>();
+const emit = defineEmits<{
+    navigate: [row: unknown];
+    "navigate-page": [direction: -1 | 1];
+}>();
 const root = ref<HTMLElement | null>(null);
 const input = ref<HTMLInputElement | null>(null);
 const fieldsOpen = ref(false);
@@ -48,7 +51,10 @@ function toggleField(id: string): void {
 
 async function navigate(direction: -1 | 1): Promise<void> {
     const row = props.state.navigate(props.rows, direction);
-    if (!row) return;
+    if (!row) {
+        emit("navigate-page", direction);
+        return;
+    }
     emit("navigate", row);
     await nextTick();
     const id = CSS.escape(props.state.identify(row));
