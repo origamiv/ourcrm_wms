@@ -142,7 +142,6 @@ final class ImportRunController extends BaseApiController
                 's.status as schedule_status',
                 's.next_run_at',
                 's.last_run_at',
-                's.last_result',
                 'st.options->\'entity_groups\' as entity_groups',
                 'st.options->\'description\' as description',
             ])
@@ -191,7 +190,6 @@ final class ImportRunController extends BaseApiController
                     'schedule_status' => $task->schedule_status,
                     'next_run_at' => $task->next_run_at,
                     'last_run_at' => $task->last_run_at,
-                    'last_result' => $task->last_result,
                 ];
             }),
             'recent_imports_by_group' => $importsByGroup,
