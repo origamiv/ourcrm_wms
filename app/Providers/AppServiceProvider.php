@@ -12,6 +12,7 @@ use App\Console\ExportTableCommand;
 use App\Console\FreshCommand;
 use App\Console\ImportTableCommand;
 use App\Console\ImportTswmsCommand;
+use App\Console\ImportTswmsScheduledCommand;
 use App\Console\InitializeWmsTenantCommand;
 use App\Console\MessengerChannelsCommand;
 use App\Console\PostingCommand;
@@ -103,6 +104,7 @@ final class AppServiceProvider extends ServiceProvider
             DbConnectionsCommand::class,
             InitializeWmsTenantCommand::class,
             ImportTswmsCommand::class,
+            ImportTswmsScheduledCommand::class,
         ]);
     }
 }

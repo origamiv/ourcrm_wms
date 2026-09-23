@@ -123,4 +123,97 @@ final class ImportRunController extends BaseApiController
             'total' => $runs->total(),
         ]);
     }
+
+    /** Возвращает статус периодических задач TSWMS планировщика для текущего tenant */
+    public function schedulerStatus(Request $request): JsonResponse
+    {
+        $tenantId = (string) $request->user()->tenant_id;
+
+        // Получаем задачи TSWMS планировщика для текущего тенанта
+        $schedulerTasks = \DB::table('public.scheduler as s')
+            ->join('public.scheduler_tasks as st', 'st.shortname', '=', 's.task_key')
+            ->where('s.tenant_id', $tenantId)
+            ->where('st.target', 'wms:import:tswms-scheduled')
+            ->where('s.status', 1)
+            ->select([
+                's.id',
+                's.name',
+                's.task_key', 
+                's.status as schedule_status',
+                's.next_run_at',
+                's.last_run_at',
+                's.last_result',
+                'st.options->\'entity_groups\' as entity_groups',
+                'st.options->\'description\' as description',
+            ])
+            ->orderBy('s.task_key')
+            ->get();
+
+        // Получаем последние запуски импортов TSWMS
+        $recentImports = ImportRun::query()
+            ->where('tenant_id', $tenantId)
+            ->where('project', 'tswms')
+            ->where('started_at', '>=', now()->subHours(24))
+            ->select(['id', 'name', 'status', 'started_at', 'finished_at', 'error_message', 'options'])
+            ->orderBy('started_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Группируем импорты по группам сущностей
+        $importsByGroup = [];
+        foreach ($recentImports as $import) {
+            $options = is_string($import->options) ? json_decode($import->options, true) : (array)($import->options ?? []);
+            $only = $options['only'] ?? [];
+            
+            // Определяем группу по импортированным сущностям
+            $group = $this->determineEntityGroup($only);
+            if (!isset($importsByGroup[$group])) {
+                $importsByGroup[$group] = [];
+            }
+            $importsByGroup[$group][] = [
+                'id' => $import->id,
+                'name' => $import->name,
+                'status' => $import->status,
+                'started_at' => $import->started_at?->toISOString(),
+                'finished_at' => $import->finished_at?->toISOString(),
+                'error_message' => $import->error_message,
+            ];
+        }
+
+        return response()->json([
+            'scheduler_tasks' => $schedulerTasks->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'name' => $task->name,
+                    'task_key' => $task->task_key,
+                    'entity_groups' => json_decode($task->entity_groups ?? '""', true),
+                    'description' => json_decode($task->description ?? '""', true),
+                    'schedule_status' => $task->schedule_status,
+                    'next_run_at' => $task->next_run_at,
+                    'last_run_at' => $task->last_run_at,
+                    'last_result' => $task->last_result,
+                ];
+            }),
+            'recent_imports_by_group' => $importsByGroup,
+            'current_time' => now()->toISOString(),
+        ]);
+    }
+
+    private function determineEntityGroup(array $entities): string
+    {
+        $entityGroups = [
+            'references' => ['clients', 'accounts', 'webhooks', 'warehouses', 'services', 'task_stages', 'users', 'documents'],
+            'goods' => ['goods'],
+            'orders' => ['orders', 'order_goods', 'order_histories', 'shipments', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'],
+            'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
+        ];
+
+        foreach ($entityGroups as $group => $groupEntities) {
+            if (array_intersect($entities, $groupEntities)) {
+                return $group;
+            }
+        }
+
+        return 'unknown';
+    }
 }

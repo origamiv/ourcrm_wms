@@ -18,9 +18,16 @@ use Throwable;
 
 final class ImportTswmsCommand extends Command
 {
-    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограничение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
+    protected $signature = 'wms:import:tswms {--tenant= : Тенант WMS} {--tswms-client-id= : ID клиента TSWMS} {--dry-run} {--only=*} {--entity-groups= : Группы сущностей (references,goods,orders,tasks)} {--inline : Выполнить этап непосредственно внутри job} {--count-only : Вернуть количество строк task_goods} {--goods-count-only : Вернуть количество строк товаров} {--goods-offset=0 : Смещение строк товаров} {--goods-limit=0 : Ограничение строк товаров} {--task-goods-offset=0 : Смещение строк task_goods} {--task-goods-limit=0 : Ограничение строк task_goods}';
 
     protected $description = 'Импортирует данные выбранного клиента TSWMS в тенант WMS';
+
+    private const ENTITY_GROUPS = [
+        'references' => ['clients', 'accounts', 'webhooks', 'warehouses', 'services', 'task_stages', 'users', 'documents'],
+        'goods' => ['goods'],
+        'orders' => ['orders', 'order_goods', 'order_histories', 'shipments', 'order_statuses', 'order_sources', 'order_cancel_statuses', 'logistic_companies', 'shipment_statuses'],
+        'tasks' => ['tasks', 'task_goods', 'acceptances', 'cell_goods'],
+    ];
 
     private string $tenant;
 
@@ -55,7 +62,7 @@ final class ImportTswmsCommand extends Command
             return self::FAILURE;
         }
         if (! $this->option('inline')) {
-            $only = array_values(array_filter($this->option('only')));
+            $only = $this->resolveEntitiesFromOptions();
             $activeQuery = ImportRun::query()
                 ->where('tenant_id', $this->tenant)
                 ->whereIn('status', ['queued', 'running']);
@@ -146,7 +153,7 @@ final class ImportTswmsCommand extends Command
 
             return self::SUCCESS;
         }
-        $only = array_filter($this->option('only'));
+        $only = $this->resolveEntitiesFromOptions();
         $this->runStep('clients', fn () => $this->importPartners(), $only);
         $this->runStep('accounts', fn () => $this->importAccounts(), $only);
         $this->runStep('webhooks', fn () => $this->importWebhooks(), $only);
@@ -1141,5 +1148,28 @@ final class ImportTswmsCommand extends Command
         unset($data['created_at'],$data['updated_at']);
 
         return hash('sha256', 'v9|'.json_encode($data, JSON_UNESCAPED_UNICODE));
+    }
+
+    private function resolveEntitiesFromOptions(): array
+    {
+        // Если указана опция --entity-groups, используем её
+        $entityGroups = (string) ($this->option('entity-groups') ?: '');
+        if ($entityGroups !== '') {
+            $groups = array_filter(array_map('trim', explode(',', $entityGroups)));
+            $entities = [];
+            
+            foreach ($groups as $group) {
+                if (isset(self::ENTITY_GROUPS[$group])) {
+                    $entities = array_merge($entities, self::ENTITY_GROUPS[$group]);
+                } else {
+                    $this->components->warn("Неизвестная группа сущностей: {$group}. Доступные группы: " . implode(', ', array_keys(self::ENTITY_GROUPS)));
+                }
+            }
+            
+            return array_unique($entities);
+        }
+
+        // Иначе используем старую опцию --only для обратной совместимости
+        return array_values(array_filter($this->option('only')));
     }
 }
