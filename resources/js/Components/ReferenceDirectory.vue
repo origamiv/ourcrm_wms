@@ -379,10 +379,11 @@ const store = createEntitySync<ReferenceRow>(
 );
 const serverRows = ref<ReferenceRow[]>([]);
 const serverMeta = ref({ current_page: 1, last_page: 1, per_page: 25, total: 0, from: null as number | null, to: null as number | null });
-const serverLoading = ref(false);
+const serverLoading = ref(true);
 const serverError = ref("");
 const rows = serverRows;
-const ready = ref(false);
+// Табличная оболочка доступна сразу; строки подгружаются отдельно по AJAX.
+const ready = ref(true);
 const syncing = serverLoading;
 const online = ref(navigator.onLine);
 const error = serverError;
