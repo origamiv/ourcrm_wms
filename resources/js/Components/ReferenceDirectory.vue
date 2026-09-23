@@ -377,7 +377,16 @@ const store = createEntitySync<ReferenceRow>(
           }
         : undefined,
 );
-const { rows, ready, syncing, online, error, warning } = store;
+const serverRows = ref<ReferenceRow[]>([]);
+const serverMeta = ref({ current_page: 1, last_page: 1, per_page: 25, total: 0, from: null as number | null, to: null as number | null });
+const serverLoading = ref(false);
+const serverError = ref("");
+const rows = serverRows;
+const ready = ref(false);
+const syncing = serverLoading;
+const online = ref(navigator.onLine);
+const error = serverError;
+const warning = ref("");
 const lookupStores = Object.fromEntries(
     [
         ...new Set(
@@ -385,7 +394,7 @@ const lookupStores = Object.fromEntries(
                 field.lookup ? [field.lookup] : [],
             ),
         ),
-    ].map((entity) => [
+    ].filter((entity) => entity !== props.entity).map((entity) => [
         entity,
         createEntitySync<ReferenceRow>(
             `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
@@ -424,6 +433,43 @@ const query = ref(""),
     statusFilter = ref("all"),
     currentPage = ref(1),
     descending = ref(false);
+let pageRequest = 0;
+async function loadPage(reset = false) {
+    if (!online.value) return;
+    if (reset) currentPage.value = 1;
+    const request = ++pageRequest;
+    serverLoading.value = true;
+    serverError.value = "";
+    const params = new URLSearchParams({
+        page: String(currentPage.value),
+        per_page: "25",
+        q: query.value || tableSearch.debouncedQuery.value,
+        short_query: shortQuery.value,
+        deleted: statusFilter.value === "deleted" ? "deleted" : "active",
+        sort: isKiz ? "code" : "name",
+        direction: descending.value ? "desc" : "asc",
+    });
+    if (statusFilter.value !== "all" && statusFilter.value !== "deleted")
+        params.set("status", statusFilter.value);
+    if (recordIdFilter.value) params.set("record_id", recordIdFilter.value);
+    if (clientFilter.value) params.set("filter[client_id]", clientFilter.value);
+    if (docTypeFilter.value) params.set("filter[doc_type_id]", docTypeFilter.value);
+    if (dateFilter.value) params.set("filter[doc_date]", dateFilter.value);
+    if (clientScope.value) params.set("filter[client_id]", clientScope.value.id);
+    if (warehouseScope.value) params.set("filter[warehouse_id]", warehouseScope.value.id);
+    try {
+        const response = await http(`/web/directory/${encodeURIComponent(String(props.entity))}?${params}`);
+        if (request !== pageRequest) return;
+        serverRows.value = response.data ?? [];
+        serverMeta.value = response.meta ?? serverMeta.value;
+        ready.value = true;
+    } catch (e) {
+        if (request !== pageRequest) return;
+        serverError.value = e instanceof Error ? e.message : "Не удалось загрузить страницу.";
+    } finally {
+        if (request === pageRequest) serverLoading.value = false;
+    }
+}
 const selected = ref<ReferenceRow | null>(null),
     deleting = ref<ReferenceRow | null>(null),
     conflict = ref<ReferenceRow | null>(null);
@@ -460,7 +506,8 @@ async function pickAcceptance() {
             { barcode: acceptanceBarcode.value.trim() },
         );
         if (response.acceptance) {
-            await store.apply(response.acceptance);
+            const index = serverRows.value.findIndex((row) => String(row.id) === String(response.acceptance.id));
+            if (index >= 0) serverRows.value[index] = response.acceptance;
             conductingAcceptance.value = response.acceptance;
         }
         acceptanceBarcode.value = "";
@@ -665,7 +712,10 @@ const searchBaseRows = computed(() =>
 const filtered = computed(() => tableSearch.apply(searchBaseRows.value));
 watch(
     [tableSearch.debouncedQuery, tableSearch.mode, tableSearch.selectedFields],
-    () => (currentPage.value = 1),
+    () => {
+        currentPage.value = 1;
+        if (tableSearch.mode.value === "filter") void loadPage(true);
+    },
     { deep: true },
 );
 const expandedGoods = ref(new Set<string>());
@@ -686,13 +736,7 @@ const goodsForest = computed(() =>
     ),
 );
 const pages = computed(() =>
-    Math.max(
-        1,
-        Math.ceil(
-            (isGood ? goodsForest.value.roots.length : filtered.value.length) /
-                25,
-        ),
-    ),
+    Math.max(1, serverMeta.value.last_page),
 );
 const pageItems = computed<(number | string)[]>(() => {
     const total = pages.value;
@@ -706,18 +750,8 @@ const pageItems = computed<(number | string)[]>(() => {
 });
 const visible = computed(() =>
     isGood
-        ? flattenGoods(
-              goodsForest.value.roots.slice(
-                  (currentPage.value - 1) * 25,
-                  currentPage.value * 25,
-              ),
-              expandedGoods.value,
-              goodsFiltered.value,
-          )
-        : filtered.value.slice(
-              (currentPage.value - 1) * 25,
-              currentPage.value * 25,
-          ),
+        ? flattenGoods(goodsForest.value.roots, expandedGoods.value, goodsFiltered.value)
+        : filtered.value,
 );
 function toggleGood(id: string) {
     const next = new Set(expandedGoods.value);
@@ -747,9 +781,10 @@ function revealGood(row: ReferenceRow) {
     if (index >= 0) currentPage.value = Math.floor(index / 25) + 1;
 }
 watch(
-    [query, shortQuery, statusFilter, clientFilter, docTypeFilter, dateFilter],
-    () => (currentPage.value = 1),
+    [query, shortQuery, statusFilter, clientFilter, docTypeFilter, dateFilter, descending],
+    () => void loadPage(true),
 );
+watch(currentPage, () => void loadPage());
 watch(
     pages,
     (count) => (currentPage.value = Math.min(currentPage.value, count)),
@@ -1126,13 +1161,11 @@ async function save(remove = false) {
             },
         );
         if (remove) {
-            await store.remove(target!);
-            await store.sync();
-        } else await store.apply(response.data);
-        if (isGood) {
-            await store.sync();
-            if (!remove) revealGood(response.data);
+            await loadPage();
+        } else {
+            await loadPage();
         }
+        if (isGood && !remove) revealGood(response.data);
         if (creating) {
             // Keep the editor open for rapid consecutive entry creation.
             saving.value = false;
@@ -1202,7 +1235,7 @@ async function importData(format: string, file?: File, text?: string) {
             "POST",
             upload,
         );
-        for (const row of response.data ?? []) await store.apply(row);
+        await loadPage();
         notice.value = response.imported
             ? `Импортировано записей: ${response.imported}`
             : "В файле не найдено строк для импорта.";
@@ -1223,7 +1256,7 @@ async function confirmDelete() {
 }
 onMounted(async () => {
     await Promise.all([
-        store.start(),
+        loadPage(),
         ...Object.values(lookupStores).map((store) => store.start()),
     ]);
 });
@@ -2194,7 +2227,7 @@ useCardRoute<ReferenceRow>({
                 class="list-footer"
             >
                 <span
-                    >Найдено: {{ filtered.length
+                    >Найдено: {{ serverMeta.total
                     }}<template v-if="isGood">
                         · Корневых веток:
                         {{ goodsForest.roots.length }}</template
@@ -2204,7 +2237,7 @@ useCardRoute<ReferenceRow>({
                     <button
                         class="refresh-button"
                         :disabled="!online || syncing"
-                        @click="store.sync"
+                        @click="loadPage"
                     >
                         Обновить
                     </button>

@@ -17,6 +17,7 @@ Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group
     Route::put('/web/filter_presets/{id}', [App\Http\Controllers\FilterPresetController::class, 'update'])->whereNumber('id');
     Route::delete('/web/filter_presets/{id}', [App\Http\Controllers\FilterPresetController::class, 'destroy'])->whereNumber('id');
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
+    Route::get('/web/directory/{entity_type}', [App\Http\Controllers\DirectoryController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/web/worktime/state', [App\Http\Controllers\WorktimeController::class, 'state']);
     Route::get('/web/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
     Route::post('/web/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);

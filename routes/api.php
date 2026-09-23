@@ -13,6 +13,7 @@ Route::middleware(['auth:sanctum', EnsureWmsAccess::class])->group(function () {
     Route::get('/instructions/{id}/content', [App\Http\Controllers\InstructionController::class, 'content'])->whereNumber('id');
     Route::get('/instructions/{id}/download', [App\Http\Controllers\InstructionController::class, 'download'])->whereNumber('id');
     Route::get('/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
+    Route::get('/directory/{entity_type}', [App\Http\Controllers\DirectoryController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/worktime/state', [App\Http\Controllers\WorktimeController::class, 'state']);
     Route::get('/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);
     Route::post('/worktime/{action}', [App\Http\Controllers\WorktimeController::class, 'action'])->whereIn('action', ['start', 'pause', 'finish']);
