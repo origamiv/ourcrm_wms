@@ -101,6 +101,16 @@ it('показывает календарь запусков только выб
     $this->getJson('/web/clients/integrations/'.$this->webhook->id.'/run_logs/day?date='.$date)
         ->assertOk()->assertJsonPath('total', 2)->assertJsonPath('data.0.processed_records', 18)
         ->assertJsonPath('data.1.processed_records', 125);
+    $filter = urlencode(json_encode([
+        'glue' => 'and',
+        'rules' => [['field' => 'status', 'type' => 'tuple', 'filter' => 'equal', 'value' => 'failed']],
+    ], JSON_THROW_ON_ERROR));
+    $this->getJson('/web/clients/integrations/'.$this->webhook->id.'/run_logs?year='.now()->year.'&filter='.$filter)
+        ->assertOk()->assertJsonPath('data.0.count', 1);
+    $this->getJson('/web/clients/integrations/'.$this->webhook->id.'/run_logs/day?date='.$date.'&filter='.$filter)
+        ->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.processed_records', 18);
+    $this->getJson('/web/imports?filter='.$filter)
+        ->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.processed_records', 18);
     $this->getJson('/web/clients/integrations/999999/run_logs?year='.now()->year)->assertNotFound();
 });
 

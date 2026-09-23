@@ -9,6 +9,14 @@ import { createEntitySync } from "../lib/entitySync";
 import type { EntityRow } from "../lib/cache";
 import TableColumnSettings from "./TableColumnSettings.vue";
 import DataTransferMenu from "./DataTransferMenu.vue";
+import FilterPresetButton from "./FilterPresetButton.vue";
+import FilterPresetTiles from "./FilterPresetTiles.vue";
+import {
+    applyTableFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 interface CatalogRow extends EntityRow {
     name: string;
     slug: string | null;
@@ -20,16 +28,22 @@ interface CatalogRow extends EntityRow {
 }
 const props = defineProps<{ entity: "roles" | "permissions"; title: string }>();
 const page = usePage<any>();
+const advancedFilters = useFilterPresets(`access:${props.entity}`);
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) {
-    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    if (
+        !window.matchMedia("(max-width: 900px)").matches ||
+        (event?.detail ?? 0) > 1
+    )
+        return;
     const key = String(id);
     const next = new Set(expandedMobileRows.value);
-    if (next.has(key)) next.delete(key); else next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     expandedMobileRows.value = next;
 }
 function openName(row: CatalogRow, event: MouseEvent) {
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (window.matchMedia("(max-width: 900px)").matches) {
         event.stopPropagation();
         toggleMobileRow(row.id, event);
         return;
@@ -155,7 +169,31 @@ const query = ref(""),
     system = ref("all"),
     currentPage = ref(1),
     sort = ref<"name" | "slug">("name");
-const filtered = computed(() =>
+const advancedFields: FilterField[] = [
+    { id: "id", label: "#", type: "number" },
+    { id: "name", label: "Название", type: "text" },
+    { id: "slug", label: "Код", type: "text" },
+    {
+        id: props.entity === "roles" ? "description" : "resource",
+        label: props.entity === "roles" ? "Описание" : "Ресурс",
+        type: "text",
+    },
+    {
+        id: "system",
+        label: "Системная запись",
+        type: "tuple",
+        format: (value) => (value ? "Да" : "Нет"),
+    },
+    {
+        id: "status",
+        label: "Статус",
+        type: "tuple",
+        format: (value) => statusLabel(Number(value)),
+    },
+    { id: "deleted_at", label: "Удалена", type: "text" },
+];
+const advancedOptions: FilterOptions = { system: [0, 1], status: [0, 1, 2] };
+const quickFiltered = computed(() =>
     rows.value
         .filter((row) => {
             if (status.value === "deleted" ? !row.deleted_at : !!row.deleted_at)
@@ -182,6 +220,9 @@ const filtered = computed(() =>
                     "ru",
                 ) || a.id.localeCompare(b.id),
         ),
+);
+const filtered = computed(() =>
+    applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
 );
 const pageCount = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / 25)),
@@ -260,10 +301,30 @@ useCardRoute<CatalogRow>({
             <div class="page-heading">
                 <h1>{{ title }}</h1>
                 <div class="page-heading-actions">
-                    <DataTransferMenu :rows="visible" :columns="columnFields" :filename="entity" />
-                    <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">{{ entity === "roles" ? "Добавить роль" : "Добавить право" }}</button>
+                    <FilterPresetButton
+                        :state="advancedFilters"
+                        :fields="advancedFields"
+                        :options="advancedOptions"
+                    />
+                    <DataTransferMenu
+                        :rows="filtered"
+                        :columns="columnFields"
+                        :filename="entity"
+                    />
+                    <button
+                        class="primary"
+                        :disabled="!online || !ready || saving"
+                        @click="open(null)"
+                    >
+                        {{
+                            entity === "roles"
+                                ? "Добавить роль"
+                                : "Добавить право"
+                        }}
+                    </button>
                 </div>
             </div>
+            <FilterPresetTiles :state="advancedFilters" />
             <div class="sync-line" role="status">
                 <span :class="{ 'offline-text': !online }">{{
                     syncing
@@ -296,7 +357,13 @@ useCardRoute<CatalogRow>({
                             </th>
                             <th>Системная запись</th>
                             <th>Статус</th>
-                            <th>Действия <TableColumnSettings :columns="columnFields" :storage-key="`${entity}-columns`" /></th>
+                            <th>
+                                Действия
+                                <TableColumnSettings
+                                    :columns="columnFields"
+                                    :storage-key="`${entity}-columns`"
+                                />
+                            </th>
                         </tr>
                         <tr class="column-filters">
                             <th class="id-column"></th>
@@ -337,9 +404,16 @@ useCardRoute<CatalogRow>({
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in visible" :key="row.id"
-                            :class="{ 'mobile-card-expanded': expandedMobileRows.has(String(row.id)) }"
-                            @click="toggleMobileRow(row.id, $event)">
+                        <tr
+                            v-for="row in visible"
+                            :key="row.id"
+                            :class="{
+                                'mobile-card-expanded': expandedMobileRows.has(
+                                    String(row.id),
+                                ),
+                            }"
+                            @click="toggleMobileRow(row.id, $event)"
+                        >
                             <td class="id-column">{{ row.id }}</td>
                             <td>
                                 <button
@@ -351,14 +425,20 @@ useCardRoute<CatalogRow>({
                                 </button>
                             </td>
                             <td data-label="Код">{{ row.slug || "—" }}</td>
-                            <td :data-label="entity === 'roles' ? 'Описание' : 'Ресурс'">
+                            <td
+                                :data-label="
+                                    entity === 'roles' ? 'Описание' : 'Ресурс'
+                                "
+                            >
                                 {{
                                     (entity === "roles"
                                         ? row.description
                                         : row.resource) || "—"
                                 }}
                             </td>
-                            <td data-label="Системная запись">{{ row.system ? "Да" : "Нет" }}</td>
+                            <td data-label="Системная запись">
+                                {{ row.system ? "Да" : "Нет" }}
+                            </td>
                             <td data-label="Статус">
                                 <span class="badge">{{
                                     row.deleted_at

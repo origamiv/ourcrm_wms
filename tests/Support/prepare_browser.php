@@ -27,6 +27,9 @@ DB::transaction(function () {
         }
     }
 });
+DB::transaction(function () {
+    (require database_path('migrations/2026_09_23_000001_create_user_filter_presets.php'))->up();
+});
 echo "Тестовые пользователи подготовлены в локальной wms_browser_test.\n";
 DB::transaction(function () {
     DB::table('main.roles')->insert(['name' => 'Кладовщик', 'slug' => 'warehouse_operator', 'description' => 'Операции склада', 'status' => 1, 'tenant_id' => 'test_org']);

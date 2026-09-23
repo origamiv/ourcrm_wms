@@ -5,6 +5,13 @@ import AdminTabs from "../Components/AdminTabs.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
+import FilterPresetButton from "../Components/FilterPresetButton.vue";
+import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import {
+    applyTableFilter,
+    useFilterPresets,
+    type FilterField,
+} from "../lib/tableFilters";
 interface RoleRow extends EntityRow {
     name: string;
     slug: string;
@@ -21,6 +28,13 @@ interface Assignment extends EntityRow {
     deleted_at: string | null;
 }
 const page = usePage<any>();
+const advancedFilters = useFilterPresets("roles_rights");
+const advancedFields: FilterField[] = [
+    { id: "id", label: "#", type: "number" },
+    { id: "name", label: "Право", type: "text" },
+    { id: "slug", label: "Код", type: "text" },
+    { id: "resource", label: "Ресурс", type: "text" },
+];
 const scope = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`;
 const roles = createEntitySync<RoleRow>(scope, "roles");
 const permissions = createEntitySync<PermissionRow>(scope, "permissions");
@@ -46,10 +60,13 @@ const activeRoles = computed(() =>
         .filter((row) => row.status === 1 && !row.deleted_at)
         .sort((a, b) => a.name.localeCompare(b.name, "ru")),
 );
+const filteredPermissions = computed(() =>
+    applyTableFilter(permissions.rows.value, advancedFilters.combined.value),
+);
 const groups = computed(() => {
     const map = new Map<string, PermissionRow[]>();
     const q = query.value.trim().toLocaleLowerCase("ru");
-    for (const row of permissions.rows.value) {
+    for (const row of filteredPermissions.value) {
         if (row.deleted_at || row.status !== 1) continue;
         if (
             q &&
@@ -140,6 +157,10 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
             <AdminTabs />
             <div class="page-heading">
                 <h1>Роли и права</h1>
+                <FilterPresetButton
+                    :state="advancedFilters"
+                    :fields="advancedFields"
+                />
                 <button
                     class="primary"
                     :disabled="!online || !!saving"
@@ -175,6 +196,7 @@ onUnmounted(() => stores.forEach((store) => store.stop()));
             >
                 {{ message }}
             </p>
+            <FilterPresetTiles :state="advancedFilters" />
             <div class="matrix-tools">
                 <input
                     v-model="query"

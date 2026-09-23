@@ -12,6 +12,10 @@ use Inertia\Inertia;
 Route::get('/login', Login::class)->name('login');
 Route::post('/logout', [WmsAuthController::class, 'logout'])->name('logout');
 Route::middleware([EnsureWmsAccess::class, HandleInertiaRequests::class])->group(function () {
+    Route::get('/web/filter_presets', [App\Http\Controllers\FilterPresetController::class, 'index']);
+    Route::post('/web/filter_presets', [App\Http\Controllers\FilterPresetController::class, 'store']);
+    Route::put('/web/filter_presets/{id}', [App\Http\Controllers\FilterPresetController::class, 'update'])->whereNumber('id');
+    Route::delete('/web/filter_presets/{id}', [App\Http\Controllers\FilterPresetController::class, 'destroy'])->whereNumber('id');
     Route::get('/web/sync/{entity_type}', [App\Http\Controllers\EntitySyncController::class, 'index'])->where('entity_type', '[a-z][a-z0-9_]*');
     Route::get('/web/worktime/state', [App\Http\Controllers\WorktimeController::class, 'state']);
     Route::get('/web/worktime', [App\Http\Controllers\WorktimeController::class, 'calendar']);

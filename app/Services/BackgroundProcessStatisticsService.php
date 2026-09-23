@@ -21,15 +21,15 @@ final class BackgroundProcessStatisticsService
     /**
      * @return array<string, mixed>
      */
-    public function statistics(string $tenant, string $groupBy, string $period, string $marketplace): array
+    public function statistics(string $tenant, string $groupBy, string $period, string $marketplace, ?string $filter = null): array
     {
         $range = $this->range($period);
         $webhooks = $this->webhooks($tenant, $groupBy, $marketplace);
         $webhookIds = $webhooks->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
 
-        $summaries = $this->summaries($tenant, $webhookIds, $range['selected_from'], $range['selected_to']);
-        $latestRuns = $this->latestRuns($tenant, $webhookIds, $range['selected_from'], $range['selected_to']);
-        $activity = $this->activity($tenant, $webhookIds, $range['statistics_from'], $range['statistics_to'], $range['bucket_unit']);
+        $summaries = $this->summaries($tenant, $webhookIds, $range['selected_from'], $range['selected_to'], $groupBy, $filter);
+        $latestRuns = $this->latestRuns($tenant, $webhookIds, $range['selected_from'], $range['selected_to'], $groupBy, $filter);
+        $activity = $this->activity($tenant, $webhookIds, $range['statistics_from'], $range['statistics_to'], $range['bucket_unit'], $groupBy, $filter);
 
         return [
             'group_by' => $groupBy,
@@ -49,7 +49,7 @@ final class BackgroundProcessStatisticsService
     /**
      * @return array<string, mixed>
      */
-    public function runs(string $tenant, string $groupBy, string $period, string $marketplace, string $bucketStart, int $page): array
+    public function runs(string $tenant, string $groupBy, string $period, string $marketplace, ?string $filter, string $bucketStart, int $page): array
     {
         $range = $this->range($period);
         $timezone = (string) config('app.timezone', 'Europe/Moscow');
@@ -77,12 +77,14 @@ final class BackgroundProcessStatisticsService
             static fn (object $webhook): array => [(string) $webhook->id => $webhook->client_id],
         );
 
-        $runs = ImportRun::query()
+        $query = ImportRun::query()
             ->where('tenant_id', $tenant)
             ->whereIn('source_webhook_id', $webhookIds)
             ->whereIn('status', self::RUN_STATUSES)
             ->where('created_at', '>=', $start)
-            ->where('created_at', '<', $end)
+            ->where('created_at', '<', $end);
+        app(QueryFilterService::class)->apply($query, $filter, $this->runFilterFields($groupBy));
+        $runs = $query
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate(100, ['id', 'source_webhook_id', 'status', 'processed_records', 'created_at'], 'page', $page);
@@ -235,18 +237,21 @@ final class BackgroundProcessStatisticsService
             ->where('status', 1);
     }
 
-    private function summaries(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to): Collection
+    private function summaries(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to, string $groupBy, ?string $filter): Collection
     {
         if ($webhookIds === []) {
             return collect();
         }
 
-        return ImportRun::query()
+        $query = ImportRun::query()
             ->where('tenant_id', $tenant)
             ->whereIn('source_webhook_id', $webhookIds)
             ->whereIn('status', self::RUN_STATUSES)
             ->where('created_at', '>=', $from)
-            ->where('created_at', '<', $to)
+            ->where('created_at', '<', $to);
+        app(QueryFilterService::class)->apply($query, $filter, $this->runFilterFields($groupBy));
+
+        return $query
             ->selectRaw("source_webhook_id,
                 COUNT(*)::integer AS total_runs,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::integer AS successful_runs,
@@ -257,7 +262,7 @@ final class BackgroundProcessStatisticsService
             ->keyBy(static fn (object $row): string => (string) $row->source_webhook_id);
     }
 
-    private function activity(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to, string $unit): Collection
+    private function activity(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to, string $unit, string $groupBy, ?string $filter): Collection
     {
         if ($webhookIds === []) {
             return collect();
@@ -267,12 +272,15 @@ final class BackgroundProcessStatisticsService
             ? "date_bin('15 minutes', created_at, TIMESTAMP '2000-01-01 00:00:00')"
             : "date_trunc('{$unit}', created_at)";
 
-        return ImportRun::query()
+        $query = ImportRun::query()
             ->where('tenant_id', $tenant)
             ->whereIn('source_webhook_id', $webhookIds)
             ->whereIn('status', self::RUN_STATUSES)
             ->where('created_at', '>=', $from)
-            ->where('created_at', '<', $to)
+            ->where('created_at', '<', $to);
+        app(QueryFilterService::class)->apply($query, $filter, $this->runFilterFields($groupBy));
+
+        return $query
             ->selectRaw("source_webhook_id,
                 {$bucketExpression} AS bucket,
                 COUNT(*)::integer AS count,
@@ -285,24 +293,41 @@ final class BackgroundProcessStatisticsService
             ->groupBy(static fn (object $row): string => (string) $row->source_webhook_id);
     }
 
-    private function latestRuns(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to): Collection
+    private function latestRuns(string $tenant, array $webhookIds, CarbonImmutable $from, CarbonImmutable $to, string $groupBy, ?string $filter): Collection
     {
         if ($webhookIds === []) {
             return collect();
         }
 
-        return ImportRun::query()
+        $query = ImportRun::query()
             ->where('tenant_id', $tenant)
             ->whereIn('source_webhook_id', $webhookIds)
             ->whereIn('status', self::RUN_STATUSES)
             ->where('created_at', '>=', $from)
-            ->where('created_at', '<', $to)
+            ->where('created_at', '<', $to);
+        app(QueryFilterService::class)->apply($query, $filter, $this->runFilterFields($groupBy));
+
+        return $query
             ->selectRaw('DISTINCT ON (source_webhook_id) id, source_webhook_id, status, created_at')
             ->orderBy('source_webhook_id')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get()
             ->keyBy(static fn (ImportRun $run): string => (string) $run->source_webhook_id);
+    }
+
+    /** @return array<string, string> */
+    private function runFilterFields(string $groupBy): array
+    {
+        return [
+            'id' => 'wms.import_runs.id',
+            'entity_id' => $groupBy === 'clients'
+                ? '(SELECT webhook.client_id FROM integration.webhooks AS webhook WHERE webhook.id = wms.import_runs.source_webhook_id)'
+                : 'wms.import_runs.source_webhook_id',
+            'created_at' => 'wms.import_runs.created_at',
+            'status' => 'wms.import_runs.status',
+            'processed_records' => 'wms.import_runs.processed_records',
+        ];
     }
 
     private function row(string $groupBy, Collection $webhooks, Collection $summaries, Collection $latestRuns, Collection $activity): array

@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import MaintenanceTabs from "../Components/MaintenanceTabs.vue";
 import { formatDateInTimezone } from "../lib/dates";
 import { http, HttpError } from "../lib/http";
+import FilterPresetButton from "../Components/FilterPresetButton.vue";
+import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import {
+    serializedFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 
 type GroupBy = "clients" | "webhooks";
 type MarketplaceFilter =
@@ -73,6 +81,7 @@ const marketplaces: { value: MarketplaceFilter; label: string }[] = [
 ];
 
 const groupBy = ref<GroupBy>("clients");
+const advancedFilters = useFilterPresets("background_processes");
 const period = ref<Period>("today");
 const marketplace = ref<MarketplaceFilter>("all");
 const summary = ref<StatisticsRow | null>(null);
@@ -96,6 +105,23 @@ const statusLabels: Record<string, string> = {
     completed: "Завершён",
     failed: "Ошибка",
 };
+const advancedFields = computed<FilterField[]>(() => [
+    { id: "id", label: "# запуска", type: "number" },
+    {
+        id: "entity_id",
+        label: groupBy.value === "clients" ? "ID клиента" : "ID вебхука",
+        type: "number",
+    },
+    { id: "created_at", label: "Дата и время запуска", type: "date" },
+    {
+        id: "status",
+        label: "Статус",
+        type: "tuple",
+        format: (value) => statusLabels[String(value)] ?? String(value),
+    },
+    { id: "processed_records", label: "Обработано записей", type: "number" },
+]);
+const advancedOptions: FilterOptions = { status: Object.keys(statusLabels) };
 const entityHeading = computed(() =>
     groupBy.value === "clients" ? "ID клиента" : "ID вебхука",
 );
@@ -206,6 +232,8 @@ async function load(): Promise<void> {
             period: period.value,
             marketplace: marketplace.value,
         });
+        const filter = serializedFilter(advancedFilters.combined.value);
+        if (filter) query.set("filter", filter);
         const response = await http(
             `/web/background_processes?${query.toString()}`,
         );
@@ -245,6 +273,8 @@ async function loadRuns(point: DisplayPoint, page = 1): Promise<void> {
             bucket_start: point.start,
             page: String(page),
         });
+        const filter = serializedFilter(advancedFilters.combined.value);
+        if (filter) query.set("filter", filter);
         const response = await http(
             `/web/background_processes/runs?${query.toString()}`,
         );
@@ -286,6 +316,11 @@ function selectPeriod(value: Period): void {
 onMounted(() => {
     void load();
 });
+watch(
+    () => advancedFilters.combined.value,
+    () => void load(),
+    { deep: true },
+);
 </script>
 
 <template>
@@ -296,7 +331,14 @@ onMounted(() => {
                 Обслуживание › Фоновые процессы
             </div>
             <MaintenanceTabs />
-            <div class="page-heading"><h1>Фоновые процессы</h1></div>
+            <div class="page-heading">
+                <h1>Фоновые процессы</h1>
+                <FilterPresetButton
+                    :state="advancedFilters"
+                    :fields="advancedFields"
+                    :options="advancedOptions"
+                />
+            </div>
 
             <div class="process-filters">
                 <div class="process-control-group">
@@ -383,6 +425,7 @@ onMounted(() => {
                     </select>
                 </div>
             </div>
+            <FilterPresetTiles :state="advancedFilters" />
 
             <p v-if="error" class="notice error" role="alert">{{ error }}</p>
             <div v-if="loading" class="process-state" role="status">

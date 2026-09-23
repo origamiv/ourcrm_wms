@@ -7,17 +7,37 @@ namespace App\Http\Controllers;
 use App\Http\BaseApiController;
 use App\Models\ImportRun;
 use App\Models\ImportRunStage;
+use App\Services\QueryFilterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ImportRunController extends BaseApiController
 {
     /** Возвращает историю запусков импортов текущего tenant с прогрессом обработки. */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, QueryFilterService $filters): JsonResponse
     {
-        $runs = ImportRun::query()
+        $input = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'filter' => ['sometimes', 'nullable', 'string', 'max:32768'],
+        ]);
+        $query = ImportRun::query()
             ->with('stages')
-            ->visibleTo((string) $request->user()->tenant_id)
+            ->visibleTo((string) $request->user()->tenant_id);
+        $filters->apply($query, $input['filter'] ?? null, [
+            'id' => 'wms.import_runs.id',
+            'name' => 'wms.import_runs.name',
+            'client_id' => "COALESCE(wms.import_runs.source_client_id, NULLIF(wms.import_runs.options->>'client_id', '')::bigint)",
+            'client_name' => "wms.import_runs.options->>'client_name'",
+            'marketplace' => "COALESCE(wms.import_runs.options->>'marketplace', wms.import_runs.source_system)",
+            'webhook_id' => "COALESCE(wms.import_runs.source_webhook_id, NULLIF(wms.import_runs.options->>'webhook_id', '')::bigint)",
+            'started_at' => 'wms.import_runs.started_at',
+            'updated_at' => 'wms.import_runs.updated_at',
+            'current_stage' => 'wms.import_runs.current_stage',
+            'processed_records' => 'wms.import_runs.processed_records',
+            'status' => 'wms.import_runs.status',
+            'error_message' => 'wms.import_runs.error_message',
+        ]);
+        $runs = $query
             ->orderByRaw('GREATEST(wms.import_runs.updated_at, COALESCE((SELECT MAX(stages.updated_at) FROM wms.import_run_stages AS stages WHERE stages.import_run_id = wms.import_runs.id), wms.import_runs.updated_at)) DESC')
             ->orderByDesc('id')
             ->paginate(50);

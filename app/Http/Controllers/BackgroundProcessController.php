@@ -20,6 +20,7 @@ final class BackgroundProcessController extends BaseApiController
             'group_by' => ['sometimes', Rule::in(['clients', 'webhooks'])],
             'period' => ['sometimes', Rule::in(['today', 'yesterday', 'week', 'month', 'hours_4', 'hour', 'minutes_15'])],
             'marketplace' => ['sometimes', Rule::in(['all', 'none', 'wildberries', 'ozon', 'yandex_market'])],
+            'filter' => ['sometimes', 'nullable', 'string', 'max:32768'],
         ]);
 
         $result = $statistics->statistics(
@@ -27,6 +28,7 @@ final class BackgroundProcessController extends BaseApiController
             (string) ($input['group_by'] ?? 'clients'),
             (string) ($input['period'] ?? 'today'),
             (string) ($input['marketplace'] ?? 'all'),
+            $input['filter'] ?? null,
         );
 
         return response()->json($result)->header('Cache-Control', 'private, no-store');
@@ -41,6 +43,7 @@ final class BackgroundProcessController extends BaseApiController
             'bucket_start' => ['required', 'date'],
             'marketplace' => ['sometimes', Rule::in(['all', 'none', 'wildberries', 'ozon', 'yandex_market'])],
             'page' => ['sometimes', 'integer', 'min:1'],
+            'filter' => ['sometimes', 'nullable', 'string', 'max:32768'],
         ]);
 
         try {
@@ -49,6 +52,7 @@ final class BackgroundProcessController extends BaseApiController
                 (string) $input['group_by'],
                 (string) $input['period'],
                 (string) ($input['marketplace'] ?? 'all'),
+                $input['filter'] ?? null,
                 (string) $input['bucket_start'],
                 (int) ($input['page'] ?? 1),
             );

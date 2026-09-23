@@ -47,6 +47,9 @@ import Modules from "./Pages/Modules.vue";
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
 import "vuetify/styles";
+// Полный пакет стилей обязателен: редактор правил использует RichSelect,
+// Popup и другие вложенные компоненты SVAR Vue Core/Menu.
+import "@svar-ui/vue-filter/all.css";
 import { createVuetify } from "vuetify";
 import { VSelect } from "vuetify/components";
 import Shell from "./Components/Shell.vue";

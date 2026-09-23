@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Head, router, usePage } from "@inertiajs/vue3";
 import ClientTabs from "../Components/ClientTabs.vue";
 import { formatDate } from "../lib/dates";
 import { http } from "../lib/http";
+import FilterPresetButton from "../Components/FilterPresetButton.vue";
+import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import {
+    serializedFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 
 type DayCount = { date: string; count: number };
 type RunRow = {
@@ -21,6 +29,7 @@ type CalendarCell = {
 };
 
 const page = usePage<any>();
+const advancedFilters = useFilterPresets("client_integration_run_logs");
 const integration = computed<{ id: string; name: string }>(
     () => page.props.integrationScope,
 );
@@ -103,7 +112,9 @@ const mobileMonths = computed(() =>
         const firstDay = new Date(Date.UTC(year.value, index, 1));
         const leadingDays = (firstDay.getUTCDay() + 6) % 7;
         const prefix = `${year.value}-${String(index + 1).padStart(2, "0")}-`;
-        const monthCells = cells.value.filter((cell) => cell.date.startsWith(prefix));
+        const monthCells = cells.value.filter((cell) =>
+            cell.date.startsWith(prefix),
+        );
         return {
             label: month.label,
             cells: [...Array<null>(leadingDays).fill(null), ...monthCells],
@@ -123,7 +134,11 @@ const lastMobileMonth = computed(() =>
 const visibleMobileMonths = computed(() =>
     mobileMonths.value
         .map((month, index) => ({ ...month, index }))
-        .filter((month) => month.index >= firstMobileMonth.value && month.index <= lastMobileMonth.value),
+        .filter(
+            (month) =>
+                month.index >= firstMobileMonth.value &&
+                month.index <= lastMobileMonth.value,
+        ),
 );
 const statusLabels: Record<string, string> = {
     queued: "В очереди",
@@ -132,6 +147,22 @@ const statusLabels: Record<string, string> = {
     failed: "Ошибка",
     cancelled: "Отменён",
 };
+const advancedFields: FilterField[] = [
+    { id: "id", label: "#", type: "number" },
+    { id: "created_at", label: "Дата и время запуска", type: "date" },
+    {
+        id: "status",
+        label: "Статус",
+        type: "tuple",
+        format: (value) => statusLabels[String(value)] ?? String(value),
+    },
+    { id: "processed_records", label: "Обработано записей", type: "number" },
+];
+const advancedOptions: FilterOptions = { status: Object.keys(statusLabels) };
+function filterQuery(): string {
+    const filter = serializedFilter(advancedFilters.combined.value);
+    return filter ? `&filter=${encodeURIComponent(filter)}` : "";
+}
 
 async function loadCalendar(nextYear: number) {
     const request = ++calendarRequest;
@@ -140,7 +171,7 @@ async function loadCalendar(nextYear: number) {
     error.value = "";
     try {
         const response = await http(
-            `/web/clients/integrations/${integration.value.id}/run_logs?year=${nextYear}`,
+            `/web/clients/integrations/${integration.value.id}/run_logs?year=${nextYear}${filterQuery()}`,
         );
         if (request === calendarRequest) dayCounts.value = response.data;
     } catch (e) {
@@ -160,7 +191,7 @@ async function loadDay(date: string, nextPage = 1) {
     error.value = "";
     try {
         const response = await http(
-            `/web/clients/integrations/${integration.value.id}/run_logs/day?date=${date}&page=${nextPage}`,
+            `/web/clients/integrations/${integration.value.id}/run_logs/day?date=${date}&page=${nextPage}${filterQuery()}`,
         );
         if (request !== dayRequest) return;
         runs.value =
@@ -188,6 +219,14 @@ onMounted(() => {
     void loadCalendar(year.value);
     void loadDay(selectedDate.value);
 });
+watch(
+    () => advancedFilters.combined.value,
+    () => {
+        void loadCalendar(year.value);
+        void loadDay(selectedDate.value);
+    },
+    { deep: true },
+);
 </script>
 
 <template>
@@ -206,15 +245,22 @@ onMounted(() => {
                     <h1>Логи запуска #{{ integration.id }}</h1>
                     <p>{{ integration.name }}</p>
                 </div>
-                <button
-                    type="button"
-                    class="back-button"
-                    @click="router.visit(listUrl)"
-                >
-                    ← К списку
-                </button>
+                <div class="page-heading-actions">
+                    <FilterPresetButton
+                        :state="advancedFilters"
+                        :fields="advancedFields"
+                        :options="advancedOptions"
+                    /><button
+                        type="button"
+                        class="back-button"
+                        @click="router.visit(listUrl)"
+                    >
+                        ← К списку
+                    </button>
+                </div>
             </div>
             <div v-if="error" class="logs-error" role="alert">{{ error }}</div>
+            <FilterPresetTiles :state="advancedFilters" />
             <div class="logs-content">
                 <section
                     class="activity-card"
@@ -248,18 +294,21 @@ onMounted(() => {
                         Загружаем календарь…
                     </p>
                     <div class="calendar-scroll">
-                        <div class="calendar-layout" :style="{ '--weeks': weeks }">
+                        <div
+                            class="calendar-layout"
+                            :style="{ '--weeks': weeks }"
+                        >
                             <div class="weekday-labels">
                                 <span>Пн</span><span>Ср</span><span>Пт</span>
                             </div>
                             <div class="calendar-main">
-                                <div
-                                    class="month-labels"
-                                >
+                                <div class="month-labels">
                                     <span
                                         v-for="month in months"
                                         :key="month.label"
-                                        :style="{ left: `${(month.week / weeks) * 100}%` }"
+                                        :style="{
+                                            left: `${(month.week / weeks) * 100}%`,
+                                        }"
                                         >{{ month.label }}</span
                                     >
                                 </div>
@@ -298,24 +347,46 @@ onMounted(() => {
                         >
                             <h3>{{ month.label }}</h3>
                             <div class="mobile-weekdays" aria-hidden="true">
-                                <span v-for="day in ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']" :key="day">{{ day }}</span>
+                                <span
+                                    v-for="day in [
+                                        'Пн',
+                                        'Вт',
+                                        'Ср',
+                                        'Чт',
+                                        'Пт',
+                                        'Сб',
+                                        'Вс',
+                                    ]"
+                                    :key="day"
+                                    >{{ day }}</span
+                                >
                             </div>
                             <div class="mobile-month-grid">
-                                <template v-for="(cell, dayIndex) in month.cells" :key="dayIndex">
+                                <template
+                                    v-for="(cell, dayIndex) in month.cells"
+                                    :key="dayIndex"
+                                >
                                     <button
                                         v-if="cell"
                                         type="button"
                                         class="activity-cell"
                                         :class="[
                                             `level-${cell.level}`,
-                                            { selected: selectedDate === cell.date },
+                                            {
+                                                selected:
+                                                    selectedDate === cell.date,
+                                            },
                                         ]"
                                         :disabled="cell.future"
                                         :aria-label="`${formatDate(cell.date)}: ${cell.count} запусков`"
-                                        :aria-pressed="selectedDate === cell.date"
+                                        :aria-pressed="
+                                            selectedDate === cell.date
+                                        "
                                         :title="`${formatDate(cell.date)} — ${cell.count} запусков`"
                                         @click="loadDay(cell.date)"
-                                    >{{ Number(cell.date.slice(-2)) }}</button>
+                                    >
+                                        {{ Number(cell.date.slice(-2)) }}
+                                    </button>
                                     <span v-else aria-hidden="true"></span>
                                 </template>
                             </div>

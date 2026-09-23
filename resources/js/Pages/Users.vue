@@ -10,6 +10,14 @@ import { http, HttpError, endSession } from "../lib/http";
 import TableColumnSettings from "../Components/TableColumnSettings.vue";
 import DataTransferMenu from "../Components/DataTransferMenu.vue";
 import { createEntitySync } from "../lib/entitySync";
+import FilterPresetButton from "../Components/FilterPresetButton.vue";
+import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import {
+    applyTableFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 const page = usePage<any>();
 const columnSettingsOpen = ref(false);
 const columnFields = [
@@ -19,6 +27,7 @@ const columnFields = [
     { key: "roles", label: "Роли" },
     { key: "status", label: "Статус" },
 ];
+const advancedFilters = useFilterPresets("users");
 const store = createUsers(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
 );
@@ -45,21 +54,26 @@ const selected = ref<UserRow | null>(null),
 const viewing = ref(false);
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) {
-    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    if (
+        !window.matchMedia("(max-width: 900px)").matches ||
+        (event?.detail ?? 0) > 1
+    )
+        return;
     const key = String(id);
     const next = new Set(expandedMobileRows.value);
-    if (next.has(key)) next.delete(key); else next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     expandedMobileRows.value = next;
 }
 function handleRowClick(row: UserRow, event: MouseEvent) {
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (window.matchMedia("(max-width: 900px)").matches) {
         toggleMobileRow(row.id, event);
         return;
     }
     open(row);
 }
 function handleNameClick(row: UserRow, event: MouseEvent) {
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (window.matchMedia("(max-width: 900px)").matches) {
         event.stopPropagation();
         toggleMobileRow(row.id, event);
         return;
@@ -100,7 +114,24 @@ const statuses: Record<number, string> = {
     2: "Отключен",
     3: "Выполняется действие",
 };
-const filtered = computed(() => {
+const advancedFields: FilterField[] = [
+    { id: "id", label: "#", type: "number" },
+    { id: "name", label: "Имя", type: "text" },
+    { id: "last_name", label: "Фамилия", type: "text" },
+    { id: "middle_name", label: "Отчество", type: "text" },
+    { id: "nick", label: "Ник", type: "text" },
+    { id: "email", label: "Email", type: "text" },
+    { id: "phone", label: "Телефон", type: "text" },
+    {
+        id: "status",
+        label: "Статус",
+        type: "tuple",
+        format: (value) => statuses[Number(value)] ?? String(value),
+    },
+    { id: "deleted_at", label: "Удалён", type: "text" },
+];
+const advancedOptions: FilterOptions = { status: [0, 1, 2, 3] };
+const quickFiltered = computed(() => {
     const q = query.value.toLocaleLowerCase("ru");
     return rows.value
         .filter((row) => {
@@ -142,6 +173,9 @@ const filtered = computed(() => {
             ),
         );
 });
+const filtered = computed(() =>
+    applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
 const pages = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / 25)),
 );
@@ -357,8 +391,13 @@ useCardRoute<UserRow>({
             <div class="page-heading">
                 <h1>Пользователи</h1>
                 <div class="page-heading-actions">
+                    <FilterPresetButton
+                        :state="advancedFilters"
+                        :fields="advancedFields"
+                        :options="advancedOptions"
+                    />
                     <DataTransferMenu
-                        :rows="visible"
+                        :rows="filtered"
                         :columns="columnFields"
                         filename="users"
                     />
@@ -371,6 +410,7 @@ useCardRoute<UserRow>({
                     </button>
                 </div>
             </div>
+            <FilterPresetTiles :state="advancedFilters" />
             <div class="sync-line" role="status">
                 <span :class="{ 'offline-text': !online }">{{
                     syncing
@@ -465,7 +505,9 @@ useCardRoute<UserRow>({
                             v-for="row in visible"
                             :key="row.id"
                             :class="{
-                                'mobile-card-expanded': expandedMobileRows.has(String(row.id)),
+                                'mobile-card-expanded': expandedMobileRows.has(
+                                    String(row.id),
+                                ),
                                 selected: selected?.id === row.id && editing,
                             }"
                             @click="handleRowClick(row, $event)"
@@ -487,8 +529,16 @@ useCardRoute<UserRow>({
                                     }}
                                 </button>
                             </td>
-                            <td data-label="Почта"><span class="mobile-field-value">{{ row.email || "—" }}</span></td>
-                            <td data-label="Телефон"><span class="mobile-field-value">{{ row.phone || "—" }}</span></td>
+                            <td data-label="Почта">
+                                <span class="mobile-field-value">{{
+                                    row.email || "—"
+                                }}</span>
+                            </td>
+                            <td data-label="Телефон">
+                                <span class="mobile-field-value">{{
+                                    row.phone || "—"
+                                }}</span>
+                            </td>
                             <td
                                 class="user-roles-cell"
                                 data-label="Роли"
@@ -515,16 +565,16 @@ useCardRoute<UserRow>({
                             </td>
                             <td data-label="Статус">
                                 <span class="mobile-field-value">
-                                <span
-                                    class="badge"
-                                    :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
-                                    >{{
-                                        row.deleted_at
-                                            ? "Удалён"
-                                            : (statuses[row.status ?? -1] ??
-                                              "Неизвестен")
-                                    }}</span
-                                >
+                                    <span
+                                        class="badge"
+                                        :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
+                                        >{{
+                                            row.deleted_at
+                                                ? "Удалён"
+                                                : (statuses[row.status ?? -1] ??
+                                                  "Неизвестен")
+                                        }}</span
+                                    >
                                 </span>
                             </td>
                             <td>

@@ -9,20 +9,37 @@ import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
 import TableColumnSettings from "../Components/TableColumnSettings.vue";
 import DataTransferMenu from "../Components/DataTransferMenu.vue";
+import FilterPresetButton from "../Components/FilterPresetButton.vue";
+import FilterPresetTiles from "../Components/FilterPresetTiles.vue";
+import {
+    applyTableFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 interface ClientRow extends EntityRow {
     name: string | null;
     shortname: string | null;
     status: number | null;
     deleted_at: string | null;
 }
-type Relation = "documents" | "accounts" | "integrations" | "companies" | "individuals";
+type Relation =
+    "documents" | "accounts" | "integrations" | "companies" | "individuals";
 type RelationFlags = Record<Relation, boolean>;
 type ClientAction = Relation | "view" | "edit" | "delete";
 const clientActions: { key: ClientAction; label: string; icon: string }[] = [
     { key: "documents", label: "Документы", icon: "/design/crm/documents.svg" },
     { key: "accounts", label: "Доступы", icon: "/design/crm/key.svg" },
-    { key: "integrations", label: "Интеграции", icon: "/design/crm/integrations.svg" },
-    { key: "companies", label: "Юрлица", icon: "/design/crm/client_companies.svg" },
+    {
+        key: "integrations",
+        label: "Интеграции",
+        icon: "/design/crm/integrations.svg",
+    },
+    {
+        key: "companies",
+        label: "Юрлица",
+        icon: "/design/crm/client_companies.svg",
+    },
     { key: "individuals", label: "Физлица", icon: "/design/crm/contacts.svg" },
     { key: "view", label: "Просмотр", icon: "/design/crm/view.svg" },
     { key: "edit", label: "Редактировать", icon: "/design/crm/edit.svg" },
@@ -33,6 +50,19 @@ const columnFields = [
     { key: "name", label: "Название" },
     { key: "shortname", label: "Краткое название" },
     { key: "status", label: "Статус" },
+];
+const advancedFilters = useFilterPresets("clients");
+const advancedFields: FilterField[] = [
+    { id: "id", label: "#", type: "number" },
+    { id: "name", label: "Название", type: "text" },
+    { id: "shortname", label: "Краткое название", type: "text" },
+    {
+        id: "status",
+        label: "Статус",
+        type: "tuple",
+        format: (value) => statusLabels[String(value)] ?? String(value),
+    },
+    { id: "deleted_at", label: "Удалён", type: "text" },
 ];
 const store = createEntitySync<ClientRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
@@ -65,7 +95,8 @@ const statusLabels: Record<string, string> = {
     "2": "Отключен",
     null: "Не указан",
 };
-const filtered = computed(() =>
+const advancedOptions: FilterOptions = { status: [0, 1, 2] };
+const quickFiltered = computed(() =>
     rows.value
         .filter((row) => {
             if (
@@ -95,6 +126,9 @@ const filtered = computed(() =>
                 (descending.value ? -1 : 1),
         ),
 );
+const filtered = computed(() =>
+    applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
 const pages = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / 25)),
 );
@@ -110,9 +144,12 @@ async function refreshRelations(): Promise<void> {
     relationError.value = "";
     try {
         const response = await http(`/web/clients/relations?${params}`);
-        if (request === relationRequest) relations.value = { ...relations.value, ...response.data };
+        if (request === relationRequest)
+            relations.value = { ...relations.value, ...response.data };
     } catch {
-        if (request === relationRequest) relationError.value = "Не удалось проверить связанные записи клиентов.";
+        if (request === relationRequest)
+            relationError.value =
+                "Не удалось проверить связанные записи клиентов.";
     }
 }
 function relationDisabled(row: ClientRow, relation: Relation): boolean {
@@ -122,21 +159,36 @@ function relationDisabled(row: ClientRow, relation: Relation): boolean {
 }
 function actionDisabled(row: ClientRow, action: ClientAction): boolean {
     if (action === "view") return false;
-    if (action === "edit" || action === "delete") return !online.value || saving.value || !!row.deleted_at;
+    if (action === "edit" || action === "delete")
+        return !online.value || saving.value || !!row.deleted_at;
     return relationDisabled(row, action);
 }
 function runAction(row: ClientRow, action: ClientAction): void {
     if (actionDisabled(row, action)) return;
     closeActionMenu();
     switch (action) {
-        case "documents": openDocuments(row); break;
-        case "accounts": openAccounts(row); break;
-        case "integrations": openIntegrations(row); break;
+        case "documents":
+            openDocuments(row);
+            break;
+        case "accounts":
+            openAccounts(row);
+            break;
+        case "integrations":
+            openIntegrations(row);
+            break;
         case "companies":
-        case "individuals": openParties(row, action); break;
-        case "view": open(row, true); break;
-        case "edit": open(row); break;
-        case "delete": deleting.value = row; break;
+        case "individuals":
+            openParties(row, action);
+            break;
+        case "view":
+            open(row, true);
+            break;
+        case "edit":
+            open(row);
+            break;
+        case "delete":
+            deleting.value = row;
+            break;
     }
 }
 const actionMenuRow = ref<ClientRow | null>(null);
@@ -152,18 +204,33 @@ function toggleActionMenu(row: ClientRow, event: MouseEvent): void {
         closeActionMenu();
         return;
     }
-    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const trigger = (
+        event.currentTarget as HTMLElement
+    ).getBoundingClientRect();
     const menuWidth = 208;
     const menuHeight = clientActions.length * 40 + 12;
     actionMenuPosition.value = {
-        top: trigger.bottom + menuHeight + 8 <= window.innerHeight
-            ? trigger.bottom + 4
-            : Math.max(8, trigger.top - menuHeight - 4),
-        left: Math.max(8, Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8)),
+        top:
+            trigger.bottom + menuHeight + 8 <= window.innerHeight
+                ? trigger.bottom + 4
+                : Math.max(8, trigger.top - menuHeight - 4),
+        left: Math.max(
+            8,
+            Math.min(
+                trigger.right - menuWidth,
+                window.innerWidth - menuWidth - 8,
+            ),
+        ),
     };
     actionMenuRow.value = row;
 }
-watch(visible, () => { void refreshRelations(); }, { immediate: true });
+watch(
+    visible,
+    () => {
+        void refreshRelations();
+    },
+    { immediate: true },
+);
 watch([query, shortQuery, statusFilter], () => (currentPage.value = 1));
 watch(
     pages,
@@ -174,14 +241,19 @@ function displayName(row: ClientRow) {
 }
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) {
-    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    if (
+        !window.matchMedia("(max-width: 900px)").matches ||
+        (event?.detail ?? 0) > 1
+    )
+        return;
     const key = String(id);
     const next = new Set(expandedMobileRows.value);
-    if (next.has(key)) next.delete(key); else next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     expandedMobileRows.value = next;
 }
 function openName(row: ClientRow, event: MouseEvent) {
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (window.matchMedia("(max-width: 900px)").matches) {
         event.stopPropagation();
         toggleMobileRow(row.id, event);
         return;
@@ -330,8 +402,23 @@ useCardRoute<ClientRow>({
             <div class="page-heading">
                 <h1>Клиенты</h1>
                 <div class="page-heading-actions">
-                    <DataTransferMenu :rows="visible" :columns="columnFields" filename="clients" />
-                    <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">Добавить клиента</button>
+                    <FilterPresetButton
+                        :state="advancedFilters"
+                        :fields="advancedFields"
+                        :options="advancedOptions"
+                    />
+                    <DataTransferMenu
+                        :rows="filtered"
+                        :columns="columnFields"
+                        filename="clients"
+                    />
+                    <button
+                        class="primary"
+                        :disabled="!online || !ready || saving"
+                        @click="open(null)"
+                    >
+                        Добавить клиента
+                    </button>
                 </div>
             </div>
             <div class="sync-line" role="status">
@@ -345,10 +432,13 @@ useCardRoute<ClientRow>({
                             : "Первичная загрузка…"
                 }}
             </div>
+            <FilterPresetTiles :state="advancedFilters" />
             <p v-if="error || warning" class="notice" role="alert">
                 {{ error || warning }}
             </p>
-            <p v-if="relationError" class="notice" role="alert">{{ relationError }}</p>
+            <p v-if="relationError" class="notice" role="alert">
+                {{ relationError }}
+            </p>
             <div class="table-scroll">
                 <table>
                     <thead>
@@ -361,7 +451,13 @@ useCardRoute<ClientRow>({
                             </th>
                             <th>Краткое название</th>
                             <th>Статус</th>
-                            <th>Действия <TableColumnSettings :columns="columnFields" storage-key="clients-columns" /></th>
+                            <th>
+                                Действия
+                                <TableColumnSettings
+                                    :columns="columnFields"
+                                    storage-key="clients-columns"
+                                />
+                            </th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>
@@ -397,7 +493,11 @@ useCardRoute<ClientRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
-                            :class="{ 'mobile-card-expanded': expandedMobileRows.has(String(row.id)) }"
+                            :class="{
+                                'mobile-card-expanded': expandedMobileRows.has(
+                                    String(row.id),
+                                ),
+                            }"
                             @click="toggleMobileRow(row.id, $event)"
                             @dblclick="open(row)"
                         >
@@ -432,7 +532,9 @@ useCardRoute<ClientRow>({
                                         type="button"
                                         :aria-label="`${action.label}: ${displayName(row)}`"
                                         :title="action.label"
-                                        :disabled="actionDisabled(row, action.key)"
+                                        :disabled="
+                                            actionDisabled(row, action.key)
+                                        "
                                         @click="runAction(row, action.key)"
                                     >
                                         <img :src="action.icon" alt="" />
@@ -444,9 +546,13 @@ useCardRoute<ClientRow>({
                                     type="button"
                                     :aria-label="`Действия: ${displayName(row)}`"
                                     aria-haspopup="menu"
-                                    :aria-expanded="actionMenuRow?.id === row.id"
+                                    :aria-expanded="
+                                        actionMenuRow?.id === row.id
+                                    "
                                     @click.stop="toggleActionMenu(row, $event)"
-                                >⋮</button>
+                                >
+                                    ⋮
+                                </button>
                             </td>
                         </tr>
                         <tr v-if="!visible.length">
@@ -489,12 +595,18 @@ useCardRoute<ClientRow>({
         </section>
         <Teleport to="body">
             <template v-if="actionMenuRow">
-                <div class="client-action-menu-backdrop" @click="closeActionMenu"></div>
+                <div
+                    class="client-action-menu-backdrop"
+                    @click="closeActionMenu"
+                ></div>
                 <div
                     class="client-action-menu"
                     role="menu"
                     :aria-label="`Действия: ${displayName(actionMenuRow)}`"
-                    :style="{ top: `${actionMenuPosition.top}px`, left: `${actionMenuPosition.left}px` }"
+                    :style="{
+                        top: `${actionMenuPosition.top}px`,
+                        left: `${actionMenuPosition.left}px`,
+                    }"
                     @keydown.esc.stop="closeActionMenu"
                 >
                     <button
@@ -682,10 +794,26 @@ useCardRoute<ClientRow>({
     object-fit: contain;
 }
 @media (max-width: 900px) {
-    html body .main-panel .table-scroll table tbody tr td:last-child .row-actions.client-desktop-actions {
+    html
+        body
+        .main-panel
+        .table-scroll
+        table
+        tbody
+        tr
+        td:last-child
+        .row-actions.client-desktop-actions {
         display: none !important;
     }
-    html body .main-panel .table-scroll table tbody tr td:last-child .client-mobile-action-trigger {
+    html
+        body
+        .main-panel
+        .table-scroll
+        table
+        tbody
+        tr
+        td:last-child
+        .client-mobile-action-trigger {
         display: inline-grid !important;
         place-items: center;
         width: 28px !important;

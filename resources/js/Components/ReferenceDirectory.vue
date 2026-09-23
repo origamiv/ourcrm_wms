@@ -18,12 +18,22 @@ import ClientTabs from "./ClientTabs.vue";
 import LogisticsTabs from "./LogisticsTabs.vue";
 import MaintenanceTabs from "./MaintenanceTabs.vue";
 import SchedulerRepeatEditor from "./SchedulerRepeatEditor.vue";
-import TableColumnSettings, { type ColumnSettings } from "./TableColumnSettings.vue";
+import TableColumnSettings, {
+    type ColumnSettings,
+} from "./TableColumnSettings.vue";
+import FilterPresetButton from "./FilterPresetButton.vue";
+import FilterPresetTiles from "./FilterPresetTiles.vue";
 import { references } from "../lib/references";
 import ConfirmDelete from "../Components/ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
+import {
+    applyTableFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 interface ReferenceRow extends EntityRow {
     name: string | null;
     shortname?: string | null;
@@ -32,13 +42,32 @@ interface ReferenceRow extends EntityRow {
     status: number | null;
     deleted_at: string | null;
 }
-const props = defineProps<{ entity: keyof typeof references; taskView?: "table" | "kanban"; clientSection?: boolean }>();
+const props = defineProps<{
+    entity: keyof typeof references;
+    taskView?: "table" | "kanban";
+    clientSection?: boolean;
+}>();
 const emit = defineEmits<{ toggleTaskView: [] }>();
 const definition = references[props.entity];
+const advancedFilters = useFilterPresets(`reference:${String(props.entity)}`);
 const columnSettings = ref<ColumnSettings>({ order: [], hidden: [] });
 const expandedMobileRows = ref<Set<string>>(new Set());
-function toggleMobileRow(id: string | number, event?: MouseEvent) { if (event && event.detail > 1) return; const key = String(id); const next = new Set(expandedMobileRows.value); if (next.has(key)) next.delete(key); else next.add(key); expandedMobileRows.value = next; }
-function openName(row: ReferenceRow, event: MouseEvent) { if (window.matchMedia('(max-width: 900px)').matches) { event.stopPropagation(); toggleMobileRow(row.id, event); return; } open(row, true); }
+function toggleMobileRow(id: string | number, event?: MouseEvent) {
+    if (event && event.detail > 1) return;
+    const key = String(id);
+    const next = new Set(expandedMobileRows.value);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    expandedMobileRows.value = next;
+}
+function openName(row: ReferenceRow, event: MouseEvent) {
+    if (window.matchMedia("(max-width: 900px)").matches) {
+        event.stopPropagation();
+        toggleMobileRow(row.id, event);
+        return;
+    }
+    open(row, true);
+}
 const isCellGood = props.entity === "cell_goods";
 const isAcceptance = props.entity === "acceptances";
 const isTask = props.entity === "tasks";
@@ -48,28 +77,47 @@ const columnStorageKey = computed(
 );
 const fixedColumnKeys = new Set(["__id", "__actions"]);
 function isFixedColumn(key: string): boolean {
-    return fixedColumnKeys.has(key) || (isTask && ["client_id", "task_type_id", "task_stage_id", "__sku_count"].includes(key)) || (["client_services", "client_accounts"].includes(props.entity) && ["__name", "shortname", "status"].includes(key));
+    return (
+        fixedColumnKeys.has(key) ||
+        (isTask &&
+            [
+                "client_id",
+                "task_type_id",
+                "task_stage_id",
+                "__sku_count",
+            ].includes(key)) ||
+        (["client_services", "client_accounts"].includes(props.entity) &&
+            ["__name", "shortname", "status"].includes(key))
+    );
 }
 const configurableColumns = computed(() => [
     {
         key: "__id",
         label: "#",
     },
-    ...(!isCellGood && !isAcceptance ? [{
-        key: "__name",
-        label:
-            props.entity === "kizes"
-                ? "Код маркировки"
-                : props.entity === "client_individuals"
-                  ? "ФИО"
-                  : "Название",
-    }] : []),
+    ...(!isCellGood && !isAcceptance
+        ? [
+              {
+                  key: "__name",
+                  label:
+                      props.entity === "kizes"
+                          ? "Код маркировки"
+                          : props.entity === "client_individuals"
+                            ? "ФИО"
+                            : "Название",
+              },
+          ]
+        : []),
     ...definition.fields,
     ...(isTask ? [{ key: "__sku_count", label: "Количество SKU/товара" }] : []),
-    ...(!isCellGood ? [{
-        key: "status",
-        label: props.entity === "kizes" ? "Состояние" : "Статус",
-    }] : []),
+    ...(!isCellGood
+        ? [
+              {
+                  key: "status",
+                  label: props.entity === "kizes" ? "Состояние" : "Статус",
+              },
+          ]
+        : []),
     {
         key: "__actions",
         label: "Действия",
@@ -86,7 +134,11 @@ const allColumns = computed(() => {
     return [...saved, ...fresh].map((key) => known.get(key)!);
 });
 const orderedColumns = computed(() =>
-    allColumns.value.filter((field) => isFixedColumn(field.key) || !columnSettings.value.hidden.includes(field.key)),
+    allColumns.value.filter(
+        (field) =>
+            isFixedColumn(field.key) ||
+            !columnSettings.value.hidden.includes(field.key),
+    ),
 );
 const renderedSpecialColumns = new Set([
     "__id",
@@ -115,9 +167,15 @@ const extraColumns = computed(() =>
 );
 function isColumnVisible(key: string): boolean {
     if (isFixedColumn(key)) return true;
-    return !columnSettings.value.hidden.includes(key) && allColumns.value.some((field) => field.key === key);
+    return (
+        !columnSettings.value.hidden.includes(key) &&
+        allColumns.value.some((field) => field.key === key)
+    );
 }
-function columnValue(row: ReferenceRow, field: (typeof definition.fields)[number]) {
+function columnValue(
+    row: ReferenceRow,
+    field: (typeof definition.fields)[number],
+) {
     const value = row[field.key];
     if (value == null || value === "") return "—";
     if (field.lookup) {
@@ -136,15 +194,31 @@ function columnValue(row: ReferenceRow, field: (typeof definition.fields)[number
     if (Array.isArray(value)) return value.join(", ");
     return String(value);
 }
-function taskLookupValue(row: ReferenceRow, key: string, lookup: string): string {
+function taskLookupValue(
+    row: ReferenceRow,
+    key: string,
+    lookup: string,
+): string {
     const value = row[key];
     if (value == null || value === "") return "—";
-    const found = choices(lookup).find((item) => String(item.id) === String(value));
+    const found = choices(lookup).find(
+        (item) => String(item.id) === String(value),
+    );
     if (found?.name) return String(found.name);
-    const src = row.src && typeof row.src === "object" ? row.src as Record<string, any> : {};
-    return String(row[`${key.replace(/_id$/, "")}_name`] ?? src[`${key.replace(/_id$/, "")}_name`] ?? `№${value}`);
+    const src =
+        row.src && typeof row.src === "object"
+            ? (row.src as Record<string, any>)
+            : {};
+    return String(
+        row[`${key.replace(/_id$/, "")}_name`] ??
+            src[`${key.replace(/_id$/, "")}_name`] ??
+            `№${value}`,
+    );
 }
-function lookupOption(entity: string, value: unknown): ReferenceRow | undefined {
+function lookupOption(
+    entity: string,
+    value: unknown,
+): ReferenceRow | undefined {
     return choices(entity).find((item) => String(item.id) === String(value));
 }
 function lookupInitial(entity: string, value: unknown): string {
@@ -156,11 +230,19 @@ function taskSkuCount(row: ReferenceRow): string {
     const sku = Array.isArray(src.goods)
         ? src.goods.length
         : Number(src.goods_count ?? src.products_count ?? 0);
-    const count = Number(src.pieces_count ?? src.items_count ?? src.total_pieces ?? src.planned_pieces ?? row.fact_count ?? 0);
+    const count = Number(
+        src.pieces_count ??
+            src.items_count ??
+            src.total_pieces ??
+            src.planned_pieces ??
+            row.fact_count ??
+            0,
+    );
     return `${Number.isFinite(sku) ? sku : 0} / ${Number.isFinite(count) ? count : 0}`;
 }
 const isIntegration = props.entity.startsWith("integration_");
-const isClientIntegration = props.clientSection === true && props.entity === "integration_webhooks";
+const isClientIntegration =
+    props.clientSection === true && props.entity === "integration_webhooks";
 const displayTitle = isClientIntegration ? "Интеграции" : definition.title;
 const isMaintenance = ["scheduler_tasks", "scheduler"].includes(props.entity);
 const isScheduler = props.entity === "scheduler";
@@ -177,10 +259,35 @@ const editorFields = computed(() =>
 const detailLoading = ref(false);
 const detailReady = ref(false);
 let detailRequest = 0;
-const isFulfillment = ["warehouses", "type_warehouses", "kind_warehouses", "type_storage", "zones", "cells", "cell_goods", "acceptances", "type_acceptance", "type_services", "services_ff", "tasks", "task_types", "task_statuses", "task_stages", "priorities", "marketplaces", "delivery_services"].includes(
-    props.entity,
-);
-const isLogistics = ["orders", "shipments", "order_statuses", "order_sources", "order_cancel_statuses", "logistic_companies", "shipment_statuses"].includes(props.entity);
+const isFulfillment = [
+    "warehouses",
+    "type_warehouses",
+    "kind_warehouses",
+    "type_storage",
+    "zones",
+    "cells",
+    "cell_goods",
+    "acceptances",
+    "type_acceptance",
+    "type_services",
+    "services_ff",
+    "tasks",
+    "task_types",
+    "task_statuses",
+    "task_stages",
+    "priorities",
+    "marketplaces",
+    "delivery_services",
+].includes(props.entity);
+const isLogistics = [
+    "orders",
+    "shipments",
+    "order_statuses",
+    "order_sources",
+    "order_cancel_statuses",
+    "logistic_companies",
+    "shipment_statuses",
+].includes(props.entity);
 const isKiz = props.entity === "kizes";
 const kizColumns = computed(() =>
     isKiz
@@ -201,27 +308,47 @@ const isGoodsSection =
     isGood ||
     ["type_goods", "unit_goods", "kind_kiz", "kizes"].includes(props.entity);
 const isIndividual = props.entity === "client_individuals";
-const isClientScoped = isClientIntegration || ["client_individuals", "client_companies", "client_documents", "client_accounts"].includes(props.entity);
+const isClientScoped =
+    isClientIntegration ||
+    [
+        "client_individuals",
+        "client_companies",
+        "client_documents",
+        "client_accounts",
+    ].includes(props.entity);
 const isDocument = props.entity === "client_documents";
 const isDocType = props.entity === "client_doc_types";
-const isClientCatalog = ["client_services", "client_accounts"].includes(props.entity);
-const isClientSection = isClientIntegration || isIndividual || isDocument || isDocType || isClientCatalog;
+const isClientCatalog = ["client_services", "client_accounts"].includes(
+    props.entity,
+);
+const isClientSection =
+    isClientIntegration ||
+    isIndividual ||
+    isDocument ||
+    isDocType ||
+    isClientCatalog;
 const basePath = isClientIntegration
     ? "/clients/integrations"
     : isIntegration
-    ? `/integration/${props.entity.replace("integration_", "")}`
-    : isFulfillment
-      ? `/fulfillment/${props.entity}`
-    : isLogistics
-      ? `/logistics/${props.entity}`
-    : isGoodsSection
-      ? `/goods/${props.entity}`
-      : isClientSection
-        ? `/clients/${props.entity.replace("client_", "")}`
-        : isMaintenance
-          ? props.entity === "scheduler" ? "/scheduler" : "/scheduler_tasks"
-          : `/main/${props.entity}`;
-const endpoint = isIndividual ? null : isClientIntegration ? "/integration/webhooks" : basePath.replace("/main/", "/");
+      ? `/integration/${props.entity.replace("integration_", "")}`
+      : isFulfillment
+        ? `/fulfillment/${props.entity}`
+        : isLogistics
+          ? `/logistics/${props.entity}`
+          : isGoodsSection
+            ? `/goods/${props.entity}`
+            : isClientSection
+              ? `/clients/${props.entity.replace("client_", "")}`
+              : isMaintenance
+                ? props.entity === "scheduler"
+                    ? "/scheduler"
+                    : "/scheduler_tasks"
+                : `/main/${props.entity}`;
+const endpoint = isIndividual
+    ? null
+    : isClientIntegration
+      ? "/integration/webhooks"
+      : basePath.replace("/main/", "/");
 const clientFilter = ref("");
 const docTypeFilter = ref("");
 const dateFilter = ref("");
@@ -237,7 +364,10 @@ const store = createEntitySync<ReferenceRow>(
     `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`,
     props.entity,
     isClientIntegration && clientScope.value
-        ? { cacheKey: `${props.entity}:client:${clientScope.value.id}`, syncUrl: `/web/clients/${clientScope.value.id}/integrations/sync` }
+        ? {
+              cacheKey: `${props.entity}:client:${clientScope.value.id}`,
+              syncUrl: `/web/clients/${clientScope.value.id}/integrations/sync`,
+          }
         : undefined,
 );
 const { rows, ready, syncing, online, error, warning } = store;
@@ -307,11 +437,21 @@ function closeAcceptance() {
     if (!acceptanceSaving.value) conductingAcceptance.value = null;
 }
 async function pickAcceptance() {
-    if (!conductingAcceptance.value || !acceptanceBarcode.value.trim() || acceptanceSaving.value || !online.value) return;
+    if (
+        !conductingAcceptance.value ||
+        !acceptanceBarcode.value.trim() ||
+        acceptanceSaving.value ||
+        !online.value
+    )
+        return;
     acceptanceSaving.value = true;
     acceptanceNotice.value = "";
     try {
-        const response = await http(`/web/acceptances/${conductingAcceptance.value.id}/pick`, "POST", { barcode: acceptanceBarcode.value.trim() });
+        const response = await http(
+            `/web/acceptances/${conductingAcceptance.value.id}/pick`,
+            "POST",
+            { barcode: acceptanceBarcode.value.trim() },
+        );
         if (response.acceptance) {
             await store.apply(response.acceptance);
             conductingAcceptance.value = response.acceptance;
@@ -325,7 +465,12 @@ async function pickAcceptance() {
         await nextTick();
         acceptanceInput.value?.focus();
     } catch (e) {
-        acceptanceNotice.value = e instanceof HttpError ? e.message : e instanceof Error ? e.message : "Не удалось провести приемку";
+        acceptanceNotice.value =
+            e instanceof HttpError
+                ? e.message
+                : e instanceof Error
+                  ? e.message
+                  : "Не удалось провести приемку";
     } finally {
         acceptanceSaving.value = false;
     }
@@ -333,17 +478,25 @@ async function pickAcceptance() {
 // Selection is keyed by id and intentionally lives outside the paginated slice,
 // so moving between pages does not clear previously selected records.
 const checkedIds = ref<Set<string>>(new Set());
-const pageChecked = computed(() => visible.value.length > 0 && visible.value.every((row) => checkedIds.value.has(String(row.id))));
-const somePageChecked = computed(() => visible.value.some((row) => checkedIds.value.has(String(row.id))));
+const pageChecked = computed(
+    () =>
+        visible.value.length > 0 &&
+        visible.value.every((row) => checkedIds.value.has(String(row.id))),
+);
+const somePageChecked = computed(() =>
+    visible.value.some((row) => checkedIds.value.has(String(row.id))),
+);
 function toggleChecked(id: string | number) {
     const next = new Set(checkedIds.value);
     const key = String(id);
-    if (next.has(key)) next.delete(key); else next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     checkedIds.value = next;
 }
 function togglePageChecked() {
     const next = new Set(checkedIds.value);
-    if (pageChecked.value) visible.value.forEach((row) => next.delete(String(row.id)));
+    if (pageChecked.value)
+        visible.value.forEach((row) => next.delete(String(row.id)));
     else visible.value.forEach((row) => next.add(String(row.id)));
     checkedIds.value = next;
 }
@@ -355,16 +508,80 @@ const form = ref<Record<string, any>>({ name: "", status: 1 });
 const statusLabels: Record<string, string> = isAcceptance
     ? { "0": "Новая", "1": "Завершена", "2": "Отменена", "3": "В процессе" }
     : isDocument
-    ? { "0": "Новый", "1": "Активен", "2": "Отменен", "3": "Отправлен" }
-    : isDocType
-      ? { "1": "Активен", "2": "Отключен" }
-      : {
-            "0": "Новый",
-            "1": "Активен",
-            "2": "Отключен",
-            null: "Не указан",
-        };
-const filtered = computed(() =>
+      ? { "0": "Новый", "1": "Активен", "2": "Отменен", "3": "Отправлен" }
+      : isDocType
+        ? { "1": "Активен", "2": "Отключен" }
+        : {
+              "0": "Новый",
+              "1": "Активен",
+              "2": "Отключен",
+              null: "Не указан",
+          };
+const advancedFields = computed<FilterField[]>(() => [
+    { id: "id", label: "#", type: "number" },
+    ...(!isCellGood && !isAcceptance
+        ? [
+              {
+                  id: "name",
+                  label: isKiz ? "Код маркировки" : "Название",
+                  type: "text" as const,
+              },
+          ]
+        : []),
+    ...definition.fields
+        .filter((field) => field.kind !== "json")
+        .map((field) => ({
+            id: field.key,
+            label: field.label,
+            type: (["number", "money"].includes(field.kind ?? "")
+                ? "number"
+                : ["date", "datetime"].includes(field.kind ?? "")
+                  ? "date"
+                  : ["lookup", "flag", "flag12"].includes(field.kind ?? "")
+                    ? "tuple"
+                    : "text") as FilterField["type"],
+            ...(field.kind === "lookup"
+                ? {
+                      format: (value: unknown) =>
+                          choices(field.lookup!).find(
+                              (item) => String(item.id) === String(value),
+                          )?.name ?? `№${value}`,
+                  }
+                : {}),
+        })),
+    ...(!isCellGood
+        ? [
+              {
+                  id: "status",
+                  label: isKiz ? "Состояние" : "Статус",
+                  type: "tuple" as const,
+                  format: (value: unknown) =>
+                      statusLabels[String(value)] ?? String(value),
+              },
+          ]
+        : []),
+    { id: "deleted_at", label: "Удалена", type: "text" },
+]);
+const advancedOptions = computed<FilterOptions>(() =>
+    Object.fromEntries(
+        advancedFields.value
+            .filter((field) => field.type === "tuple")
+            .map((field) => [
+                field.id,
+                [
+                    ...new Set(
+                        rows.value
+                            .map((row) => row[field.id])
+                            .filter(
+                                (value) =>
+                                    value !== null && value !== undefined,
+                            ),
+                    ),
+                ] as Array<string | number>,
+            ]),
+    ),
+);
+const quickFiltered = computed(() =>
     rows.value
         .filter((row) => {
             if (
@@ -429,6 +646,9 @@ const filtered = computed(() =>
                 ) * (descending.value ? -1 : 1),
         ),
 );
+const filtered = computed(() =>
+    applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
+);
 const expandedGoods = ref(new Set<string>());
 const goodsFiltered = computed(
     () => !!query.value || !!shortQuery.value || statusFilter.value !== "all",
@@ -453,10 +673,12 @@ const pages = computed(() =>
 );
 const pageItems = computed<(number | string)[]>(() => {
     const total = pages.value;
-    if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+    if (total <= 7)
+        return Array.from({ length: total }, (_, index) => index + 1);
     const current = currentPage.value;
     if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
-    if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+    if (current >= total - 3)
+        return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
     return [1, "…", current - 1, current, current + 1, "…", total];
 });
 const visible = computed(() =>
@@ -524,15 +746,33 @@ function applyTaskDefaults() {
     const defaults: Record<string, [string, (row: ReferenceRow) => boolean]> = {
         client_id: ["clients", () => true],
         task_type_id: ["task_types", () => true],
-        status_id: ["task_statuses", (row) => String(row.id) === "1" || row.shortname === "new"],
-        priority_id: ["priorities", (row) => row.shortname === "medium" || /средн/i.test(String(row.name ?? ""))],
+        status_id: [
+            "task_statuses",
+            (row) => String(row.id) === "1" || row.shortname === "new",
+        ],
+        priority_id: [
+            "priorities",
+            (row) =>
+                row.shortname === "medium" ||
+                /средн/i.test(String(row.name ?? "")),
+        ],
         warehouse_id: ["warehouses", () => true],
     };
     for (const [field, [entity, predicate]] of Object.entries(defaults)) {
-        if (!pendingTaskDefaults.has(field) || (form.value[field] != null && form.value[field] !== "")) { pendingTaskDefaults.delete(field); continue; }
+        if (
+            !pendingTaskDefaults.has(field) ||
+            (form.value[field] != null && form.value[field] !== "")
+        ) {
+            pendingTaskDefaults.delete(field);
+            continue;
+        }
         if (!lookupStores[entity]?.ready.value) continue;
-        const available = choices(entity); const found = available.find(predicate) ?? available[0];
-        if (found) { form.value[field] = found.id; pendingTaskDefaults.delete(field); }
+        const available = choices(entity);
+        const found = available.find(predicate) ?? available[0];
+        if (found) {
+            form.value[field] = found.id;
+            pendingTaskDefaults.delete(field);
+        }
     }
 }
 function applyDocumentDefaults() {
@@ -565,7 +805,18 @@ watch(
     ],
     applyDocumentDefaults,
 );
-watch(() => [editing.value, viewing.value, selected.value, ...Object.values(lookupStores).flatMap((s) => [s.ready.value, s.rows.value])], applyTaskDefaults);
+watch(
+    () => [
+        editing.value,
+        viewing.value,
+        selected.value,
+        ...Object.values(lookupStores).flatMap((s) => [
+            s.ready.value,
+            s.rows.value,
+        ]),
+    ],
+    applyTaskDefaults,
+);
 function changeLookup(field: string) {
     pendingDocumentDefaults.delete(field);
     pendingTaskDefaults.delete(field);
@@ -579,20 +830,29 @@ function schedulerTaskDefaults(force = false): void {
     const current = String(form.value.params ?? "").trim();
     if (!force && current && current !== "{}") return;
     const task = choices("scheduler_tasks").find(
-        (row) => String(row.shortname ?? row.id) === String(form.value.task_key),
+        (row) =>
+            String(row.shortname ?? row.id) === String(form.value.task_key),
     );
     if (!task) return;
     let options: Record<string, any> = {};
     try {
-        options = typeof task.options === "string" ? JSON.parse(task.options) : (task.options ?? {});
+        options =
+            typeof task.options === "string"
+                ? JSON.parse(task.options)
+                : (task.options ?? {});
     } catch {
         options = {};
     }
     const tenant = String(page.props.auth?.tenant_id ?? "");
-    const values = (items: Record<string, any> | undefined): Record<string, any> =>
+    const values = (
+        items: Record<string, any> | undefined,
+    ): Record<string, any> =>
         Object.fromEntries(
             Object.entries(items ?? {}).map(([key, definition]) => {
-                const value = definition?.default === "current_tenant" ? tenant : definition?.default ?? null;
+                const value =
+                    definition?.default === "current_tenant"
+                        ? tenant
+                        : (definition?.default ?? null);
                 return [key, value];
             }),
         );
@@ -616,23 +876,37 @@ function displayName(row: ReferenceRow) {
 function openGoodDetail(row: ReferenceRow) {
     const url = `/goods/goods/${encodeURIComponent(row.id)}/view`;
     if (online.value) router.visit(url);
-    else router.push({ url, component: "GoodDetail", props: { ...page.props, goodId: row.id } });
+    else
+        router.push({
+            url,
+            component: "GoodDetail",
+            props: { ...page.props, goodId: row.id },
+        });
 }
 function openTaskDetail(row: ReferenceRow) {
     const url = `/fulfillment/tasks/${encodeURIComponent(row.id)}/view`;
     if (online.value) router.visit(url);
-    else router.push({ url, component: "TaskDetail", props: { ...page.props, taskId: row.id } });
+    else
+        router.push({
+            url,
+            component: "TaskDetail",
+            props: { ...page.props, taskId: row.id },
+        });
 }
 function editRow(row: ReferenceRow) {
     if (!isClientIntegration) {
         void open(row);
         return;
     }
-    const query = clientScope.value ? `?client_id=${encodeURIComponent(clientScope.value.id)}` : "";
+    const query = clientScope.value
+        ? `?client_id=${encodeURIComponent(clientScope.value.id)}`
+        : "";
     router.visit(`${basePath}/${encodeURIComponent(row.id)}/edit${query}`);
 }
 function openIntegrationLogs(row: ReferenceRow) {
-    const query = clientScope.value ? `?client_id=${encodeURIComponent(clientScope.value.id)}` : "";
+    const query = clientScope.value
+        ? `?client_id=${encodeURIComponent(clientScope.value.id)}`
+        : "";
     router.visit(`${basePath}/${encodeURIComponent(row.id)}/logs${query}`);
 }
 async function open(row: ReferenceRow | null, readOnly = false) {
@@ -648,7 +922,9 @@ async function open(row: ReferenceRow | null, readOnly = false) {
     }
     detailLoading.value = true;
     try {
-        const response = await http(`/web${isClientIntegration ? "/integration/webhooks" : basePath}/${row.id}`);
+        const response = await http(
+            `/web${isClientIntegration ? "/integration/webhooks" : basePath}/${row.id}`,
+        );
         if (
             request !== detailRequest ||
             !editing.value ||
@@ -709,13 +985,20 @@ function fillForm(row: ReferenceRow | null, readOnly = false) {
         ...(isGood ? { is_category: row?.is_category ?? 2 } : {}),
         status: row ? row.status : isDocument ? 0 : 1,
         ...(clientScope.value ? { client_id: clientScope.value.id } : {}),
-        ...(warehouseScope.value ? { warehouse_id: warehouseScope.value.id } : {}),
-        ...(isTask && !row
-            ? { created_by_user_id: page.props.auth.id }
+        ...(warehouseScope.value
+            ? { warehouse_id: warehouseScope.value.id }
             : {}),
+        ...(isTask && !row ? { created_by_user_id: page.props.auth.id } : {}),
     };
     pendingTaskDefaults.clear();
-    if (isTask && !row) ["client_id", "task_type_id", "status_id", "priority_id", "warehouse_id"].forEach((field) => pendingTaskDefaults.add(field));
+    if (isTask && !row)
+        [
+            "client_id",
+            "task_type_id",
+            "status_id",
+            "priority_id",
+            "warehouse_id",
+        ].forEach((field) => pendingTaskDefaults.add(field));
     for (const field of definition.fields)
         if (field.kind === "json")
             form.value[field.key] =
@@ -848,7 +1131,10 @@ async function save(remove = false) {
     }
 }
 function normalizedHeader(value: unknown) {
-    return String(value ?? "").trim().toLocaleLowerCase("ru").replace(/[\s_#№.-]+/g, "");
+    return String(value ?? "")
+        .trim()
+        .toLocaleLowerCase("ru")
+        .replace(/[\s_#№.-]+/g, "");
 }
 async function importData(format: string, file?: File, text?: string) {
     if (!file && !text) return;
@@ -861,15 +1147,38 @@ async function importData(format: string, file?: File, text?: string) {
     try {
         const upload = new FormData();
         if (file) upload.append("file", file);
-        else upload.append("file", new Blob([text ?? ""], { type: "text/plain" }), "clipboard.txt");
+        else
+            upload.append(
+                "file",
+                new Blob([text ?? ""], { type: "text/plain" }),
+                "clipboard.txt",
+            );
         upload.append("format", format);
-        if (warehouseScope.value) upload.append("warehouse_id", warehouseScope.value.id);
-        upload.append("columns", JSON.stringify(definition.fields.map((field) => ({ key: field.key, label: field.label }))));
-        const response = await http(`/web/import/${encodeURIComponent(props.entity)}`, "POST", upload);
+        if (warehouseScope.value)
+            upload.append("warehouse_id", warehouseScope.value.id);
+        upload.append(
+            "columns",
+            JSON.stringify(
+                definition.fields.map((field) => ({
+                    key: field.key,
+                    label: field.label,
+                })),
+            ),
+        );
+        const response = await http(
+            `/web/import/${encodeURIComponent(props.entity)}`,
+            "POST",
+            upload,
+        );
         for (const row of response.data ?? []) await store.apply(row);
-        notice.value = response.imported ? `Импортировано записей: ${response.imported}` : "В файле не найдено строк для импорта.";
+        notice.value = response.imported
+            ? `Импортировано записей: ${response.imported}`
+            : "В файле не найдено строк для импорта.";
     } catch (e) {
-        notice.value = e instanceof Error ? `Импорт не выполнен: ${e.message}` : "Импорт не выполнен.";
+        notice.value =
+            e instanceof Error
+                ? `Импорт не выполнен: ${e.message}`
+                : "Импорт не выполнен.";
     } finally {
         saving.value = false;
     }
@@ -926,46 +1235,96 @@ useCardRoute<ReferenceRow>({
 </script>
 <template>
     <Head :title="displayTitle" />
-    <div class="users-workspace" :class="{ 'has-editor': editing || conductingAcceptance }">
+    <div
+        class="users-workspace"
+        :class="{ 'has-editor': editing || conductingAcceptance }"
+    >
         <section class="users-list">
             <div class="content-breadcrumb">
                 {{
                     isClientSection
                         ? "Клиенты"
                         : isIntegration
-                        ? "Интеграции"
-                        : isFulfillment
-                        ? "Фулфилмент › Справочники"
-                        : isLogistics
-                          ? (props.entity === "orders" ? "Логистика" : "Логистика › Справочники")
-                        : isGoodsSection
-                          ? "Товары"
-                        : isMaintenance
-                          ? "Обслуживание › Справочники"
-                            : "Администрирование › Справочники"
+                          ? "Интеграции"
+                          : isFulfillment
+                            ? "Фулфилмент › Справочники"
+                            : isLogistics
+                              ? props.entity === "orders"
+                                  ? "Логистика"
+                                  : "Логистика › Справочники"
+                              : isGoodsSection
+                                ? "Товары"
+                                : isMaintenance
+                                  ? "Обслуживание › Справочники"
+                                  : "Администрирование › Справочники"
                 }}
                 › {{ displayTitle }}
             </div>
-            <ClientTabs v-if="isClientIntegration" /><IntegrationTabs v-else-if="isIntegration" /><FulfillmentTabs
-                v-else-if="isFulfillment"
-            /><LogisticsTabs v-else-if="isLogistics" /><GoodsTabs
-                v-else-if="isGoodsSection"
-            /><ClientTabs v-else-if="isClientSection" /><MaintenanceTabs v-else-if="isMaintenance" /><AdminTabs v-else />
+            <ClientTabs v-if="isClientIntegration" /><IntegrationTabs
+                v-else-if="isIntegration"
+            /><FulfillmentTabs v-else-if="isFulfillment" /><LogisticsTabs
+                v-else-if="isLogistics"
+            /><GoodsTabs v-else-if="isGoodsSection" /><ClientTabs
+                v-else-if="isClientSection"
+            /><MaintenanceTabs v-else-if="isMaintenance" /><AdminTabs v-else />
             <p v-if="clientScope || warehouseScope" class="notice">
-                <template v-if="clientScope">Клиент: <strong>{{ clientScope.name }}</strong></template>
-                <template v-else>Склад: <strong>{{ warehouseScope?.name }}</strong></template>
+                <template v-if="clientScope"
+                    >Клиент: <strong>{{ clientScope.name }}</strong></template
+                >
+                <template v-else
+                    >Склад:
+                    <strong>{{ warehouseScope?.name }}</strong></template
+                >
             </p>
             <div class="page-heading">
                 <div class="heading-title-group">
-                    <h1>{{ warehouseScope ? `${displayTitle} для склада ${warehouseScope.name}` : clientScope ? `${displayTitle} для клиента ${clientScope.name}` : displayTitle }}</h1>
-                    <button v-if="props.entity === 'tasks'" type="button" class="task-view-toggle" @click="emit('toggleTaskView')">
-                        <img :src="props.taskView === 'kanban' ? '/design/crm/table.svg' : '/design/crm/kanban.svg'" alt="" />
-                        <span>{{ props.taskView === 'kanban' ? 'Таблица' : 'Канбан' }}</span>
+                    <h1>
+                        {{
+                            warehouseScope
+                                ? `${displayTitle} для склада ${warehouseScope.name}`
+                                : clientScope
+                                  ? `${displayTitle} для клиента ${clientScope.name}`
+                                  : displayTitle
+                        }}
+                    </h1>
+                    <button
+                        v-if="props.entity === 'tasks'"
+                        type="button"
+                        class="task-view-toggle"
+                        @click="emit('toggleTaskView')"
+                    >
+                        <img
+                            :src="
+                                props.taskView === 'kanban'
+                                    ? '/design/crm/table.svg'
+                                    : '/design/crm/kanban.svg'
+                            "
+                            alt=""
+                        />
+                        <span>{{
+                            props.taskView === "kanban" ? "Таблица" : "Канбан"
+                        }}</span>
                     </button>
                 </div>
                 <div class="page-heading-actions">
-                    <DataTransferMenu :rows="filtered" :columns="orderedColumns" :filename="String(props.entity)" @import="importData" />
-                    <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">Добавить запись</button>
+                    <FilterPresetButton
+                        :state="advancedFilters"
+                        :fields="advancedFields"
+                        :options="advancedOptions"
+                    />
+                    <DataTransferMenu
+                        :rows="filtered"
+                        :columns="orderedColumns"
+                        :filename="String(props.entity)"
+                        @import="importData"
+                    />
+                    <button
+                        class="primary"
+                        :disabled="!online || !ready || saving"
+                        @click="open(null)"
+                    >
+                        Добавить запись
+                    </button>
                 </div>
             </div>
             <div class="sync-line" role="status">
@@ -982,7 +1341,12 @@ useCardRoute<ReferenceRow>({
             <p v-if="error || warning" class="notice" role="alert">
                 {{ error || warning }}
             </p>
-            <slot v-if="props.entity === 'tasks' && props.taskView === 'kanban'" name="task-kanban" />
+            <FilterPresetTiles :state="advancedFilters" />
+            <slot
+                v-if="props.entity === 'tasks' && props.taskView === 'kanban'"
+                name="task-kanban"
+                :rows="filtered"
+            />
             <div v-if="isGood" class="goods-tree-controls">
                 <button
                     type="button"
@@ -1000,7 +1364,10 @@ useCardRoute<ReferenceRow>({
                 </button>
                 <span>Категории — папки, товары — коробки</span>
             </div>
-            <div v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'" class="table-scroll">
+            <div
+                v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'"
+                class="table-scroll"
+            >
                 <table
                     :role="isGood ? 'treegrid' : undefined"
                     :aria-label="isGood ? 'Дерево товаров' : undefined"
@@ -1012,7 +1379,9 @@ useCardRoute<ReferenceRow>({
                                     type="checkbox"
                                     aria-label="Выбрать все записи на странице"
                                     :checked="pageChecked"
-                                    :indeterminate="somePageChecked && !pageChecked"
+                                    :indeterminate="
+                                        somePageChecked && !pageChecked
+                                    "
                                     @change="togglePageChecked"
                                 />
                             </th>
@@ -1056,24 +1425,50 @@ useCardRoute<ReferenceRow>({
                                         : "Категория"
                                 }}
                             </th>
-                            <th v-if="isGood && isColumnVisible('code')">Код</th>
+                            <th v-if="isGood && isColumnVisible('code')">
+                                Код
+                            </th>
                             <template v-if="isDocument"
-                                ><th v-if="isColumnVisible('client_id')">Клиент</th>
-                                <th v-if="isColumnVisible('doc_type_id')">Тип документа</th>
-                                <th v-if="isColumnVisible('doc_date')">Дата документа</th>
-                                <th v-if="isColumnVisible('amount')">Сумма</th></template
+                                ><th v-if="isColumnVisible('client_id')">
+                                    Клиент
+                                </th>
+                                <th v-if="isColumnVisible('doc_type_id')">
+                                    Тип документа
+                                </th>
+                                <th v-if="isColumnVisible('doc_date')">
+                                    Дата документа
+                                </th>
+                                <th v-if="isColumnVisible('amount')">
+                                    Сумма
+                                </th></template
                             >
-                            <th v-if="isTask && isColumnVisible('client_id')">Клиент</th>
-                            <th v-if="isTask && isColumnVisible('task_type_id')">Тип задачи</th>
-                            <th v-if="isTask && isColumnVisible('task_stage_id')">Этап задачи</th>
-                            <th v-if="isTask && isColumnVisible('__sku_count')">Количество SKU/товара</th>
+                            <th v-if="isTask && isColumnVisible('client_id')">
+                                Клиент
+                            </th>
+                            <th
+                                v-if="isTask && isColumnVisible('task_type_id')"
+                            >
+                                Тип задачи
+                            </th>
+                            <th
+                                v-if="
+                                    isTask && isColumnVisible('task_stage_id')
+                                "
+                            >
+                                Этап задачи
+                            </th>
+                            <th v-if="isTask && isColumnVisible('__sku_count')">
+                                Количество SKU/товара
+                            </th>
                             <th v-for="field in extraColumns" :key="field.key">
                                 {{ field.label }}
                             </th>
                             <th v-for="field in kizColumns" :key="field.key">
                                 {{ field.label }}
                             </th>
-                            <th v-if="isColumnVisible('status')">{{ isKiz ? "Состояние" : "Статус" }}</th>
+                            <th v-if="isColumnVisible('status')">
+                                {{ isKiz ? "Состояние" : "Статус" }}
+                            </th>
                             <th v-if="isColumnVisible('__actions')">
                                 Действия
                                 <TableColumnSettings
@@ -1166,11 +1561,24 @@ useCardRoute<ReferenceRow>({
                                 </th>
                                 <th v-if="isColumnVisible('amount')"></th>
                             </template>
-                            <th v-if="isTask && isColumnVisible('client_id')"></th>
-                            <th v-if="isTask && isColumnVisible('task_type_id')"></th>
-                            <th v-if="isTask && isColumnVisible('task_stage_id')"></th>
-                            <th v-if="isTask && isColumnVisible('__sku_count')"></th>
-                            <th v-for="field in extraColumns" :key="field.key"></th>
+                            <th
+                                v-if="isTask && isColumnVisible('client_id')"
+                            ></th>
+                            <th
+                                v-if="isTask && isColumnVisible('task_type_id')"
+                            ></th>
+                            <th
+                                v-if="
+                                    isTask && isColumnVisible('task_stage_id')
+                                "
+                            ></th>
+                            <th
+                                v-if="isTask && isColumnVisible('__sku_count')"
+                            ></th>
+                            <th
+                                v-for="field in extraColumns"
+                                :key="field.key"
+                            ></th>
                             <th
                                 v-for="field in kizColumns"
                                 :key="field.key"
@@ -1202,14 +1610,23 @@ useCardRoute<ReferenceRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
-                            v-memo="[row, orderedColumns, checkedIds, expandedMobileRows, saving, online]"
+                            v-memo="[
+                                row,
+                                orderedColumns,
+                                checkedIds,
+                                expandedMobileRows,
+                                saving,
+                                online,
+                            ]"
                             :class="{
                                 'goods-category-row':
                                     isGood &&
                                     (row.is_category === 1 ||
                                         !!goodsForest.nodes.get(row.id)
                                             ?.children.length),
-                                'mobile-card-expanded': expandedMobileRows.has(String(row.id)),
+                                'mobile-card-expanded': expandedMobileRows.has(
+                                    String(row.id),
+                                ),
                             }"
                             :aria-level="
                                 isGood
@@ -1224,7 +1641,13 @@ useCardRoute<ReferenceRow>({
                                     : undefined
                             "
                             @click="toggleMobileRow(row.id, $event)"
-                            @dblclick="isGood ? openGoodDetail(row) : isTask ? openTaskDetail(row) : open(row, true)"
+                            @dblclick="
+                                isGood
+                                    ? openGoodDetail(row)
+                                    : isTask
+                                      ? openTaskDetail(row)
+                                      : open(row, true)
+                            "
                         >
                             <td class="check-column" @dblclick.stop>
                                 <input
@@ -1318,10 +1741,17 @@ useCardRoute<ReferenceRow>({
                                     {{ displayName(row) }}
                                 </button>
                             </td>
-                            <td v-if="!isKiz && isColumnVisible('shortname')" data-label="Краткое название">
+                            <td
+                                v-if="!isKiz && isColumnVisible('shortname')"
+                                data-label="Краткое название"
+                            >
                                 {{ row.shortname || "—" }}
                             </td>
-                            <td v-for="field in kizColumns" :key="field.key" :data-label="field.label">
+                            <td
+                                v-for="field in kizColumns"
+                                :key="field.key"
+                                :data-label="field.label"
+                            >
                                 {{
                                     field.lookup
                                         ? (choices(field.lookup).find(
@@ -1337,11 +1767,17 @@ useCardRoute<ReferenceRow>({
                                           : (row[field.key] ?? "—")
                                 }}
                             </td>
-                            <td v-if="isGood && isColumnVisible('code')" data-label="Код">
+                            <td
+                                v-if="isGood && isColumnVisible('code')"
+                                data-label="Код"
+                            >
                                 {{ row.code || "—" }}
                             </td>
                             <template v-if="isDocument">
-                                <td v-if="isColumnVisible('client_id')" data-label="Клиент">
+                                <td
+                                    v-if="isColumnVisible('client_id')"
+                                    data-label="Клиент"
+                                >
                                     {{
                                         lookupStores.clients?.rows.value.find(
                                             (item) =>
@@ -1350,7 +1786,10 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Клиент №${row.client_id}`
                                     }}
                                 </td>
-                                <td v-if="isColumnVisible('doc_type_id')" data-label="Тип документа">
+                                <td
+                                    v-if="isColumnVisible('doc_type_id')"
+                                    data-label="Тип документа"
+                                >
                                     {{
                                         lookupStores.client_doc_types?.rows.value.find(
                                             (item) =>
@@ -1359,10 +1798,16 @@ useCardRoute<ReferenceRow>({
                                         )?.name || `Тип №${row.doc_type_id}`
                                     }}
                                 </td>
-                                <td v-if="isColumnVisible('doc_date')" data-label="Дата документа">
+                                <td
+                                    v-if="isColumnVisible('doc_date')"
+                                    data-label="Дата документа"
+                                >
                                     {{ formatDate(row.doc_date) }}
                                 </td>
-                                <td v-if="isColumnVisible('amount')" data-label="Сумма">
+                                <td
+                                    v-if="isColumnVisible('amount')"
+                                    data-label="Сумма"
+                                >
                                     {{
                                         row.amount == null
                                             ? "—"
@@ -1373,29 +1818,158 @@ useCardRoute<ReferenceRow>({
                                     }}
                                 </td>
                             </template>
-                            <td v-if="isTask && isColumnVisible('client_id')" data-label="Клиент">
-                                {{ columnValue(row, { key: 'client_id', label: 'Клиент', kind: 'lookup', lookup: 'clients' }) }}
+                            <td
+                                v-if="isTask && isColumnVisible('client_id')"
+                                data-label="Клиент"
+                            >
+                                {{
+                                    columnValue(row, {
+                                        key: "client_id",
+                                        label: "Клиент",
+                                        kind: "lookup",
+                                        lookup: "clients",
+                                    })
+                                }}
                             </td>
-                            <td v-if="isTask && isColumnVisible('task_type_id')" data-label="Тип задачи"><div class="lookup-avatar-cell"><span class="lookup-avatar"><img v-if="lookupOption('task_types', row.task_type_id)?.icon" :src="String(lookupOption('task_types', row.task_type_id)?.icon)" alt="" /><span v-else>{{ lookupInitial('task_types', row.task_type_id) }}</span></span><span>{{ taskLookupValue(row, 'task_type_id', 'task_types') }}</span></div></td>
-                            <td v-if="isTask && isColumnVisible('task_stage_id')" data-label="Этап задачи">{{ taskLookupValue(row, 'task_stage_id', 'task_stages') }}</td>
-                            <td v-if="isTask && isColumnVisible('__sku_count')" data-label="Количество SKU/товара">
+                            <td
+                                v-if="isTask && isColumnVisible('task_type_id')"
+                                data-label="Тип задачи"
+                            >
+                                <div class="lookup-avatar-cell">
+                                    <span class="lookup-avatar"
+                                        ><img
+                                            v-if="
+                                                lookupOption(
+                                                    'task_types',
+                                                    row.task_type_id,
+                                                )?.icon
+                                            "
+                                            :src="
+                                                String(
+                                                    lookupOption(
+                                                        'task_types',
+                                                        row.task_type_id,
+                                                    )?.icon,
+                                                )
+                                            "
+                                            alt=""
+                                        /><span v-else>{{
+                                            lookupInitial(
+                                                "task_types",
+                                                row.task_type_id,
+                                            )
+                                        }}</span></span
+                                    ><span>{{
+                                        taskLookupValue(
+                                            row,
+                                            "task_type_id",
+                                            "task_types",
+                                        )
+                                    }}</span>
+                                </div>
+                            </td>
+                            <td
+                                v-if="
+                                    isTask && isColumnVisible('task_stage_id')
+                                "
+                                data-label="Этап задачи"
+                            >
+                                {{
+                                    taskLookupValue(
+                                        row,
+                                        "task_stage_id",
+                                        "task_stages",
+                                    )
+                                }}
+                            </td>
+                            <td
+                                v-if="isTask && isColumnVisible('__sku_count')"
+                                data-label="Количество SKU/товара"
+                            >
                                 {{ taskSkuCount(row) }}
                             </td>
-                            <td v-for="field in extraColumns" :key="field.key" :data-label="field.label">
-                                <div v-if="isTask && (field.key === 'task_type_id' || field.key === 'priority_id')" class="lookup-avatar-cell">
-                                    <span class="lookup-avatar" :title="lookupOption(field.lookup!, row[field.key])?.name || field.label">
-                                        <img v-if="lookupOption(field.lookup!, row[field.key])?.icon" :src="String(lookupOption(field.lookup!, row[field.key])?.icon)" alt="" />
-                                        <span v-else>{{ lookupInitial(field.lookup!, row[field.key]) }}</span>
+                            <td
+                                v-for="field in extraColumns"
+                                :key="field.key"
+                                :data-label="field.label"
+                            >
+                                <div
+                                    v-if="
+                                        isTask &&
+                                        (field.key === 'task_type_id' ||
+                                            field.key === 'priority_id')
+                                    "
+                                    class="lookup-avatar-cell"
+                                >
+                                    <span
+                                        class="lookup-avatar"
+                                        :title="
+                                            lookupOption(
+                                                field.lookup!,
+                                                row[field.key],
+                                            )?.name || field.label
+                                        "
+                                    >
+                                        <img
+                                            v-if="
+                                                lookupOption(
+                                                    field.lookup!,
+                                                    row[field.key],
+                                                )?.icon
+                                            "
+                                            :src="
+                                                String(
+                                                    lookupOption(
+                                                        field.lookup!,
+                                                        row[field.key],
+                                                    )?.icon,
+                                                )
+                                            "
+                                            alt=""
+                                        />
+                                        <span v-else>{{
+                                            lookupInitial(
+                                                field.lookup!,
+                                                row[field.key],
+                                            )
+                                        }}</span>
                                     </span>
                                     <span>{{ columnValue(row, field) }}</span>
                                 </div>
-                                <div v-else-if="isAcceptance && field.key === 'progress'" class="table-progress" :aria-label="`Прогресс: ${Number(row.progress ?? 0)}%`">
-                                    <span class="table-progress-track"><i :style="{ width: `${Math.max(0, Math.min(100, Number(row.progress ?? 0)))}%` }"></i></span>
-                                    <b>{{ Math.max(0, Math.min(100, Number(row.progress ?? 0))) }}%</b>
+                                <div
+                                    v-else-if="
+                                        isAcceptance && field.key === 'progress'
+                                    "
+                                    class="table-progress"
+                                    :aria-label="`Прогресс: ${Number(row.progress ?? 0)}%`"
+                                >
+                                    <span class="table-progress-track"
+                                        ><i
+                                            :style="{
+                                                width: `${Math.max(0, Math.min(100, Number(row.progress ?? 0)))}%`,
+                                            }"
+                                        ></i
+                                    ></span>
+                                    <b
+                                        >{{
+                                            Math.max(
+                                                0,
+                                                Math.min(
+                                                    100,
+                                                    Number(row.progress ?? 0),
+                                                ),
+                                            )
+                                        }}%</b
+                                    >
                                 </div>
-                                <template v-else>{{ columnValue(row, field) }}</template>
+                                <template v-else>{{
+                                    columnValue(row, field)
+                                }}</template>
                             </td>
-                            <td v-if="isColumnVisible('status')" data-label="Статус">
+                            <td
+                                v-if="isColumnVisible('status')"
+                                data-label="Статус"
+                            >
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
@@ -1409,21 +1983,64 @@ useCardRoute<ReferenceRow>({
                                                 ] ?? String(row.status))
                                     }}</span
                                 >
-                                <span v-if="isTask" class="task-stage-inline">{{ taskLookupValue(row, "task_stage_id", "task_stages") }}</span>
+                                <span v-if="isTask" class="task-stage-inline">{{
+                                    taskLookupValue(
+                                        row,
+                                        "task_stage_id",
+                                        "task_stages",
+                                    )
+                                }}</span>
                             </td>
                             <td>
                                 <div class="row-actions">
                                     <template v-if="isClients">
-                                        <button :aria-label="`Документы клиента: ${displayName(row)}`" title="Документы" @click.stop="router.visit(`/clients/documents?client_id=${row.id}`)"><img src="/design/crm/documents.svg" alt="" /></button>
-                                        <button :aria-label="`Доступы клиента: ${displayName(row)}`" title="Доступы" @click.stop="router.visit(`/clients/accounts?client_id=${row.id}`)"><img src="/design/crm/administration.svg" alt="" /></button>
+                                        <button
+                                            :aria-label="`Документы клиента: ${displayName(row)}`"
+                                            title="Документы"
+                                            @click.stop="
+                                                router.visit(
+                                                    `/clients/documents?client_id=${row.id}`,
+                                                )
+                                            "
+                                        >
+                                            <img
+                                                src="/design/crm/documents.svg"
+                                                alt=""
+                                            />
+                                        </button>
+                                        <button
+                                            :aria-label="`Доступы клиента: ${displayName(row)}`"
+                                            title="Доступы"
+                                            @click.stop="
+                                                router.visit(
+                                                    `/clients/accounts?client_id=${row.id}`,
+                                                )
+                                            "
+                                        >
+                                            <img
+                                                src="/design/crm/administration.svg"
+                                                alt=""
+                                            />
+                                        </button>
                                     </template>
                                     <button
                                         v-if="isAcceptance"
                                         :aria-label="`Провести приемку: ${displayName(row)}`"
                                         title="Провести приемку"
-                                        :disabled="!online || saving || !!row.deleted_at || Number(row.status) === 1"
+                                        :disabled="
+                                            !online ||
+                                            saving ||
+                                            !!row.deleted_at ||
+                                            Number(row.status) === 1
+                                        "
                                         @click.stop="openAcceptance(row)"
-                                    ><span class="acceptance-play-icon" aria-hidden="true">▶</span></button>
+                                    >
+                                        <span
+                                            class="acceptance-play-icon"
+                                            aria-hidden="true"
+                                            >▶</span
+                                        >
+                                    </button>
                                     <DocumentDownload
                                         v-if="isDocument"
                                         :id="row.id"
@@ -1436,7 +2053,13 @@ useCardRoute<ReferenceRow>({
                                         title="Логи запуска"
                                         :disabled="!online"
                                         @click.stop="openIntegrationLogs(row)"
-                                    ><span class="run-logs-icon" aria-hidden="true">▦</span></button>
+                                    >
+                                        <span
+                                            class="run-logs-icon"
+                                            aria-hidden="true"
+                                            >▦</span
+                                        >
+                                    </button>
                                     <button
                                         :aria-label="`Просмотр: ${displayName(row)}`"
                                         title="Просмотр"
@@ -1450,10 +2073,17 @@ useCardRoute<ReferenceRow>({
                                         v-if="props.entity === 'warehouses'"
                                         :aria-label="`Ячейки склада: ${displayName(row)}`"
                                         title="Ячейки"
-                                        @click.stop="router.visit(`/fulfillment/cells?warehouse_id=${row.id}`)"
+                                        @click.stop="
+                                            router.visit(
+                                                `/fulfillment/cells?warehouse_id=${row.id}`,
+                                            )
+                                        "
                                     >
-                                        <img src="/design/crm/cells.svg" alt="" />
-                                    </button><button
+                                        <img
+                                            src="/design/crm/cells.svg"
+                                            alt=""
+                                        /></button
+                                    ><button
                                         :aria-label="`Редактировать: ${displayName(row)}`"
                                         title="Редактировать"
                                         :disabled="
@@ -1508,7 +2138,10 @@ useCardRoute<ReferenceRow>({
                     </tbody>
                 </table>
             </div>
-            <footer v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'" class="list-footer">
+            <footer
+                v-if="props.entity !== 'tasks' || props.taskView !== 'kanban'"
+                class="list-footer"
+            >
                 <span
                     >Найдено: {{ filtered.length
                     }}<template v-if="isGood">
@@ -1528,26 +2161,40 @@ useCardRoute<ReferenceRow>({
                         :disabled="currentPage === 1"
                         @click="currentPage = 1"
                         aria-label="Первая страница"
-                    >«</button>
+                    >
+                        «
+                    </button>
                     <button
                         :disabled="currentPage === 1"
                         @click="currentPage--"
                         aria-label="Предыдущая страница"
-                    >‹</button>
+                    >
+                        ‹
+                    </button>
                     <template v-for="item in pageItems" :key="item">
                         <span v-if="item === '…'">…</span>
-                        <button v-else :class="{ active: currentPage === item }" @click="currentPage = Number(item)">{{ item }}</button>
+                        <button
+                            v-else
+                            :class="{ active: currentPage === item }"
+                            @click="currentPage = Number(item)"
+                        >
+                            {{ item }}
+                        </button>
                     </template>
                     <button
                         :disabled="currentPage === pages"
                         @click="currentPage++"
                         aria-label="Следующая страница"
-                    >›</button>
+                    >
+                        ›
+                    </button>
                     <button
                         :disabled="currentPage === pages"
                         @click="currentPage = pages"
                         aria-label="Последняя страница"
-                    >»</button>
+                    >
+                        »
+                    </button>
                 </div>
             </footer>
         </section>
@@ -1558,23 +2205,68 @@ useCardRoute<ReferenceRow>({
             @cancel="deleting = null"
             @confirm="confirmDelete"
         />
-        <aside v-if="conductingAcceptance" class="editor acceptance-editor" aria-label="Провести приемку">
+        <aside
+            v-if="conductingAcceptance"
+            class="editor acceptance-editor"
+            aria-label="Провести приемку"
+        >
             <header>
                 <div>
                     <small>ПРОВЕДЕНИЕ ПРИЕМКИ</small>
                     <h2>Провести приемку N {{ conductingAcceptance.id }}</h2>
                 </div>
-                <button type="button" aria-label="Закрыть проведение приемки" :disabled="acceptanceSaving" @click="closeAcceptance">×</button>
+                <button
+                    type="button"
+                    aria-label="Закрыть проведение приемки"
+                    :disabled="acceptanceSaving"
+                    @click="closeAcceptance"
+                >
+                    ×
+                </button>
             </header>
             <div class="editor-content acceptance-content">
                 <div class="acceptance-progress">
-                    <div class="acceptance-progress-label"><span>Прогресс</span><b>{{ conductingAcceptance.fact_count ?? 0 }} из {{ conductingAcceptance.plan_count ?? 0 }}</b></div>
-                    <div class="acceptance-progress-track"><i :style="{ width: `${Math.min(100, Number(conductingAcceptance.plan_count) > 0 ? Number(conductingAcceptance.fact_count ?? 0) / Number(conductingAcceptance.plan_count) * 100 : 0)}%` }"></i></div>
+                    <div class="acceptance-progress-label">
+                        <span>Прогресс</span
+                        ><b
+                            >{{ conductingAcceptance.fact_count ?? 0 }} из
+                            {{ conductingAcceptance.plan_count ?? 0 }}</b
+                        >
+                    </div>
+                    <div class="acceptance-progress-track">
+                        <i
+                            :style="{
+                                width: `${Math.min(100, Number(conductingAcceptance.plan_count) > 0 ? (Number(conductingAcceptance.fact_count ?? 0) / Number(conductingAcceptance.plan_count)) * 100 : 0)}%`,
+                            }"
+                        ></i>
+                    </div>
                 </div>
-                <p v-if="acceptanceNotice" class="notice" role="status">{{ acceptanceNotice }}</p>
-                <form class="acceptance-pick-form" @submit.prevent="pickAcceptance">
-                    <label>Штрихкод товара<input ref="acceptanceInput" v-model="acceptanceBarcode" inputmode="numeric" autocomplete="off" autofocus :disabled="acceptanceSaving" placeholder="Введите или отсканируйте ШК" /></label>
-                    <button type="submit" class="primary" :disabled="acceptanceSaving || !acceptanceBarcode.trim()">{{ acceptanceSaving ? "Сохраняем…" : "Сохранить" }}</button>
+                <p v-if="acceptanceNotice" class="notice" role="status">
+                    {{ acceptanceNotice }}
+                </p>
+                <form
+                    class="acceptance-pick-form"
+                    @submit.prevent="pickAcceptance"
+                >
+                    <label
+                        >Штрихкод товара<input
+                            ref="acceptanceInput"
+                            v-model="acceptanceBarcode"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            autofocus
+                            :disabled="acceptanceSaving"
+                            placeholder="Введите или отсканируйте ШК"
+                    /></label>
+                    <button
+                        type="submit"
+                        class="primary"
+                        :disabled="
+                            acceptanceSaving || !acceptanceBarcode.trim()
+                        "
+                    >
+                        {{ acceptanceSaving ? "Сохраняем…" : "Сохранить" }}
+                    </button>
                 </form>
             </div>
         </aside>
@@ -1680,12 +2372,25 @@ useCardRoute<ReferenceRow>({
                             <label v-else :key="field.key"
                                 >{{ field.label }}
                                 <SchedulerRepeatEditor
-                                    v-if="isScheduler && field.key === 'schedule'"
+                                    v-if="
+                                        isScheduler && field.key === 'schedule'
+                                    "
                                     v-model="form[field.key]"
-                                    :disabled="viewing || saving || !online || !!conflict"
+                                    :disabled="
+                                        viewing ||
+                                        saving ||
+                                        !online ||
+                                        !!conflict
+                                    "
                                 />
                                 <textarea
-                                    v-if="field.kind === 'json' && !(isScheduler && field.key === 'schedule')"
+                                    v-if="
+                                        field.kind === 'json' &&
+                                        !(
+                                            isScheduler &&
+                                            field.key === 'schedule'
+                                        )
+                                    "
                                     v-model="form[field.key]"
                                     :aria-label="field.label"
                                     rows="6"
@@ -1740,14 +2445,21 @@ useCardRoute<ReferenceRow>({
                                     v-model="form[field.key]"
                                     :aria-label="field.label"
                                 >
-                                    <option v-if="!field.required" :value="null">Не выбрано</option>
+                                    <option
+                                        v-if="!field.required"
+                                        :value="null"
+                                    >
+                                        Не выбрано
+                                    </option>
                                     <option
                                         v-if="
                                             form[field.key] &&
                                             !choices(field.lookup!).some(
                                                 (row) =>
                                                     String(
-                                                        isScheduler && field.key === 'task_key'
+                                                        isScheduler &&
+                                                            field.key ===
+                                                                'task_key'
                                                             ? row.shortname
                                                             : row.id,
                                                     ) ===
@@ -1765,7 +2477,8 @@ useCardRoute<ReferenceRow>({
                                         v-for="row in choices(field.lookup!)"
                                         :key="row.id"
                                         :value="
-                                            isScheduler && field.key === 'task_key'
+                                            isScheduler &&
+                                            field.key === 'task_key'
                                                 ? row.shortname
                                                 : row.id
                                         "
@@ -1874,7 +2587,7 @@ useCardRoute<ReferenceRow>({
                                 )?.settings?.print?.fields ?? []
                             "
                         />
-                                <label v-if="!isKiz && !isCellGood && !isAcceptance"
+                        <label v-if="!isKiz && !isCellGood && !isAcceptance"
                             >Статус<select
                                 v-model="form.status"
                                 aria-label="Статус"
@@ -2077,7 +2790,11 @@ useCardRoute<ReferenceRow>({
     color: #2274a5;
     cursor: pointer;
 }
-.task-view-toggle img { width: 18px; height: 18px; object-fit: contain; }
+.task-view-toggle img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
 .heading-title-group {
     display: inline-flex;
     align-items: center;
@@ -2235,19 +2952,93 @@ td,
     font-size: 22px;
     line-height: 1;
 }
-.table-progress { display: flex; align-items: center; gap: 8px; min-width: 130px; }
-.table-progress-track { display: block; width: 88px; height: 7px; border-radius: 5px; background: #e1f3e7; overflow: hidden; }
-.table-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
-.table-progress b { color: #1e892f; font-size: 11px; font-weight: 700; }
-.lookup-avatar-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 145px; }
-.lookup-avatar { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; overflow: hidden; border-radius: 7px; background: transparent; color: #1e892f; font-size: 12px; font-weight: 700; }
-.lookup-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.acceptance-content { display: grid; gap: 18px; }
-.acceptance-progress { display: grid; gap: 8px; }
-.acceptance-progress-label { display: flex; justify-content: space-between; color: #667085; font-size: 12px; }
-.acceptance-progress-label b { color: #1e892f; font-weight: 700; }
-.acceptance-progress-track { height: 9px; border-radius: 6px; background: #e1f3e7; overflow: hidden; }
-.acceptance-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1e892f, #65c98a); transition: width .2s ease; }
-.acceptance-pick-form { display: grid; gap: 14px; }
-.acceptance-pick-form label { display: grid; gap: 7px; }
+.table-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 130px;
+}
+.table-progress-track {
+    display: block;
+    width: 88px;
+    height: 7px;
+    border-radius: 5px;
+    background: #e1f3e7;
+    overflow: hidden;
+}
+.table-progress-track i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1e892f, #65c98a);
+    transition: width 0.2s ease;
+}
+.table-progress b {
+    color: #1e892f;
+    font-size: 11px;
+    font-weight: 700;
+}
+.lookup-avatar-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 145px;
+}
+.lookup-avatar {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    overflow: hidden;
+    border-radius: 7px;
+    background: transparent;
+    color: #1e892f;
+    font-size: 12px;
+    font-weight: 700;
+}
+.lookup-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.acceptance-content {
+    display: grid;
+    gap: 18px;
+}
+.acceptance-progress {
+    display: grid;
+    gap: 8px;
+}
+.acceptance-progress-label {
+    display: flex;
+    justify-content: space-between;
+    color: #667085;
+    font-size: 12px;
+}
+.acceptance-progress-label b {
+    color: #1e892f;
+    font-weight: 700;
+}
+.acceptance-progress-track {
+    height: 9px;
+    border-radius: 6px;
+    background: #e1f3e7;
+    overflow: hidden;
+}
+.acceptance-progress-track i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1e892f, #65c98a);
+    transition: width 0.2s ease;
+}
+.acceptance-pick-form {
+    display: grid;
+    gap: 14px;
+}
+.acceptance-pick-form label {
+    display: grid;
+    gap: 7px;
+}
 </style>

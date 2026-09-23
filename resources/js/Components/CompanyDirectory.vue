@@ -7,10 +7,18 @@ import AdminTabs from "./AdminTabs.vue";
 import ClientTabs from "./ClientTabs.vue";
 import TableColumnSettings from "./TableColumnSettings.vue";
 import DataTransferMenu from "./DataTransferMenu.vue";
+import FilterPresetButton from "./FilterPresetButton.vue";
+import FilterPresetTiles from "./FilterPresetTiles.vue";
 import ConfirmDelete from "./ConfirmDelete.vue";
 import { createEntitySync } from "../lib/entitySync";
 import { http, HttpError } from "../lib/http";
 import type { EntityRow } from "../lib/cache";
+import {
+    applyTableFilter,
+    useFilterPresets,
+    type FilterField,
+    type FilterOptions,
+} from "../lib/tableFilters";
 interface DirectoryRow extends EntityRow {
     name: string;
     shortname: string;
@@ -24,6 +32,7 @@ const props = defineProps<{
     title: string;
 }>();
 const page = usePage<any>();
+const advancedFilters = useFilterPresets(`company:${props.entity}`);
 const namespace = `${page.props.cacheVersion}:${page.props.auth.id}:${page.props.auth.tenant_id}`;
 const store = createEntitySync<DirectoryRow>(namespace, props.entity);
 const companies =
@@ -77,6 +86,55 @@ const flags: Record<string, string> = isClientCompany
           is_client: "Клиент",
           is_partner: "Партнёр",
       };
+const advancedFields = computed<FilterField[]>(() => [
+    { id: "id", label: "#", type: "number" },
+    ...Object.entries(labels).map(([id, label]) => ({
+        id,
+        label,
+        type: "text" as const,
+    })),
+    ...Object.entries(srcLabels).map(([id, label]) => ({
+        id: `src.${id}`,
+        label,
+        type: "text" as const,
+    })),
+    ...Object.entries(flags).map(([id, label]) => ({
+        id: `src.${id}`,
+        label,
+        type: "tuple" as const,
+        format: (value: unknown) => (value ? "Да" : "Нет"),
+    })),
+    ...(!isCompany
+        ? [
+              {
+                  id: "company_id",
+                  label: "Компания",
+                  type: "tuple" as const,
+                  format: (value: unknown) => companyName(value),
+              },
+          ]
+        : []),
+    {
+        id: "status",
+        label: "Статус",
+        type: "tuple",
+        format: (value: unknown) => statuses[String(value)] ?? String(value),
+    },
+    { id: "deleted_at", label: "Удалена", type: "text" },
+]);
+const advancedOptions = computed<FilterOptions>(() => ({
+    status: [0, 1, 2],
+    ...Object.fromEntries(
+        Object.keys(flags).map((key) => [`src.${key}`, [0, 1]]),
+    ),
+    ...(!isCompany
+        ? {
+              company_id: companyOptions.value.map((company) =>
+                  Number(company.id),
+              ),
+          }
+        : {}),
+}));
 const hiddenColumns = ref<string[]>([]);
 const columnFields = computed(() => [
     { key: "name", label: isCompany ? "Название компании" : "ФИО" },
@@ -95,7 +153,10 @@ function toggleColumn(key: string) {
     hiddenColumns.value = isColumnVisible(key)
         ? [...hiddenColumns.value, key]
         : hiddenColumns.value.filter((item) => item !== key);
-    localStorage.setItem(columnStorageKey.value, JSON.stringify(hiddenColumns.value));
+    localStorage.setItem(
+        columnStorageKey.value,
+        JSON.stringify(hiddenColumns.value),
+    );
 }
 const flagFilter = ref("");
 const query = ref(""),
@@ -112,14 +173,19 @@ const selected = ref<DirectoryRow | null>(null),
     conflict = ref<DirectoryRow | null>(null);
 const expandedMobileRows = ref<Set<string>>(new Set());
 function toggleMobileRow(id: string | number, event?: MouseEvent) {
-    if (!window.matchMedia('(max-width: 900px)').matches || (event?.detail ?? 0) > 1) return;
+    if (
+        !window.matchMedia("(max-width: 900px)").matches ||
+        (event?.detail ?? 0) > 1
+    )
+        return;
     const key = String(id);
     const next = new Set(expandedMobileRows.value);
-    if (next.has(key)) next.delete(key); else next.add(key);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     expandedMobileRows.value = next;
 }
 function openName(row: DirectoryRow, event: MouseEvent) {
-    if (window.matchMedia('(max-width: 900px)').matches) {
+    if (window.matchMedia("(max-width: 900px)").matches) {
         event.stopPropagation();
         toggleMobileRow(row.id, event);
         return;
@@ -143,7 +209,7 @@ function companyName(id: unknown) {
             ?.name ?? "Компания недоступна"
     );
 }
-const filtered = computed(() =>
+const quickFiltered = computed(() =>
     rows.value
         .filter((row) => {
             if (
@@ -194,6 +260,9 @@ const filtered = computed(() =>
                 a.name.localeCompare(b.name, "ru") *
                 (descending.value ? -1 : 1),
         ),
+);
+const filtered = computed(() =>
+    applyTableFilter(quickFiltered.value, advancedFilters.combined.value),
 );
 const pages = computed(() =>
     Math.max(1, Math.ceil(filtered.value.length / 25)),
@@ -353,7 +422,9 @@ async function confirmDelete() {
 }
 onMounted(async () => {
     try {
-        const saved = JSON.parse(localStorage.getItem(columnStorageKey.value) ?? "[]");
+        const saved = JSON.parse(
+            localStorage.getItem(columnStorageKey.value) ?? "[]",
+        );
         if (Array.isArray(saved)) hiddenColumns.value = saved.map(String);
     } catch {}
     await Promise.all([
@@ -420,10 +491,33 @@ useCardRoute<DirectoryRow>({
                     }}</strong>
                 </p>
                 <div class="page-heading">
-                    <h1>{{ clientScope ? `${title} для клиента ${clientScope.name}` : scope ? `${title} для компании ${scope.name}` : title }}</h1>
+                    <h1>
+                        {{
+                            clientScope
+                                ? `${title} для клиента ${clientScope.name}`
+                                : scope
+                                  ? `${title} для компании ${scope.name}`
+                                  : title
+                        }}
+                    </h1>
                     <div class="page-heading-actions">
-                        <DataTransferMenu :rows="filtered" :columns="columnFields" :filename="props.entity" />
-                        <button class="primary" :disabled="!online || !ready || saving" @click="open(null)">+ Добавить {{ singular }}</button>
+                        <FilterPresetButton
+                            :state="advancedFilters"
+                            :fields="advancedFields"
+                            :options="advancedOptions"
+                        />
+                        <DataTransferMenu
+                            :rows="filtered"
+                            :columns="columnFields"
+                            :filename="props.entity"
+                        />
+                        <button
+                            class="primary"
+                            :disabled="!online || !ready || saving"
+                            @click="open(null)"
+                        >
+                            + Добавить {{ singular }}
+                        </button>
                     </div>
                 </div>
                 <p class="sync-line" role="status">
@@ -441,6 +535,7 @@ useCardRoute<DirectoryRow>({
                     {{ companies.error.value }}
                 </p>
             </div>
+            <FilterPresetTiles :state="advancedFilters" />
             <div class="table-scroll">
                 <table>
                     <thead>
@@ -457,17 +552,30 @@ useCardRoute<DirectoryRow>({
                                     {{ descending ? "▴" : "▾" }}
                                 </button>
                             </th>
-                            <th v-if="!isCompany && isColumnVisible('company')">Компания</th>
+                            <th v-if="!isCompany && isColumnVisible('company')">
+                                Компания
+                            </th>
                             <th v-if="isColumnVisible('detail')">
                                 {{ isCompany ? "ИНН" : "Контактное значение" }}
                             </th>
                             <th v-if="isColumnVisible('status')">Статус</th>
                             <template v-if="isCompany">
-                                <template v-for="(label, key) in flags" :key="key">
-                                    <th v-if="isColumnVisible(key)">{{ label }}</th>
+                                <template
+                                    v-for="(label, key) in flags"
+                                    :key="key"
+                                >
+                                    <th v-if="isColumnVisible(key)">
+                                        {{ label }}
+                                    </th>
                                 </template>
                             </template>
-                            <th>Действия <TableColumnSettings :columns="columnFields" :storage-key="columnStorageKey" /></th>
+                            <th>
+                                Действия
+                                <TableColumnSettings
+                                    :columns="columnFields"
+                                    :storage-key="columnStorageKey"
+                                />
+                            </th>
                         </tr>
                         <tr class="filter-row">
                             <th class="id-column"></th>
@@ -519,7 +627,11 @@ useCardRoute<DirectoryRow>({
                             </th>
                             <th
                                 v-if="isCompany && !isClientCompany"
-                                v-show="isColumnVisible('is_own') && isColumnVisible('is_client') && isColumnVisible('is_partner')"
+                                v-show="
+                                    isColumnVisible('is_own') &&
+                                    isColumnVisible('is_client') &&
+                                    isColumnVisible('is_partner')
+                                "
                                 colspan="3"
                             >
                                 <select
@@ -543,7 +655,11 @@ useCardRoute<DirectoryRow>({
                         <tr
                             v-for="row in visible"
                             :key="row.id"
-                            :class="{ 'mobile-card-expanded': expandedMobileRows.has(String(row.id)) }"
+                            :class="{
+                                'mobile-card-expanded': expandedMobileRows.has(
+                                    String(row.id),
+                                ),
+                            }"
                             @click="toggleMobileRow(row.id, $event)"
                             @dblclick="open(row)"
                         >
@@ -556,13 +672,24 @@ useCardRoute<DirectoryRow>({
                                     {{ row.name }}
                                 </button>
                             </td>
-                            <td v-if="!isCompany && isColumnVisible('company')" data-label="Компания">
+                            <td
+                                v-if="!isCompany && isColumnVisible('company')"
+                                data-label="Компания"
+                            >
                                 {{ companyName(row.company_id) }}
                             </td>
-                            <td v-if="isColumnVisible('detail')" :data-label="isCompany ? 'ИНН' : 'Контактное значение'">
+                            <td
+                                v-if="isColumnVisible('detail')"
+                                :data-label="
+                                    isCompany ? 'ИНН' : 'Контактное значение'
+                                "
+                            >
                                 {{ (isCompany ? row.inn : row.val) || "—" }}
                             </td>
-                            <td v-if="isColumnVisible('status')" data-label="Статус">
+                            <td
+                                v-if="isColumnVisible('status')"
+                                data-label="Статус"
+                            >
                                 <span
                                     class="badge"
                                     :class="`status-${row.deleted_at ? 'deleted' : row.status}`"
@@ -575,16 +702,19 @@ useCardRoute<DirectoryRow>({
                                 >
                             </td>
                             <template v-if="isCompany"
-                                ><template v-for="(label, key) in flags" :key="key"><td v-if="isColumnVisible(key)">
-                                    <img
-                                        v-if="
-                                            row.src?.[key] === true ||
-                                            row.src?.[key] === 1
-                                        "
-                                        class="flag-tick"
-                                        src="/design/crm/tick.svg"
-                                        :alt="label"
-                                    /></td></template
+                                ><template
+                                    v-for="(label, key) in flags"
+                                    :key="key"
+                                    ><td v-if="isColumnVisible(key)">
+                                        <img
+                                            v-if="
+                                                row.src?.[key] === true ||
+                                                row.src?.[key] === 1
+                                            "
+                                            class="flag-tick"
+                                            src="/design/crm/tick.svg"
+                                            :alt="label"
+                                        /></td></template
                             ></template>
                             <td>
                                 <div class="row-actions">

@@ -227,6 +227,32 @@ it('фильтрует статистику по маркетплейсу и з�
         ->assertJsonPath('data.0.failed_runs', 1);
 });
 
+it('применяет конструктор фильтров до агрегации календаря', function (): void {
+    $this->loginUser($this->makeUser([], true));
+    $webhook = webhookForStatistics('Вебхук', 1, 'tenant_a', null);
+    runForStatistics($webhook, 'tenant_a', 'completed', now()->startOfDay()->addHour());
+    runForStatistics($webhook, 'tenant_a', 'failed', now()->startOfDay()->addHours(2));
+    $filter = json_encode([
+        'glue' => 'and',
+        'rules' => [[
+            'field' => 'status',
+            'type' => 'tuple',
+            'filter' => 'equal',
+            'value' => 'failed',
+        ]],
+    ], JSON_THROW_ON_ERROR);
+
+    $this->getJson('/web/background_processes?'.http_build_query([
+        'group_by' => 'webhooks',
+        'period' => 'today',
+        'filter' => $filter,
+    ]))->assertOk()
+        ->assertJsonPath('data.0.total_runs', 1)
+        ->assertJsonPath('data.0.failed_runs', 1)
+        ->assertJsonCount(1, 'data.0.activity')
+        ->assertJsonPath('data.0.activity.0.failed_count', 1);
+});
+
 it('возвращает границы и единицы всех поддерживаемых периодов', function (string $period, string $unit, string $selectedFrom, string $selectedTo): void {
     $this->loginUser($this->makeUser([], true));
 

@@ -7,19 +7,22 @@ namespace App\Http\Controllers;
 use App\Http\BaseApiController;
 use App\Models\ImportRun;
 use App\Models\IntegrationWebhook;
+use App\Services\QueryFilterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ClientIntegrationRunLogController extends BaseApiController
 {
-    public function calendar(Request $request, string $id): JsonResponse
+    public function calendar(Request $request, QueryFilterService $filters, string $id): JsonResponse
     {
-        $input = $request->validate(['year' => ['required', 'integer', 'between:2000,2100']]);
+        $input = $request->validate(['year' => ['required', 'integer', 'between:2000,2100'], 'filter' => ['sometimes', 'nullable', 'string', 'max:32768']]);
         $tenant = (string) $request->user()->tenant_id;
         IntegrationWebhook::withTrashed()->visibleTo($tenant)->findOrFail($id);
         $year = (int) $input['year'];
 
-        $days = $this->runs($tenant, $id)
+        $query = $this->runs($tenant, $id);
+        $filters->apply($query, $input['filter'] ?? null, $this->filterFields());
+        $days = $query
             ->where('created_at', '>=', sprintf('%04d-01-01', $year))
             ->where('created_at', '<', sprintf('%04d-01-01', $year + 1))
             ->selectRaw('created_at::date AS date, COUNT(*)::integer AS count')
@@ -31,13 +34,15 @@ final class ClientIntegrationRunLogController extends BaseApiController
         return response()->json(['data' => $days])->header('Cache-Control', 'private, no-store');
     }
 
-    public function day(Request $request, string $id): JsonResponse
+    public function day(Request $request, QueryFilterService $filters, string $id): JsonResponse
     {
-        $input = $request->validate(['date' => ['required', 'date_format:Y-m-d'], 'page' => ['sometimes', 'integer', 'min:1']]);
+        $input = $request->validate(['date' => ['required', 'date_format:Y-m-d'], 'page' => ['sometimes', 'integer', 'min:1'], 'filter' => ['sometimes', 'nullable', 'string', 'max:32768']]);
         $tenant = (string) $request->user()->tenant_id;
         IntegrationWebhook::withTrashed()->visibleTo($tenant)->findOrFail($id);
         $date = $input['date'];
-        $runs = $this->runs($tenant, $id)
+        $query = $this->runs($tenant, $id);
+        $filters->apply($query, $input['filter'] ?? null, $this->filterFields());
+        $runs = $query
             ->where('created_at', '>=', $date.' 00:00:00')
             ->where('created_at', '<', date('Y-m-d', strtotime($date.' +1 day')).' 00:00:00')
             ->orderByDesc('created_at')
@@ -62,5 +67,16 @@ final class ClientIntegrationRunLogController extends BaseApiController
         return ImportRun::query()
             ->where('tenant_id', $tenant)
             ->where('source_webhook_id', $id);
+    }
+
+    /** @return array<string, string> */
+    private function filterFields(): array
+    {
+        return [
+            'id' => 'wms.import_runs.id',
+            'created_at' => 'wms.import_runs.created_at',
+            'status' => 'wms.import_runs.status',
+            'processed_records' => 'wms.import_runs.processed_records',
+        ];
     }
 }
